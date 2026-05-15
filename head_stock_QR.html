@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>위치 QR 생성기 v1.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+  background: #f5f7fa; color: #1a3a5c; min-height: 100vh; padding-bottom: 40px;
+}
+.app-header {
+  background: #1a3a5c; color: white; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.app-header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.ver { font-size: 11px; opacity: 0.7; font-weight: 400; margin-left: 8px; }
+.app-header a {
+  color: white; text-decoration: none; font-size: 13px;
+  padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 6px;
+}
+
+.container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+.card {
+  background: white; border-radius: 10px; padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px;
+}
+.card h2 { font-size: 15px; margin-bottom: 12px; color: #1a3a5c; }
+
+.tab-bar {
+  display: flex; background: white; border-radius: 8px; overflow: hidden;
+  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.tab {
+  flex: 1; padding: 12px; text-align: center; font-size: 14px;
+  font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent;
+}
+.tab.active { color: #1a3a5c; border-bottom-color: #1a3a5c; background: #f8fbff; }
+
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #555; }
+input[type="text"], textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid #ccc;
+  border-radius: 6px; font-size: 15px; font-family: inherit;
+}
+input[type="text"]:focus, textarea:focus { outline: none; border-color: #1a3a5c; }
+textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+.btn {
+  padding: 12px 16px; border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-primary { background: #1a3a5c; color: white; width: 100%; }
+.btn-secondary { background: #e9ecef; color: #333; }
+
+.hint {
+  font-size: 12px; color: #666; background: #f0f4f8;
+  padding: 10px 12px; border-radius: 6px; line-height: 1.6; margin-top: 8px;
+}
+.hint code {
+  background: #1a3a5c; color: white; padding: 1px 5px;
+  border-radius: 3px; font-size: 11px; font-family: monospace;
+}
+
+/* QR 결과 - 단일 */
+.qr-result { text-align: center; padding-top: 8px; }
+.qr-result.hidden { display: none; }
+.qr-label-area {
+  background: white; border: 2px solid #1a3a5c; border-radius: 8px;
+  padding: 16px; display: inline-block; margin-bottom: 12px;
+}
+.qr-loc {
+  font-size: 36px; font-weight: 800; letter-spacing: 4px;
+  margin-bottom: 8px; color: #1a3a5c;
+}
+.qr-img-wrap {
+  background: white; padding: 8px; display: inline-block;
+}
+.qr-img-wrap img { width: 200px; height: 200px; display: block; }
+.qr-caption { font-size: 12px; color: #666; margin-top: 6px; }
+
+.qr-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.qr-actions .btn { flex: 1; min-width: 120px; }
+.btn-print { background: #28a745; color: white; }
+.btn-download { background: #6f42c1; color: white; }
+
+/* QR 결과 - 다중 (A4) */
+.batch-result { display: none; }
+.batch-result.show { display: block; }
+.batch-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  background: white; padding: 16px; border-radius: 8px; margin-top: 12px;
+}
+.batch-item {
+  border: 1px dashed #ccc; padding: 12px 8px; text-align: center;
+  page-break-inside: avoid;
+}
+.batch-item .b-loc {
+  font-size: 24px; font-weight: 800; letter-spacing: 3px;
+  color: #1a3a5c; margin-bottom: 6px;
+}
+.batch-item .b-img img { width: 130px; height: 130px; }
+.batch-item .b-cap { font-size: 10px; color: #888; margin-top: 4px; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.85); color: white; padding: 10px 20px;
+  border-radius: 20px; font-size: 13px; z-index: 9999;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* 인쇄 */
+@media print {
+  body { background: white; padding: 0; }
+  .app-header, .container > .tab-bar, .container > .card:not(.print-area),
+  .qr-actions, .hint, .toast { display: none !important; }
+  .container { max-width: 100%; padding: 0; }
+  .card.print-area { box-shadow: none; padding: 0; }
+
+  /* 단일 인쇄: 가운데 큰 라벨 */
+  .qr-result:not(.hidden) {
+    page-break-after: always; padding-top: 30mm;
+  }
+  .qr-label-area {
+    border-width: 3px; padding: 24px;
+  }
+  .qr-loc { font-size: 64px; }
+  .qr-img-wrap img { width: 320px; height: 320px; }
+
+  /* 다중 인쇄: A4에 격자 */
+  .batch-grid {
+    padding: 0; gap: 8mm;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .batch-item {
+    border: 2px solid #1a3a5c; padding: 12mm 4mm; min-height: 60mm;
+  }
+  .batch-item .b-loc { font-size: 28pt; }
+  .batch-item .b-img img { width: 140px; height: 140px; }
+  @page { size: A4; margin: 12mm; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>🔳 위치 QR 생성기 <span class="ver">v1.0</span></h1>
+  <a href="head_stock.html">🏠</a>
+</div>
+
+<div class="container">
+
+  <div class="tab-bar">
+    <div class="tab active" data-tab="single">📌 1개 만들기</div>
+    <div class="tab" data-tab="batch">📋 여러개 (A4)</div>
+  </div>
+
+  <!-- 단일 -->
+  <div id="page-single">
+    <div class="card">
+      <h2>📍 위치 코드 입력</h2>
+      <div class="form-group">
+        <input type="text" id="locInput" placeholder="예: A01, B-02, 가1, 1번랙" autofocus>
+      </div>
+      <button class="btn btn-primary" id="btnGenSingle" type="button">🔳 QR 생성</button>
+      <div class="hint">
+        💡 이 QR을 찍으면 해당 위치에 등록된 품목 리스트가 자동으로 표시됩니다.<br>
+        대상 페이지: <code>head_stock_mold.html?loc=위치코드</code>
+      </div>
+    </div>
+
+    <div class="card print-area">
+      <div class="qr-result hidden" id="qrSingleResult">
+        <div class="qr-label-area">
+          <div class="qr-loc" id="qrLoc"></div>
+          <div class="qr-img-wrap"><img id="qrImg" alt=""></div>
+          <div class="qr-caption">스캔 → 재고 리스트</div>
+        </div>
+        <div class="qr-actions">
+          <button class="btn btn-print" id="btnPrint" type="button">🖨 인쇄</button>
+          <button class="btn btn-download" id="btnDownload" type="button">💾 이미지 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다중 -->
+  <div id="page-batch" style="display:none">
+    <div class="card">
+      <h2>📋 여러 위치 한번에</h2>
+      <div class="form-group">
+        <label>위치 코드를 줄바꿈으로 입력</label>
+        <textarea id="locBatch" placeholder="A01&#10;A02&#10;A03&#10;B01&#10;B02"></textarea>
+      </div>
+      <button class="btn btn-primary" id="btnGenBatch" type="button">🔳 일괄 QR 생성</button>
+      <div class="hint">
+        💡 A4 한 장에 6개씩 인쇄됩니다. 가위로 잘라서 각 랙에 부착하세요.
+      </div>
+    </div>
+
+    <div class="card batch-result print-area" id="batchResult">
+      <h2 style="text-align:center;margin-bottom:8px">위치 QR 라벨 (총 <span id="batchCount">0</span>개)</h2>
+      <div class="qr-actions" style="margin-bottom:12px">
+        <button class="btn btn-print" id="btnPrintBatch" type="button">🖨 A4 인쇄</button>
+      </div>
+      <div class="batch-grid" id="batchGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+(function(){
+  function $(id) { return document.getElementById(id); }
+
+  // 베이스 URL = 현재 페이지가 있는 경로
+  function getBaseURL() {
+    const path = window.location.pathname.replace(/\/[^/]*$/, '/');
+    return window.location.origin + path + 'head_stock_mold.html';
+  }
+
+  function buildTargetURL(loc) {
+    return getBaseURL() + '?loc=' + encodeURIComponent(loc);
+  }
+
+  function buildQRImgURL(targetURL, size) {
+    size = size || 240;
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size +
+      '&margin=8&data=' + encodeURIComponent(targetURL);
+  }
+
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // 모바일에서 mouse + touch 중복 발화 방지하면서 클릭 처리
+  function tap(elOrId, handler) {
+    const el = typeof elOrId === 'string' ? $(elOrId) : elOrId;
+    if (!el) return;
+    let touched = false;
+    el.addEventListener('touchend', e => {
+      touched = true;
+      e.preventDefault();
+      handler(e);
+      setTimeout(() => { touched = false; }, 500);
+    }, { passive: false });
+    el.addEventListener('click', e => {
+      if (touched) return;
+      handler(e);
+    });
+  }
+
+  // === 단일 생성 ===
+  function genSingle() {
+    const loc = $('locInput').value.trim();
+    if (!loc) { showToast('⚠ 위치 코드를 입력하세요'); return; }
+    const url = buildTargetURL(loc);
+    $('qrLoc').textContent = loc;
+    $('qrImg').src = buildQRImgURL(url, 240);
+    $('qrSingleResult').classList.remove('hidden');
+    setTimeout(() => {
+      $('qrSingleResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  }
+
+  // === 다중 생성 ===
+  function genBatch() {
+    const raw = $('locBatch').value;
+    const list = raw.split(/[\n,]/).map(s => s.trim()).filter(s => s);
+    if (list.length === 0) { showToast('⚠ 위치 코드를 입력하세요'); return; }
+
+    const grid = $('batchGrid');
+    grid.innerHTML = list.map(loc => {
+      const url = buildTargetURL(loc);
+      const qr = buildQRImgURL(url, 200);
+      return '<div class="batch-item">' +
+        '<div class="b-loc">' + escapeHtml(loc) + '</div>' +
+        '<div class="b-img"><img src="' + qr + '" alt=""></div>' +
+        '<div class="b-cap">스캔 → 재고 리스트</div>' +
+      '</div>';
+    }).join('');
+    $('batchCount').textContent = list.length;
+    $('batchResult').classList.add('show');
+    setTimeout(() => {
+      $('batchResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  }
+
+  // === 이미지 다운로드 ===
+  async function downloadSingle() {
+    const loc = $('qrLoc').textContent;
+    const targetURL = buildTargetURL(loc);
+    const qrApiURL = buildQRImgURL(targetURL, 600);
+
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const W = 700, H = 850;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // 배경
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, W, H);
+
+        // 외곽선
+        ctx.strokeStyle = '#1a3a5c';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(20, 20, W - 40, H - 40);
+
+        // 위치 코드
+        ctx.fillStyle = '#1a3a5c';
+        ctx.font = 'bold 56px "Malgun Gothic", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(loc, W / 2, 100);
+
+        // QR
+        ctx.drawImage(img, (W - 500) / 2, 140, 500, 500);
+
+        // 캡션
+        ctx.fillStyle = '#666';
+        ctx.font = '20px "Malgun Gothic", sans-serif';
+        ctx.fillText('📱 스캔하여 재고 리스트 확인', W / 2, 700);
+
+        // URL
+        ctx.fillStyle = '#999';
+        ctx.font = '14px monospace';
+        let urlText = targetURL;
+        if (urlText.length > 60) urlText = urlText.substring(0, 57) + '...';
+        ctx.fillText(urlText, W / 2, 750);
+
+        ctx.fillStyle = '#aaa';
+        ctx.font = '13px "Malgun Gothic", sans-serif';
+        ctx.fillText('msm 소모품관리', W / 2, 790);
+
+        // 다운로드
+        canvas.toBlob(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'qr_' + loc.replace(/[^\w가-힣]/g, '_') + '.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          showToast('💾 저장됨');
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        showToast('⚠ 이미지 로드 실패');
+      };
+      img.src = qrApiURL;
+    } catch (e) {
+      showToast('❌ 실패: ' + e.message);
+    }
+  }
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // === 탭 전환 ===
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === name);
+    });
+    $('page-single').style.display = name === 'single' ? 'block' : 'none';
+    $('page-batch').style.display = name === 'batch' ? 'block' : 'none';
+  }
+
+  // 초기화
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab').forEach(t => {
+      tap(t, () => switchTab(t.dataset.tab));
+    });
+    tap('btnGenSingle', genSingle);
+    tap('btnGenBatch', genBatch);
+    tap('btnPrint', () => window.print());
+    tap('btnPrintBatch', () => window.print());
+    tap('btnDownload', downloadSingle);
+
+    // 엔터로 생성
+    $('locInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') { e.preventDefault(); genSingle(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
