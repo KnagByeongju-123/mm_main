@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>PIN 관리 (관리자)</title>
+<title>PIN 관리 v1.0</title>
 <meta name="theme-color" content="#eaf2fc">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -15,6 +15,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f4fa;color:#1a2a44;min-
 .back-btn{position:absolute;top:18px;left:12px;background:white;border:1px solid #c7d8f5;color:#1d4ed8;padding:6px 12px 6px 10px;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:3px;box-shadow:0 1px 2px rgba(30,58,138,.06)}
 .back-btn:active{transform:scale(.97)}
 .hdr-title{font-size:18px;font-weight:800;background:linear-gradient(135deg,#1d4ed8,#2563eb 50%,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr-title .ver{display:inline-block;font-size:11px;font-weight:700;color:#1d4ed8;background:#eef4ff;border:1px solid #c7d8f5;padding:3px 8px;border-radius:10px;margin-left:8px;vertical-align:middle;-webkit-text-fill-color:#1d4ed8;letter-spacing:.3px}
 .hdr-sub{font-size:11px;color:#6e809e;margin-top:3px}
 .logout{position:absolute;top:18px;right:14px;background:#fff0f0;border:1px solid #f5c7c7;color:#b91c1c;padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:700}
 
@@ -132,7 +133,7 @@ body.locked{overflow:hidden}
 
 <div class="hdr">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <div class="hdr-title">🔐 PIN 관리</div>
+  <div class="hdr-title">🔐 PIN 관리 <span class="ver">v1.0</span></div>
   <div class="hdr-sub">공장 · 이름 · 부서 · PIN 등록·수정·삭제</div>
   <button class="logout" id="logoutBtn">🔒 잠금</button>
 </div>
@@ -142,7 +143,7 @@ body.locked{overflow:hidden}
   <!-- 마스터 관리: 공장/부서 -->
   <div class="card acc" id="accMaster">
     <div class="acc-hdr" onclick="toggleAcc('accMaster')">
-      <span class="card-title" style="margin-bottom:0">⚙️ 공장 / 부서 마스터</span>
+      <span class="card-title" style="margin-bottom:0">⚙️ 공장 및 부서등록</span>
       <span class="acc-arrow">›</span>
     </div>
     <div class="acc-body">
@@ -165,10 +166,10 @@ body.locked{overflow:hidden}
     </div>
   </div>
 
-  <!-- 엑셀 일괄 등록 -->
+  <!-- 사원 일괄등록 -->
   <div class="card acc" id="accExcel">
     <div class="acc-hdr" onclick="toggleAcc('accExcel')">
-      <span class="card-title" style="margin-bottom:0">📥 엑셀 일괄 등록</span>
+      <span class="card-title" style="margin-bottom:0">📥 사원 일괄등록</span>
       <span class="acc-arrow">›</span>
     </div>
     <div class="acc-body">
@@ -192,21 +193,21 @@ body.locked{overflow:hidden}
     </div>
   </div>
 
-  <!-- 개별 등록 -->
+  <!-- 사원 개별등록 -->
   <div class="card acc" id="accSingle">
     <div class="acc-hdr" onclick="toggleAcc('accSingle')">
-      <span class="card-title" style="margin-bottom:0">➕ 개별 등록</span>
+      <span class="card-title" style="margin-bottom:0">➕ 사원 개별등록</span>
       <span class="acc-arrow">›</span>
     </div>
     <div class="acc-body">
       <div class="msg" id="addMsg"></div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <select class="inp" id="addFactory" style="flex:0 0 110px"></select>
-        <input type="text" class="inp" id="addName" placeholder="이름" maxlength="20" style="flex:1">
-        <input type="text" class="inp pin" id="addPin" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="flex:0 0 90px">
+        <select class="inp" id="addFactory" style="flex:1"></select>
+        <select class="inp" id="addDept" style="flex:1"></select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px">
-        <select class="inp" id="addDept" style="flex:1"></select>
+        <input type="text" class="inp" id="addName" placeholder="이름" maxlength="20" style="flex:1">
+        <input type="text" class="inp pin" id="addPin" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="flex:0 0 90px">
         <button class="btn btn-pri" id="addBtn" style="flex-shrink:0">등록</button>
       </div>
       <div class="help">• 이름·PIN 중복 금지 (4자리 숫자)</div>
@@ -228,17 +229,17 @@ body.locked{overflow:hidden}
     </div>
   </div>
 
-  <!-- 서버 동기화 -->
+  <!-- 서버일괄저장 -->
   <div class="card">
     <div class="card-title" style="margin-bottom:8px">
-      💾 서버 동기화 확인
-      <span class="badge" id="syncBadge" style="margin-left:auto;background:#e3f7ec;color:#15803d">동기화됨</span>
+      💾 서버일괄저장
+      <span class="badge" id="syncBadge" style="margin-left:auto;background:#e3f7ec;color:#15803d">저장됨</span>
     </div>
     <div style="font-size:11px;color:#6e809e;line-height:1.6;margin-bottom:10px;padding:10px;background:#eef4ff;border:1px solid #c7d8f5;border-radius:8px">
       💡 모든 작업은 <b style="color:#15803d">즉시 서버 저장</b>됩니다. 이 버튼은 <b style="color:#b45309">안전 확인용</b>입니다.
     </div>
     <div id="syncStat" style="font-size:12px;color:#1a2a44;margin-bottom:10px;padding:10px;background:#f8fafd;border-radius:8px;line-height:1.7;display:none"></div>
-    <button class="btn btn-grn" id="syncCheckBtn" style="width:100%;justify-content:center">🔍 서버 동기화 상태 확인</button>
+    <button class="btn btn-grn" id="syncCheckBtn" style="width:100%;justify-content:center">🔍 서버일괄저장 상태 확인</button>
     <button class="btn btn-sec" id="syncForceBtn" style="width:100%;justify-content:center;margin-top:6px;display:none">🔄 누락 항목 재전송</button>
     <div class="msg" id="syncMsg"></div>
   </div>
@@ -362,7 +363,7 @@ function updateSyncBadge(){
     b.style.background='#fff0f0';b.style.color='#b91c1c';
     const fb=document.getElementById('syncForceBtn');if(fb)fb.style.display='';
   }else{
-    b.textContent='동기화됨';
+    b.textContent='저장됨';
     b.style.background='#e3f7ec';b.style.color='#15803d';
     const fb=document.getElementById('syncForceBtn');if(fb)fb.style.display='none';
   }
@@ -747,11 +748,25 @@ function renderList(){
   const kw=(document.getElementById('searchName').value||'').trim().toLowerCase();
   const factFilter=document.getElementById('filterFactory').value;
 
-  let list=empCache;
+  let list=empCache.slice(); // 캐시 복사
   if(factFilter)list=list.filter(x=>(x.factory||'')===factFilter);
   if(kw)list=list.filter(x=>{
     const txt=((x.name||'')+' '+(x.dept||'')+' '+(x.position||'')+' '+(x.factory||'')).toLowerCase();
     return txt.includes(kw);
+  });
+
+  // 정렬: 공장(가나다) → 부서(가나다) → 이름(가나다) — 모두 오름차순
+  const HUGE = '힣힣힣힣힣'; // 미지정은 맨 뒤
+  list.sort((a,b)=>{
+    const fa = a.factory || HUGE;
+    const fb = b.factory || HUGE;
+    const fcmp = fa.localeCompare(fb, 'ko');
+    if(fcmp !== 0) return fcmp;
+    const da = a.dept || HUGE;
+    const db = b.dept || HUGE;
+    const dcmp = da.localeCompare(db, 'ko');
+    if(dcmp !== 0) return dcmp;
+    return (a.name||'').localeCompare(b.name||'', 'ko');
   });
 
   if(list.length===0){
@@ -871,7 +886,7 @@ async function delEmp(id,name){
 }
 
 /* ============================================================
-   개별 등록
+   사원 개별등록
    ============================================================ */
 async function addSingleEmp(){
   const factory=document.getElementById('addFactory').value;
@@ -901,7 +916,7 @@ async function addSingleEmp(){
 }
 
 /* ============================================================
-   서버 동기화
+   서버일괄저장 상태 확인
    ============================================================ */
 async function checkServerSync(){
   const stat=document.getElementById('syncStat');
@@ -938,13 +953,13 @@ async function checkServerSync(){
     });
 
     stat.innerHTML=html;stat.style.display='';
-    if(failed===0)showMsg('syncMsg','✅ 동기화됨 (서버 '+serverCount+'명)','ok');
+    if(failed===0)showMsg('syncMsg','✅ 저장됨 (서버 '+serverCount+'명)','ok');
     else showMsg('syncMsg','⚠️ '+failed+'건 실패 - [재전송] 클릭','warn');
     empCache=serverData;
     document.getElementById('empCount').textContent=serverCount;
     if(document.getElementById('empListPanel').style.display!=='none')renderList();
   }catch(err){showMsg('syncMsg','❌ '+err.message,'err')}
-  finally{btn.disabled=false;btn.textContent='🔍 서버 동기화 상태 확인'}
+  finally{btn.disabled=false;btn.textContent='🔍 서버일괄저장 상태 확인'}
 }
 
 async function forceResync(){
