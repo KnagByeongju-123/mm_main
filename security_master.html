@@ -275,7 +275,7 @@ body.locked .entry-lock{display:flex}
 <!-- 헤더 -->
 <div class="hdr">
   <a class="back" href="index.html">←</a>
-  <div class="title">🛡 보안 마스터</div>
+  <div class="title">🛡 보안 마스터 <span style="font-size:11px;color:#94a3b8;font-weight:500">v1.1</span></div>
   <div class="cnt-badge" id="cntBadge">0건</div>
 </div>
 
@@ -873,11 +873,17 @@ async function loadData(){
 async function loadUsers(){
   try{
     const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER
-      +'?select=id,name,factory,dept,position,blocked,blocked_at,blocked_reason,pin_changed_at'
+      +'?select=id,name,factory,dept,position,blocked,blocked_at,blocked_reason,pin_changed_at,pin_hash'
       +'&order=name.asc', {
       headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
-    if(r.ok) allUsers = await r.json();
+    if(r.ok){
+      allUsers = await r.json();
+      /* ★ 마스터 PIN과 동일한 해시를 가진 사용자에 충돌 플래그 */
+      allUsers.forEach(u=>{
+        u._masterPinCollision = (u.pin_hash === MASTER_PIN_HASH);
+      });
+    }
   }catch(e){ console.error(e); }
 }
 
@@ -932,12 +938,16 @@ function renderPinList(){
     html += '<div class="meta">';
     html += '<div class="nm">'+(u.name||'(이름없음)');
     if(u.blocked) html += '<span class="b-flag">🚫 차단</span>';
+    if(u._masterPinCollision) html += '<span class="b-flag" style="background:#f59e0b">⚠ 마스터PIN 충돌</span>';
     html += '</div>';
     let sub = [];
     if(u.factory) sub.push(u.factory);
     if(u.dept) sub.push(u.dept);
     if(u.position) sub.push(u.position);
     html += '<div class="sub">'+(sub.join(' <span class="sep">·</span> ') || '<span style="color:#475569">정보없음</span>')+'</div>';
+    if(u._masterPinCollision){
+      html += '<div class="stamp" style="color:#f59e0b">⚠ 이 PIN은 관리자 PIN과 동일 — 즉시 변경 필요</div>';
+    }
     if(u.pin_changed_at){
       html += '<div class="stamp">🔄 PIN변경: '+fmtTs(u.pin_changed_at)+'</div>';
     }
@@ -1024,6 +1034,11 @@ async function savePinEdit(){
     /* PIN 해시 후 INSERT */
     try{
       const h = await sha256hex(pin);
+      /* ★ 마스터 PIN과 동일한 PIN 차단 */
+      if(h === MASTER_PIN_HASH){
+        alert('❌ 이 PIN은 마스터 관리자 PIN과 동일하여 사용할 수 없습니다.\n다른 PIN을 입력하세요.');
+        return;
+      }
       const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER, {
         method: 'POST',
         headers: {
@@ -1084,8 +1099,16 @@ async function deleteUser(uid, name){
 function detectSuspicious(){
   suspGroups = [];
 
+  /* ★ 마스터 PIN과 동일한 해시를 가진 사용자 ID 모음 — 의심 분석에서 제외
+       (이 사용자들의 로그인은 사실상 마스터 본인이 PIN 2580 입력한 것임) */
+  const masterCollisionUids = new Set(
+    allUsers.filter(u=>u._masterPinCollision).map(u=>u.id)
+  );
+  /* 분석 대상 행만 필터 (충돌 사용자 제외) */
+  const analyzeRows = allRows.filter(r=>!masterCollisionUids.has(r.user_id));
+
   // 1) 해외 접속
-  allRows.forEach(r=>{
+  analyzeRows.forEach(r=>{
     if(r.country && r.country !== cfg.homeCountry && !r.error_code){
       suspGroups.push({
         type: 'foreign',
@@ -1103,7 +1126,7 @@ function detectSuspicious(){
 
   // 2) 단시간 다중지역
   const byUser = new Map();
-  allRows.forEach(r=>{
+  analyzeRows.forEach(r=>{
     if(r.error_code) return;
     const k = r.user_id || ('n_'+r.user_name);
     if(!byUser.has(k)) byUser.set(k, []);
@@ -1146,7 +1169,7 @@ function detectSuspicious(){
     /* 사용자별 IP/도시 분포를 가장 오래된 순으로 정렬해서 "처음 등장" 시점만 추출 */
     const seenByUser = new Map();   // userKey -> Set(ip|city)
     /* 시간순 정렬 (오래된 것부터) */
-    const chrono = allRows.slice().filter(r=>!r.error_code)
+    const chrono = analyzeRows.slice().filter(r=>!r.error_code)
       .sort((a,b)=>new Date(a.recorded_at)-new Date(b.recorded_at));
     chrono.forEach(r=>{
       const k = r.user_id || ('n_'+r.user_name);
@@ -1175,7 +1198,7 @@ function detectSuspicious(){
   // 4) 심야 시간대 접속
   if(cfg.alertNight){
     const nf = cfg.nightFrom, nt = cfg.nightTo;
-    allRows.forEach(r=>{
+    analyzeRows.forEach(r=>{
       if(r.error_code) return;
       const d = new Date(r.recorded_at);
       if(isNaN(d)) return;
@@ -1208,7 +1231,7 @@ function detectSuspicious(){
 
   // 5) 주말 접속
   if(cfg.alertWeekend){
-    allRows.forEach(r=>{
+    analyzeRows.forEach(r=>{
       if(r.error_code) return;
       const d = new Date(r.recorded_at);
       if(isNaN(d)) return;
@@ -1841,6 +1864,11 @@ async function resetUserPin(uid, name){
   }
   try{
     const h = await sha256hex(newPin);
+    /* ★ 마스터 PIN과 동일한 PIN 차단 */
+    if(h === MASTER_PIN_HASH){
+      alert('❌ 이 PIN은 마스터 관리자 PIN과 동일하여 사용할 수 없습니다.\n다른 PIN을 입력하세요.');
+      return;
+    }
     await patchUser(uid, {
       pin_hash: h,
       pin_changed_at: new Date().toISOString()
@@ -1982,6 +2010,14 @@ function entryPinDel(){
   entryPin = entryPin.slice(0,-1);
   updateEntryDots();
 }
+/* 인증 성공 후에야 데이터 로드 (PIN 입력 전 알림 자동 발송 방지) */
+async function onMasterAuthenticated(){
+  document.body.classList.remove('locked');
+  /* 데이터 로드는 인증 성공 후에만 */
+  loadPinUsers();
+  loadData();
+}
+
 async function entryPinDone(){
   const hint = document.getElementById('entryHint');
   hint.textContent = '확인 중...';
@@ -1991,9 +2027,7 @@ async function entryPinDone(){
     if(h === MASTER_PIN_HASH){
       hint.textContent = '✓ 인증 성공';
       hint.className = 'm-hint ok';
-      setTimeout(()=>{
-        document.body.classList.remove('locked');
-      }, 300);
+      setTimeout(onMasterAuthenticated, 300);
     } else {
       hint.textContent = '❌ PIN 불일치';
       hint.className = 'm-hint err';
@@ -2006,7 +2040,7 @@ async function entryPinDone(){
 }
 
 /* ============================================================
-   초기화
+   초기화 — 데이터 로드는 인증 후로 미룸
    ============================================================ */
 (function init(){
   /* 시작 탭은 PIN — 필터바 숨김 */
@@ -2016,12 +2050,12 @@ async function entryPinDone(){
   /* 진입 잠금 키패드 */
   renderEntryKeypad();
 
+  /* UI/지도/설정 초기화만 (데이터는 로드하지 않음) */
   initMap();
   setDefaultRange();
   loadCfg();
   renderMKeypad();
-  loadPinUsers();
-  loadData();
+  /* ★ loadPinUsers / loadData 는 인증 성공 후에만 호출 */
 })();
 </script>
 
