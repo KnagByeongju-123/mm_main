@@ -349,6 +349,7 @@ body.locked .entry-lock{display:flex}
             <input type="text" id="cfgHome" value="South Korea" placeholder="기준 국가명">
           </div>
           <div class="cfg-help">위 국가가 아닌 곳에서 접속 시 의심 처리</div>
+
           <div class="cfg-row" style="margin-top:10px">
             <label>다중지역</label>
             <input type="number" id="cfgWindowMin" value="60" min="5" max="1440">
@@ -357,8 +358,43 @@ body.locked .entry-lock{display:flex}
             <span style="color:#94a3b8;font-size:12px">곳 이상</span>
           </div>
           <div class="cfg-help">동일 사용자가 짧은 시간에 여러 도시에서 접속 시 의심</div>
-          <div class="cfg-row" style="margin-top:10px">
-            <button class="mini" onclick="saveCfg();detectSuspicious();toast('규칙 저장','ok')">💾 저장 & 재분석</button>
+
+          <div class="cfg-row" style="margin-top:14px;border-top:1px solid #334155;padding-top:10px">
+            <label style="min-width:110px">🆕 새 위치</label>
+            <input type="checkbox" id="cfgAlertNewLoc" style="width:18px;height:18px;cursor:pointer" checked>
+            <span style="color:#94a3b8;font-size:12px;flex:1">평소 안 쓰던 IP/도시 첫 접속</span>
+          </div>
+
+          <div class="cfg-row" style="margin-top:6px">
+            <label style="min-width:110px">🌙 심야 접속</label>
+            <input type="checkbox" id="cfgAlertNight" style="width:18px;height:18px;cursor:pointer" checked>
+            <input type="number" id="cfgNightFrom" value="22" min="0" max="23" style="max-width:55px">
+            <span style="color:#94a3b8;font-size:12px">시 ~</span>
+            <input type="number" id="cfgNightTo" value="6" min="0" max="23" style="max-width:55px">
+            <span style="color:#94a3b8;font-size:12px">시</span>
+          </div>
+          <div class="cfg-help">비업무 시간대 접속 의심 (22~06시 기본)</div>
+
+          <div class="cfg-row" style="margin-top:6px">
+            <label style="min-width:110px">📅 주말 접속</label>
+            <input type="checkbox" id="cfgAlertWeekend" style="width:18px;height:18px;cursor:pointer" checked>
+            <span style="color:#94a3b8;font-size:12px;flex:1">토/일요일 접속</span>
+          </div>
+
+          <div class="cfg-row" style="margin-top:14px;border-top:1px solid #334155;padding-top:10px">
+            <label style="min-width:110px">🚫 차단 시도</label>
+            <input type="checkbox" id="cfgAlertBlocked" style="width:18px;height:18px;cursor:pointer" checked>
+            <span style="color:#94a3b8;font-size:12px;flex:1">차단된 계정의 로그인 시도</span>
+          </div>
+
+          <div class="cfg-row" style="margin-top:6px">
+            <label style="min-width:110px">🔑 PIN 5연속</label>
+            <input type="checkbox" id="cfgAlertPinFail" style="width:18px;height:18px;cursor:pointer" checked>
+            <span style="color:#94a3b8;font-size:12px;flex:1">PIN 5회 연속 실패 (계정잠금)</span>
+          </div>
+
+          <div class="cfg-row" style="margin-top:14px">
+            <button class="mini" onclick="saveCfg();detectSuspicious();toast('규칙 저장 & 재분석','ok')">💾 저장 & 재분석</button>
           </div>
         </div>
 
@@ -494,7 +530,15 @@ let cfg = {
   homeCountry: 'South Korea',
   windowMin: 60,
   cityCnt: 2,
-  ntfyTopic: ''
+  ntfyTopic: '',
+  /* 신규 알림 조건 */
+  alertNewLoc: true,       // 새 IP/도시 첫 접속
+  alertNight: true,        // 심야 시간대 접속
+  nightFrom: 22,           // 시작 시각 (시)
+  nightTo: 6,              // 종료 시각 (시)
+  alertWeekend: true,      // 주말 접속
+  alertBlocked: true,      // 차단된 사용자 로그인 시도
+  alertPinFail: true       // PIN 5회 연속 실패
 };
 
 let pendingAction = null;   // 마스터 인증 후 실행할 콜백
@@ -634,23 +678,106 @@ function setRangeAll(){
   document.getElementById('fTo').value = ymd(new Date());
   loadData();
 }
-function loadCfg(){
+const CFG_CODE_GROUP = 'mm_security_cfg';   // Supabase common_code 그룹명
+
+async function loadCfg(){
+  /* 1) localStorage 우선 적용 (빠른 표시) */
   try{
     const o = JSON.parse(localStorage.getItem(LK_CFG)||'null');
     if(o) cfg = Object.assign(cfg, o);
   }catch(e){}
+
+  /* 2) Supabase에서 최신값 로드 시도 (있으면 덮어씀) */
+  try{
+    const r = await fetch(SUPABASE_URL+'/rest/v1/common_code'
+      +'?select=code_value&code_group=eq.'+CFG_CODE_GROUP+'&limit=1', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(r.ok){
+      const list = await r.json();
+      if(list && list.length > 0 && list[0].code_value){
+        try{
+          const remote = JSON.parse(list[0].code_value);
+          cfg = Object.assign(cfg, remote);
+          localStorage.setItem(LK_CFG, JSON.stringify(cfg));
+        }catch(e){}
+      }
+    }
+  }catch(e){}
+
+  /* 3) UI 반영 */
   document.getElementById('cfgHome').value = cfg.homeCountry;
   document.getElementById('cfgWindowMin').value = cfg.windowMin;
   document.getElementById('cfgCityCnt').value = cfg.cityCnt;
   document.getElementById('cfgTopic').value = cfg.ntfyTopic;
+  document.getElementById('cfgAlertNewLoc').checked = cfg.alertNewLoc;
+  document.getElementById('cfgAlertNight').checked = cfg.alertNight;
+  document.getElementById('cfgNightFrom').value = cfg.nightFrom;
+  document.getElementById('cfgNightTo').value = cfg.nightTo;
+  document.getElementById('cfgAlertWeekend').checked = cfg.alertWeekend;
+  document.getElementById('cfgAlertBlocked').checked = cfg.alertBlocked;
+  document.getElementById('cfgAlertPinFail').checked = cfg.alertPinFail;
   refreshTopicInfo();
 }
-function saveCfg(){
+
+async function saveCfg(){
   cfg.homeCountry = document.getElementById('cfgHome').value.trim() || 'South Korea';
   cfg.windowMin = parseInt(document.getElementById('cfgWindowMin').value) || 60;
   cfg.cityCnt = parseInt(document.getElementById('cfgCityCnt').value) || 2;
   cfg.ntfyTopic = document.getElementById('cfgTopic').value.trim();
+  cfg.alertNewLoc = document.getElementById('cfgAlertNewLoc').checked;
+  cfg.alertNight = document.getElementById('cfgAlertNight').checked;
+  cfg.nightFrom = parseInt(document.getElementById('cfgNightFrom').value);
+  cfg.nightTo = parseInt(document.getElementById('cfgNightTo').value);
+  if(isNaN(cfg.nightFrom)) cfg.nightFrom = 22;
+  if(isNaN(cfg.nightTo)) cfg.nightTo = 6;
+  cfg.alertWeekend = document.getElementById('cfgAlertWeekend').checked;
+  cfg.alertBlocked = document.getElementById('cfgAlertBlocked').checked;
+  cfg.alertPinFail = document.getElementById('cfgAlertPinFail').checked;
   localStorage.setItem(LK_CFG, JSON.stringify(cfg));
+
+  /* Supabase common_code에도 저장 (UPSERT) */
+  saveToCloud();
+}
+
+async function saveToCloud(){
+  try{
+    /* 먼저 기존 행이 있는지 확인 */
+    const chk = await fetch(SUPABASE_URL+'/rest/v1/common_code'
+      +'?select=code_group&code_group=eq.'+CFG_CODE_GROUP+'&limit=1', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    const exists = chk.ok && (await chk.json()).length > 0;
+
+    const payload = {
+      code_group: CFG_CODE_GROUP,
+      code_value: JSON.stringify(cfg)
+    };
+
+    if(exists){
+      await fetch(SUPABASE_URL+'/rest/v1/common_code?code_group=eq.'+CFG_CODE_GROUP, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer '+SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({code_value: JSON.stringify(cfg)})
+      });
+    } else {
+      await fetch(SUPABASE_URL+'/rest/v1/common_code', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer '+SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+  }catch(e){ console.warn('Cloud sync 실패:', e); }
 }
 
 /* ============================================================
@@ -1014,6 +1141,114 @@ function detectSuspicious(){
     }
   });
 
+  // 3) 새 IP/도시 첫 접속 — 사용자별로 평소 안 쓰던 곳
+  if(cfg.alertNewLoc){
+    /* 사용자별 IP/도시 분포를 가장 오래된 순으로 정렬해서 "처음 등장" 시점만 추출 */
+    const seenByUser = new Map();   // userKey -> Set(ip|city)
+    /* 시간순 정렬 (오래된 것부터) */
+    const chrono = allRows.slice().filter(r=>!r.error_code)
+      .sort((a,b)=>new Date(a.recorded_at)-new Date(b.recorded_at));
+    chrono.forEach(r=>{
+      const k = r.user_id || ('n_'+r.user_name);
+      if(!seenByUser.has(k)) seenByUser.set(k, new Set());
+      const seen = seenByUser.get(k);
+      const loc = (r.ip||'?')+'|'+(r.city||'?');
+      const firstLogin = (seen.size === 0);
+      if(!seen.has(loc) && !firstLogin){
+        /* 두 번째 위치부터, 처음 보는 IP/도시 조합 = 새 위치 */
+        suspGroups.push({
+          type: 'newloc',
+          user_id: r.user_id,
+          user_name: r.user_name,
+          factory: r.factory,
+          dept: r.dept,
+          reason: '🆕 새 위치 첫 접속: '+(r.city||'?')+(r.country?'/'+r.country:'')+' · '+(r.ip||'-'),
+          rows: [r],
+          ts: r.recorded_at,
+          key: 'N:'+k+':'+r.id
+        });
+      }
+      seen.add(loc);
+    });
+  }
+
+  // 4) 심야 시간대 접속
+  if(cfg.alertNight){
+    const nf = cfg.nightFrom, nt = cfg.nightTo;
+    allRows.forEach(r=>{
+      if(r.error_code) return;
+      const d = new Date(r.recorded_at);
+      if(isNaN(d)) return;
+      const h = d.getHours();
+      let isNight = false;
+      if(nf > nt){
+        /* 22~6시 같이 자정 걸치는 경우 */
+        isNight = (h >= nf || h < nt);
+      } else {
+        /* 1~5시 같이 자정 안 걸치는 경우 */
+        isNight = (h >= nf && h < nt);
+      }
+      if(isNight){
+        const hh = String(h).padStart(2,'0');
+        const mm = String(d.getMinutes()).padStart(2,'0');
+        suspGroups.push({
+          type: 'night',
+          user_id: r.user_id,
+          user_name: r.user_name,
+          factory: r.factory,
+          dept: r.dept,
+          reason: '🌙 심야 접속: '+hh+':'+mm+' ('+(r.city||'?')+')',
+          rows: [r],
+          ts: r.recorded_at,
+          key: 'T:'+(r.user_id||r.user_name)+':'+r.id
+        });
+      }
+    });
+  }
+
+  // 5) 주말 접속
+  if(cfg.alertWeekend){
+    allRows.forEach(r=>{
+      if(r.error_code) return;
+      const d = new Date(r.recorded_at);
+      if(isNaN(d)) return;
+      const dow = d.getDay();   // 0=일, 6=토
+      if(dow === 0 || dow === 6){
+        const dayName = (dow === 0 ? '일요일' : '토요일');
+        suspGroups.push({
+          type: 'weekend',
+          user_id: r.user_id,
+          user_name: r.user_name,
+          factory: r.factory,
+          dept: r.dept,
+          reason: '📅 주말 접속: '+dayName+' ('+(r.city||'?')+')',
+          rows: [r],
+          ts: r.recorded_at,
+          key: 'W:'+(r.user_id||r.user_name)+':'+r.id
+        });
+      }
+    });
+  }
+
+  // 6) 차단 시도 (위치기록의 error_code='blocked_attempt')
+  if(cfg.alertBlocked){
+    allRows.forEach(r=>{
+      if(r.error_code === 'blocked_attempt'){
+        suspGroups.push({
+          type: 'blocked',
+          user_id: r.user_id,
+          user_name: r.user_name,
+          factory: r.factory,
+          dept: r.dept,
+          reason: '🚫 차단 계정 로그인 시도: '+(r.city||'?')+(r.ip?' / '+r.ip:''),
+          rows: [r],
+          ts: r.recorded_at,
+          key: 'B:'+(r.user_id||r.user_name)+':'+r.id
+        });
+      }
+    });
+  }
+
   // 의심 행에 표시
   const suspRowIds = new Set();
   suspGroups.forEach(g=>g.rows.forEach(r=>suspRowIds.add(r.id)));
@@ -1042,8 +1277,18 @@ async function notifyNewSuspicious(){
   try{ alerted = JSON.parse(localStorage.getItem(LK_ALERTED)||'[]'); }catch(e){}
   const alertedSet = new Set(alerted);
 
-  const fresh = suspGroups.filter(g=>!alertedSet.has(g.key));
+  /* 차단시도(blocked)는 index.html에서 발생 즉시 발송하므로 여기서는 제외 */
+  const fresh = suspGroups.filter(g=>!alertedSet.has(g.key) && g.type !== 'blocked');
   if(fresh.length === 0) return;
+
+  /* type별 태그/제목 차별화 */
+  const tagMap = {
+    foreign:  'earth_americas,rotating_light',
+    multi:    'zap,rotating_light',
+    newloc:   'sparkles,warning',
+    night:    'crescent_moon,warning',
+    weekend:  'calendar,warning'
+  };
 
   for(const g of fresh){
     try{
@@ -1057,7 +1302,7 @@ async function notifyNewSuspicious(){
         headers: {
           'Title': 'msm Security Alert',
           'Priority': '4',
-          'Tags': 'warning,rotating_light'
+          'Tags': tagMap[g.type] || 'warning,rotating_light'
         },
         body: body
       });
