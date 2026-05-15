@@ -3,409 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0891b2">
+<meta name="theme-color" content="#0b1220">
 <title>스마트팩토리 v1.0</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
   margin: 0; padding: 0;
-  min-height: 100vh; color: #0f3a4a;
-  overflow-x: hidden;
-}
-
-/* ============= 시원한 여름 배경 ============= */
-body {
   background:
-    radial-gradient(circle at 0% 0%, rgba(165,243,252,0.6) 0%, transparent 45%),
-    radial-gradient(circle at 100% 0%, rgba(186,230,253,0.5) 0%, transparent 45%),
-    radial-gradient(circle at 50% 100%, rgba(254,215,170,0.35) 0%, transparent 50%),
-    linear-gradient(180deg, #ecfeff 0%, #e0f2fe 50%, #f0fdfa 100%);
+    radial-gradient(circle at 0% 0%, rgba(56,189,248,0.10) 0%, transparent 45%),
+    radial-gradient(circle at 100% 100%, rgba(139,92,246,0.10) 0%, transparent 45%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
   background-attachment: fixed;
+  min-height: 100vh; color: #e2e8f0;
 }
 
-/* ============= 상단 바 ============= */
-.topbar {
-  position: sticky; top: 0; z-index: 100;
-  padding: 14px 16px;
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(255,255,255,0.65);
-  backdrop-filter: blur(14px) saturate(180%);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  border-bottom: 1px solid rgba(8,145,178,0.12);
+/* 헤더 */
+.header {
+  padding: 26px 16px 16px; text-align: center;
+  background: linear-gradient(180deg, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.6) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(56,189,248,0.15);
 }
-.hamb {
-  width: 42px; height: 42px; border-radius: 12px;
-  border: none; background: linear-gradient(135deg, #06b6d4, #0891b2);
-  color: white; font-size: 20px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(8,145,178,0.3);
-  font-family: inherit;
-  flex-shrink: 0;
-  transition: transform .2s;
-}
-.hamb:active { transform: scale(0.92); }
-
-.topbar-title {
-  flex: 1; min-width: 0;
-  font-size: 19px; font-weight: 800;
-  letter-spacing: -0.4px;
-  background: linear-gradient(135deg, #0e7490, #0891b2 40%, #06b6d4 80%, #22d3ee);
+.header h1 {
+  margin: 0 0 14px 0;
+  font-size: 26px; font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #38bdf8, #60a5fa 50%, #a78bfa);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.topbar-title .ver {
+.header h1 .ver {
   display: inline-block;
-  font-size: 10px; font-weight: 700;
-  color: #0e7490;
-  background: rgba(165,243,252,0.7);
-  border: 1px solid rgba(8,145,178,0.25);
-  padding: 2px 7px; border-radius: 8px;
-  margin-left: 6px; vertical-align: middle;
-  -webkit-text-fill-color: #0e7490;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7dd3fc;
+  background: rgba(56,189,248,0.12);
+  border: 1px solid rgba(56,189,248,0.3);
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+  -webkit-text-fill-color: #7dd3fc;
+  letter-spacing: .3px;
 }
 
-.tb-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 7px 11px; border-radius: 10px;
-  border: 1px solid; background: white;
-  font-size: 12px; font-weight: 700; cursor: pointer;
+/* 헤더 버튼 그룹 */
+.top-btns {
+  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+}
+.top-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 9px;
+  border: 1px solid; background: rgba(30,41,59,0.6);
+  font-size: 13px; font-weight: 600; cursor: pointer;
   font-family: inherit;
-  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
-.tb-btn:active { transform: scale(0.95); }
-.tb-btn.user { color: #0e7490; border-color: rgba(8,145,178,0.25); background: rgba(236,254,255,0.7); }
-.tb-btn.logout { color: #c2410c; border-color: rgba(234,88,12,0.25); background: rgba(255,247,237,0.8); }
+.top-btn:active { transform: scale(0.97); }
+.top-btn .ic { font-size: 13px; }
+.top-btn.user   { color: #7dd3fc; border-color: transparent; background: transparent; box-shadow: none; }
+.top-btn.logout { color: #fda4af; border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.12); }
+.top-btn.lock   { color: #fda4af; border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.12); }
 
-/* ============= 사이드 슬라이딩 메뉴 ============= */
-.backdrop {
-  position: fixed; inset: 0; z-index: 998;
-  background: rgba(15, 58, 74, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s;
-}
-.backdrop.open { opacity: 1; pointer-events: auto; }
-
-.sidemenu {
-  position: fixed; top: 0; left: 0; bottom: 0; z-index: 999;
-  width: 86%; max-width: 340px;
-  background: linear-gradient(180deg, #ffffff 0%, #ecfeff 100%);
-  box-shadow: 4px 0 24px rgba(8,145,178,0.18);
-  transform: translateX(-105%);
-  transition: transform .32s cubic-bezier(.4,0,.2,1);
-  display: flex; flex-direction: column;
-  overflow: hidden;
-}
-.sidemenu.open { transform: translateX(0); }
-
-.sm-header {
-  padding: 22px 20px 18px;
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 60%, #0e7490 100%);
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
-.sm-header::before {
-  content: ''; position: absolute;
-  top: -30px; right: -30px;
-  width: 140px; height: 140px;
-  background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%);
-  border-radius: 50%;
-}
-.sm-header::after {
-  content: ''; position: absolute;
-  bottom: -20px; left: -20px;
-  width: 100px; height: 100px;
-  background: radial-gradient(circle, rgba(254,215,170,0.3), transparent 70%);
-  border-radius: 50%;
-}
-.sm-logo {
-  font-size: 22px; font-weight: 800;
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 4px;
-  position: relative;
-}
-.sm-sub {
-  font-size: 12px; opacity: 0.9;
-  position: relative;
-}
-.sm-close {
-  position: absolute; top: 14px; right: 14px;
-  width: 32px; height: 32px; border-radius: 50%;
-  border: none; background: rgba(255,255,255,0.2);
-  color: white; font-size: 18px; cursor: pointer;
-  font-family: inherit;
-  display: flex; align-items: center; justify-content: center;
-}
-.sm-close:active { background: rgba(255,255,255,0.35); }
-
-.sm-user {
-  padding: 14px 20px;
-  background: rgba(165,243,252,0.35);
-  border-bottom: 1px solid rgba(8,145,178,0.1);
-  font-size: 13px; color: #0e7490; font-weight: 700;
-  display: flex; align-items: center; gap: 8px;
-}
-.sm-user .av {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
-  color: white; display: flex; align-items: center; justify-content: center;
-  font-size: 17px;
-}
-.sm-user .info { flex: 1; min-width: 0; }
-.sm-user .info .nm { font-size: 14px; color: #0f3a4a; }
-.sm-user .info .sub { font-size: 11px; color: #5a8a9a; font-weight: 600; margin-top: 1px; }
-
-.sm-nav {
-  flex: 1; overflow-y: auto;
-  padding: 10px 12px 16px;
-}
-.sm-section {
-  margin-bottom: 14px;
-}
-.sm-section-title {
-  font-size: 10px; font-weight: 800;
-  color: #5a8a9a; letter-spacing: 0.8px;
-  padding: 6px 10px 8px;
-  text-transform: uppercase;
-}
-.sm-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 12px;
-  border-radius: 12px;
-  text-decoration: none; color: inherit;
-  cursor: pointer;
-  margin-bottom: 3px;
-  transition: background .15s;
-}
-.sm-item:active { background: rgba(165,243,252,0.6); }
-.sm-item .si {
-  width: 38px; height: 38px; border-radius: 11px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 19px; flex-shrink: 0;
-}
-.sm-item .st {
-  flex: 1; min-width: 0;
-}
-.sm-item .sl {
-  font-size: 14px; font-weight: 700; color: #0f3a4a;
-  margin-bottom: 2px;
-}
-.sm-item .sd {
-  font-size: 11px; color: #5a8a9a; line-height: 1.3;
-}
-.sm-item .sa {
-  font-size: 14px; color: #94a8b5;
-}
-
-.sm-item.coming-soon { opacity: 0.5; pointer-events: none; }
-.sm-item.coming-soon::after {
-  content: "준비중"; font-size: 9px;
-  padding: 2px 6px; border-radius: 6px;
-  background: #e0f2fe; color: #5a8a9a; font-weight: 700;
-  margin-left: auto;
-}
-
-/* 카테고리별 아이콘 색상 (시원한 여름톤) */
-.si.c-hq     { background: linear-gradient(135deg, #cffafe, #a5f3fc); color: #0e7490; }
-.si.c-f1     { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0f766e; }
-.si.c-f2     { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; }
-.si.c-f3     { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca; }
-.si.c-master { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #c2410c; }
-
-.sm-footer {
-  padding: 12px 20px;
-  text-align: center;
-  font-size: 11px; color: #5a8a9a;
-  border-top: 1px solid rgba(8,145,178,0.1);
-  background: rgba(236,254,255,0.5);
-}
-
-/* ============= 메인 컨테이너 (대시보드) ============= */
+/* 컨테이너 */
 .container {
-  padding: 20px 16px 40px;
+  padding: 14px 12px 40px;
   max-width: 720px; margin: 0 auto;
 }
 
-/* 환영 카드 */
-.welcome {
-  background: linear-gradient(135deg, rgba(255,255,255,0.85) 0%, rgba(207,250,254,0.7) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.6);
-  border-radius: 20px;
-  padding: 22px 20px;
-  margin-bottom: 18px;
-  box-shadow: 0 8px 24px rgba(8,145,178,0.1);
-  position: relative;
+/* 아코디언 카드 */
+.acc {
+  background: rgba(30,41,59,0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(71,85,105,0.5);
+  border-radius: 14px;
+  margin-bottom: 10px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.welcome::before {
-  content: ''; position: absolute;
-  top: -40px; right: -40px;
-  width: 160px; height: 160px;
-  background: radial-gradient(circle, rgba(34,211,238,0.25), transparent 70%);
-  border-radius: 50%;
+.acc[open] {
+  border-color: rgba(56,189,248,0.5);
+  box-shadow: 0 2px 12px rgba(56,189,248,0.15);
 }
-.welcome .greet {
-  font-size: 13px; color: #0e7490; font-weight: 700;
-  margin-bottom: 4px;
-  position: relative;
-}
-.welcome .title {
-  font-size: 22px; font-weight: 800;
-  background: linear-gradient(135deg, #0e7490, #0891b2 50%, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.5px;
-  position: relative;
-}
-.welcome .desc {
-  font-size: 12px; color: #5a8a9a;
-  margin-top: 6px;
-  position: relative;
-}
-
-/* 메인 카드 그리드 */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-.card {
-  background: rgba(255,255,255,0.75);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 18px;
-  padding: 18px 14px;
-  text-decoration: none;
-  color: inherit;
+.acc summary {
+  list-style: none;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 14px rgba(8,145,178,0.08);
-  transition: transform .15s;
-  display: flex; flex-direction: column; gap: 10px;
-  min-height: 120px;
-}
-.card:active { transform: scale(0.97); }
-.card::before {
-  content: ''; position: absolute;
-  top: -20px; right: -20px;
-  width: 90px; height: 90px;
-  border-radius: 50%;
-  opacity: 0.5;
-}
-.card.c-hq::before     { background: radial-gradient(circle, #a5f3fc, transparent 70%); }
-.card.c-f1::before     { background: radial-gradient(circle, #99f6e4, transparent 70%); }
-.card.c-f2::before     { background: radial-gradient(circle, #bfdbfe, transparent 70%); }
-.card.c-f3::before     { background: radial-gradient(circle, #c7d2fe, transparent 70%); }
-.card.c-master::before { background: radial-gradient(circle, #fed7aa, transparent 70%); }
-
-.card .ic {
-  width: 44px; height: 44px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; flex-shrink: 0;
-  position: relative;
-}
-.card.c-hq .ic     { background: linear-gradient(135deg, #cffafe, #a5f3fc); color: #0e7490; }
-.card.c-f1 .ic     { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0f766e; }
-.card.c-f2 .ic     { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; }
-.card.c-f3 .ic     { background: linear-gradient(135deg, #e0e7ff, #c7d2fe); color: #4338ca; }
-.card.c-master .ic { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #c2410c; }
-
-.card .tt {
-  font-size: 16px; font-weight: 800; color: #0f3a4a;
-  letter-spacing: -0.3px;
-  position: relative;
-}
-.card .dd {
-  font-size: 11px; color: #5a8a9a; line-height: 1.4;
-  position: relative;
-  margin-top: -4px;
-}
-.card .ar {
-  position: absolute; bottom: 12px; right: 14px;
-  font-size: 14px; color: #94a8b5;
-}
-
-/* 전체 너비 카드 (마스터) */
-.card.wide {
-  grid-column: 1 / -1;
-  flex-direction: row;
-  align-items: center;
-  min-height: auto;
   padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  user-select: none;
 }
-.card.wide .ic {
-  width: 42px; height: 42px;
-  font-size: 20px;
+.acc summary::-webkit-details-marker { display: none; }
+.acc summary::marker { display: none; }
+
+.acc .icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
 }
-.card.wide .body {
+.acc .title {
+  flex: 1; font-size: 19px; font-weight: 700; color: #f1f5f9;
+  letter-spacing: -0.3px;
+}
+.acc .count {
+  font-size: 14px; color: #7dd3fc; font-weight: 700;
+  min-width: 26px; text-align: center;
+  background: rgba(56,189,248,0.15); border-radius: 10px;
+  padding: 2px 8px;
+}
+.acc .arrow {
+  font-size: 18px; color: #64748b;
+  transition: transform 0.25s;
+  margin-left: 2px;
+}
+.acc[open] .arrow { transform: rotate(90deg); color: #38bdf8; }
+
+/* 아코디언 색상 (다크 테마) */
+.acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
+.acc.c-f1 .icon     { background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.3)); color: #5eead4; }
+.acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
+.acc.c-f3 .icon     { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
+.acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
+
+/* 서브 메뉴 영역 */
+.acc-body {
+  padding: 4px 8px 10px 8px;
+  border-top: 1px solid rgba(71,85,105,0.4);
+  background: rgba(15,23,42,0.5);
+}
+.sub-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 10px;
+  border-radius: 10px;
+  text-decoration: none; color: inherit;
+  cursor: pointer;
+}
+.sub-item:active { background: rgba(56,189,248,0.1); }
+.sub-item + .sub-item {
+  border-top: 1px solid rgba(71,85,105,0.25);
+}
+.sub-item .s-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+  background: rgba(56,189,248,0.15); color: #7dd3fc;
+}
+.sub-item .s-text {
   flex: 1; min-width: 0;
-  position: relative;
 }
-.card.wide .tt { font-size: 15px; margin-bottom: 2px; }
-.card.wide .dd { font-size: 11px; margin-top: 0; }
-.card.wide .ar {
-  position: static;
-  margin-left: auto;
+.sub-item .s-label {
+  font-size: 14px; font-weight: 600; color: #e2e8f0;
+  margin-bottom: 2px;
+}
+.sub-item .s-desc {
+  font-size: 11px; color: #94a3b8; line-height: 1.3;
+}
+.sub-item .s-arrow {
+  font-size: 15px; color: #64748b;
+}
+
+.sub-item.coming-soon { opacity: 0.5; cursor: default; pointer-events: none; }
+.sub-item.coming-soon .s-arrow { display: none; }
+.sub-item.coming-soon::after {
+  content: "준비중"; font-size: 10px;
+  padding: 2px 7px; border-radius: 8px;
+  background: rgba(71,85,105,0.4); color: #94a3b8; font-weight: 600;
 }
 
 .footer {
   text-align: center; margin-top: 24px;
-  font-size: 11px; color: #5a8a9a;
+  font-size: 11px; color: #64748b;
 }
 
-/* ============= PIN 잠금 화면 (여름테마) ============= */
+/* ============= PIN 잠금 화면 ============= */
 body.locked { overflow: hidden; }
 
 .pin-lock {
   position: fixed; inset: 0; z-index: 9999;
   background:
-    radial-gradient(circle at 20% 20%, rgba(165,243,252,0.7) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(254,215,170,0.45) 0%, transparent 50%),
-    linear-gradient(180deg, #ecfeff 0%, #e0f2fe 50%, #f0fdfa 100%);
+    radial-gradient(circle at 20% 20%, rgba(56,189,248,0.18) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139,92,246,0.15) 0%, transparent 50%),
+    linear-gradient(180deg, #0b1220 0%, #0f172a 60%, #1e293b 100%);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 20px;
 }
 .pin-lock .logo {
-  font-size: 30px; font-weight: 800; margin-bottom: 6px;
-  background: linear-gradient(135deg, #0e7490, #0891b2 40%, #06b6d4 80%, #22d3ee);
+  font-size: 28px; font-weight: 800; margin-bottom: 4px;
+  background: linear-gradient(135deg, #38bdf8, #60a5fa 50%, #a78bfa);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  display: flex; align-items: center; gap: 8px;
 }
 .pin-lock .sub {
-  font-size: 12px; color: #5a8a9a; margin-bottom: 36px;
-  font-weight: 600;
+  font-size: 12px; color: #94a3b8; margin-bottom: 32px;
 }
 .pin-lock .hint {
-  font-size: 13px; color: #0e7490; margin-bottom: 18px;
-  min-height: 19px; font-weight: 700;
+  font-size: 13px; color: #7dd3fc; margin-bottom: 16px;
+  min-height: 19px; font-weight: 600;
 }
-.pin-lock .hint.err { color: #c2410c; }
-.pin-lock .hint.ok { color: #0f766e; }
+.pin-lock .hint.err { color: #fda4af; }
+.pin-lock .hint.ok { color: #6ee7b7; }
 
 .pl-dots {
-  display: flex; gap: 16px; margin-bottom: 28px;
+  display: flex; gap: 14px; margin-bottom: 26px;
 }
 .pl-dot {
   width: 14px; height: 14px; border-radius: 50%;
-  background: rgba(255,255,255,0.7);
-  border: 2px solid #a5f3fc;
+  background: rgba(30,41,59,0.6);
+  border: 2px solid rgba(71,85,105,0.6);
   transition: all .15s;
 }
 .pl-dot.filled {
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
-  border-color: #0891b2;
-  box-shadow: 0 0 14px rgba(8,145,178,.45);
+  background: linear-gradient(135deg, #38bdf8, #60a5fa);
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56,189,248,.55);
 }
 .pl-dot.err { animation: pl-shake .4s; }
 @keyframes pl-shake {
@@ -416,39 +230,32 @@ body.locked { overflow: hidden; }
 
 .pl-keypad {
   display: grid;
-  grid-template-columns: repeat(3, 70px);
+  grid-template-columns: repeat(3, 68px);
   gap: 14px; justify-content: center;
 }
 .pl-key {
-  width: 70px; height: 70px; border-radius: 50%;
-  background: rgba(255,255,255,0.85);
+  width: 68px; height: 68px; border-radius: 50%;
+  background: rgba(30,41,59,0.75);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(8,145,178,0.2);
-  color: #0f3a4a; font-size: 24px; font-weight: 700;
+  border: 1.5px solid rgba(71,85,105,0.6);
+  color: #f1f5f9; font-size: 23px; font-weight: 600;
   cursor: pointer; font-family: inherit;
-  box-shadow: 0 2px 8px rgba(8,145,178,.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
 }
 .pl-key:active {
-  background: linear-gradient(135deg, #cffafe, #a5f3fc);
+  background: linear-gradient(135deg, rgba(56,189,248,0.25), rgba(96,165,250,0.25));
+  border-color: rgba(56,189,248,0.5);
   transform: scale(.92);
 }
 .pl-key.fn {
   background: transparent; border: none;
-  font-size: 19px; color: #5a8a9a; box-shadow: none;
+  font-size: 18px; color: #94a3b8; box-shadow: none;
 }
 
 .pl-lockout {
-  color: #c2410c; font-size: 12px; font-weight: 700;
-  margin-bottom: 14px;
-}
-
-/* 작은 화면 보정 */
-@media (max-width: 360px) {
-  .grid { grid-template-columns: 1fr; }
-  .topbar-title { font-size: 17px; }
-  .pl-keypad { grid-template-columns: repeat(3, 64px); }
-  .pl-key { width: 64px; height: 64px; font-size: 22px; }
+  color: #fda4af; font-size: 12px; font-weight: 700;
+  margin-bottom: 12px;
 }
 </style>
 </head>
@@ -456,7 +263,7 @@ body.locked { overflow: hidden; }
 
 <!-- PIN 잠금 화면 -->
 <div class="pin-lock" id="pinLock">
-  <div class="logo">🌊 스마트팩토리</div>
+  <div class="logo">🌙 스마트팩토리</div>
   <div class="sub">PIN을 입력하세요</div>
   <div class="hint" id="plHint">4자리 PIN</div>
   <div class="pl-dots" id="plDots">
@@ -466,158 +273,131 @@ body.locked { overflow: hidden; }
   <div class="pl-keypad" id="plKeypad"></div>
 </div>
 
-<!-- 상단 바 -->
-<div class="topbar">
-  <button class="hamb" id="hambBtn" type="button" aria-label="메뉴">☰</button>
-  <div class="topbar-title">스마트팩토리 <span class="ver">v1.0</span></div>
-  <button class="tb-btn logout" id="logoutBtn" type="button" style="display:none">
-    <span>🔒</span><span>로그아웃</span>
-  </button>
+<div class="header">
+  <h1>스마트팩토리 <span class="ver">v1.0</span></h1>
+  <div class="top-btns">
+    <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
+      <span class="ic">👤</span><span id="userName">사용자</span>
+    </button>
+    <button class="top-btn logout" id="logoutBtn" type="button" style="display:none">
+      <span class="ic">🔒</span><span>로그아웃</span>
+    </button>
+  </div>
 </div>
 
-<!-- 백드롭 -->
-<div class="backdrop" id="backdrop"></div>
-
-<!-- 사이드 슬라이딩 메뉴 -->
-<aside class="sidemenu" id="sidemenu">
-  <div class="sm-header">
-    <button class="sm-close" id="smClose" type="button" aria-label="닫기">✕</button>
-    <div class="sm-logo">🌊 스마트팩토리</div>
-    <div class="sm-sub">msm Smart Factory · v1.0</div>
-  </div>
-
-  <div class="sm-user" id="smUser" style="display:none">
-    <div class="av" id="smUserAv">👤</div>
-    <div class="info">
-      <div class="nm" id="smUserName">사용자</div>
-      <div class="sub" id="smUserSub"></div>
-    </div>
-  </div>
-
-  <nav class="sm-nav">
-    <!-- 본사 -->
-    <div class="sm-section">
-      <div class="sm-section-title">본사</div>
-      <a class="sm-item" href="head_moldpart.html">
-        <div class="si c-hq">📦</div>
-        <div class="st">
-          <div class="sl">금형부품 재고관리</div>
-          <div class="sd">소모품 입출고 / 재고 조회</div>
-        </div>
-        <div class="sa">›</div>
-      </a>
-    </div>
-
-    <!-- 공장 -->
-    <div class="sm-section">
-      <div class="sm-section-title">생산 공장</div>
-      <a class="sm-item" href="first_factory.html">
-        <div class="si c-f1">①</div>
-        <div class="st">
-          <div class="sl">1공장</div>
-          <div class="sd">생산 · 품질 · 설비</div>
-        </div>
-        <div class="sa">›</div>
-      </a>
-      <a class="sm-item" href="second_factory.html">
-        <div class="si c-f2">②</div>
-        <div class="st">
-          <div class="sl">2공장</div>
-          <div class="sd">생산 · 품질 · 설비</div>
-        </div>
-        <div class="sa">›</div>
-      </a>
-      <a class="sm-item" href="third_factory.html">
-        <div class="si c-f3">③</div>
-        <div class="st">
-          <div class="sl">3공장</div>
-          <div class="sd">생산 · 품질 · 설비</div>
-        </div>
-        <div class="sa">›</div>
-      </a>
-    </div>
-
-    <!-- 마스터 -->
-    <div class="sm-section">
-      <div class="sm-section-title">시스템 관리</div>
-      <a class="sm-item" href="pin_master.html">
-        <div class="si c-master">🔢</div>
-        <div class="st">
-          <div class="sl">PIN 관리</div>
-          <div class="sd">관리자 PIN 등록 / 변경</div>
-        </div>
-        <div class="sa">›</div>
-      </a>
-      <a class="sm-item" href="mold_master.html">
-        <div class="si c-master">🧱</div>
-        <div class="st">
-          <div class="sl">금형마스터</div>
-          <div class="sd">소재 / 매핑기종 / 금형재번 / 고객사</div>
-        </div>
-        <div class="sa">›</div>
-      </a>
-    </div>
-  </nav>
-
-  <div class="sm-footer">v1.0 · msm Smart Factory</div>
-</aside>
-
-<!-- 메인 콘텐츠 -->
 <div class="container">
 
-  <!-- 환영 카드 -->
-  <div class="welcome">
-    <div class="greet" id="welcomeGreet">안녕하세요 👋</div>
-    <div class="title" id="welcomeTitle">스마트팩토리 v1.0</div>
-    <div class="desc" id="welcomeDesc">메뉴를 선택하거나 좌측 ☰ 버튼으로 전체 메뉴를 열 수 있습니다</div>
+  <!-- 본사 -->
+  <details class="acc c-hq">
+    <summary>
+      <div class="icon">🏢</div>
+      <div class="title">본사</div>
+      <div class="count">1</div>
+      <div class="arrow">›</div>
+    </summary>
+    <div class="acc-body">
+      <a class="sub-item" href="head_moldpart.html">
+        <div class="s-icon">📦</div>
+        <div class="s-text">
+          <div class="s-label">금형부품 재고관리</div>
+          <div class="s-desc">소모품 입출고 / 재고 조회</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+
+  <!-- 1공장 -->
+  <details class="acc c-f1">
+    <summary>
+      <div class="icon">①</div>
+      <div class="title">1공장</div>
+      <div class="count">1</div>
+      <div class="arrow">›</div>
+    </summary>
+    <div class="acc-body">
+      <a class="sub-item" href="first_factory.html">
+        <div class="s-icon">🏭</div>
+        <div class="s-text">
+          <div class="s-label">1공장 메인</div>
+          <div class="s-desc">생산 · 품질 · 설비</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+
+  <!-- 2공장 -->
+  <details class="acc c-f2">
+    <summary>
+      <div class="icon">②</div>
+      <div class="title">2공장</div>
+      <div class="count">1</div>
+      <div class="arrow">›</div>
+    </summary>
+    <div class="acc-body">
+      <a class="sub-item" href="second_factory.html">
+        <div class="s-icon">🏭</div>
+        <div class="s-text">
+          <div class="s-label">2공장 메인</div>
+          <div class="s-desc">생산 · 품질 · 설비</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+
+  <!-- 3공장 -->
+  <details class="acc c-f3">
+    <summary>
+      <div class="icon">③</div>
+      <div class="title">3공장</div>
+      <div class="count">1</div>
+      <div class="arrow">›</div>
+    </summary>
+    <div class="acc-body">
+      <a class="sub-item" href="third_factory.html">
+        <div class="s-icon">🏭</div>
+        <div class="s-text">
+          <div class="s-label">3공장 메인</div>
+          <div class="s-desc">생산 · 품질 · 설비</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+
+  <!-- 마스터 -->
+  <details class="acc c-master">
+    <summary>
+      <div class="icon">⚙️</div>
+      <div class="title">마스터</div>
+      <div class="count">2</div>
+      <div class="arrow">›</div>
+    </summary>
+    <div class="acc-body">
+      <a class="sub-item" href="pin_master.html">
+        <div class="s-icon">🔢</div>
+        <div class="s-text">
+          <div class="s-label">PIN 관리</div>
+          <div class="s-desc">관리자 PIN 등록 / 변경</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+      <a class="sub-item" href="mold_master.html">
+        <div class="s-icon">🧱</div>
+        <div class="s-text">
+          <div class="s-label">금형마스터</div>
+          <div class="s-desc">소재 / 매핑기종 / 금형재번 / 고객사</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+
+  <div class="footer">
+    v1.0 · msm Smart Factory
   </div>
-
-  <!-- 빠른 접근 카드 그리드 -->
-  <div class="grid">
-    <a class="card c-f1" href="first_factory.html">
-      <div class="ic">①</div>
-      <div class="tt">1공장</div>
-      <div class="dd">생산 · 품질 · 설비</div>
-      <div class="ar">›</div>
-    </a>
-    <a class="card c-f2" href="second_factory.html">
-      <div class="ic">②</div>
-      <div class="tt">2공장</div>
-      <div class="dd">생산 · 품질 · 설비</div>
-      <div class="ar">›</div>
-    </a>
-    <a class="card c-f3" href="third_factory.html">
-      <div class="ic">③</div>
-      <div class="tt">3공장</div>
-      <div class="dd">생산 · 품질 · 설비</div>
-      <div class="ar">›</div>
-    </a>
-    <a class="card c-hq" href="head_moldpart.html">
-      <div class="ic">📦</div>
-      <div class="tt">본사</div>
-      <div class="dd">금형부품 재고</div>
-      <div class="ar">›</div>
-    </a>
-
-    <a class="card c-master wide" href="mold_master.html">
-      <div class="ic">🧱</div>
-      <div class="body">
-        <div class="tt">금형마스터</div>
-        <div class="dd">소재 / 매핑기종 / 금형재번 / 고객사</div>
-      </div>
-      <div class="ar">›</div>
-    </a>
-    <a class="card c-master wide" href="pin_master.html">
-      <div class="ic">🔢</div>
-      <div class="body">
-        <div class="tt">PIN 관리</div>
-        <div class="dd">관리자 PIN 등록 / 변경</div>
-      </div>
-      <div class="ar">›</div>
-    </a>
-  </div>
-
-  <div class="footer">v1.0 · msm Smart Factory</div>
 </div>
 
 <script>
@@ -631,9 +411,9 @@ const TBL_USER = 'mm_user_pin';
 /* 마스터 PIN 2580 → SHA-256 */
 const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
 
-const LK_AUTH   = 'mm_user_session';
-const LK_FAIL   = 'mm_pin_fail';
-const SESSION_DAYS = 7;
+const LK_AUTH   = 'mm_user_session';   // 인증 세션
+const LK_FAIL   = 'mm_pin_fail';       // 실패 카운트
+const SESSION_DAYS = 7;                // 자동 세션 유지 (일) - 매주 PIN 재입력
 const MAX_FAIL = 5;
 const LOCKOUT_SEC = 60;
 
@@ -658,6 +438,7 @@ function getFail(){try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count
 function setFail(f){localStorage.setItem(LK_FAIL, JSON.stringify(f))}
 function clearFail(){localStorage.removeItem(LK_FAIL)}
 
+/* 키패드 렌더링 */
 function renderKeypad(){
   const kp = document.getElementById('plKeypad');
   kp.innerHTML = '';
@@ -700,6 +481,7 @@ async function pinDone(){
   try{
     const h = await sha256hex(curPin);
 
+    // 1) 마스터 PIN 체크
     if(h === MASTER_PIN_HASH){
       clearFail();
       setSession({role:'admin', name:'관리자', factory:'', dept:''});
@@ -709,6 +491,7 @@ async function pinDone(){
       return;
     }
 
+    // 2) Supabase 조회 (mm_user_pin)
     const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER
       +'?select=id,name,factory,dept,position&pin_hash=eq.'+h, {
       headers: {
@@ -736,6 +519,7 @@ async function pinDone(){
       return;
     }
 
+    // 3) 실패
     const f = getFail();
     f.count = (f.count||0) + 1;
     if(f.count >= MAX_FAIL){
@@ -792,49 +576,24 @@ function unlock(){
 function applySession(){
   const s = getSession();
   if(!s)return;
-
-  // 시간대별 인사말
-  const hr = new Date().getHours();
-  let greet = '안녕하세요';
-  if(hr < 6) greet = '편안한 새벽이에요';
-  else if(hr < 12) greet = '좋은 아침입니다';
-  else if(hr < 18) greet = '좋은 오후입니다';
-  else greet = '수고하셨습니다';
-
+  // 상단 사용자 버튼 표시
+  const btn = document.getElementById('userBtn');
+  const nm = document.getElementById('userName');
   const lo = document.getElementById('logoutBtn');
+  btn.style.display = '';
   lo.style.display = '';
-
-  // 사이드 메뉴 사용자 영역
-  const smu = document.getElementById('smUser');
-  const smNm = document.getElementById('smUserName');
-  const smSub = document.getElementById('smUserSub');
-  const smAv = document.getElementById('smUserAv');
-  smu.style.display = '';
-
-  // 환영 카드
-  const wg = document.getElementById('welcomeGreet');
-  const wt = document.getElementById('welcomeTitle');
-
   if(s.role === 'admin'){
-    smNm.textContent = '관리자';
-    smSub.textContent = '시스템 관리자';
-    smAv.textContent = '⚙️';
-    smAv.style.background = 'linear-gradient(135deg, #fb923c, #c2410c)';
-    wg.textContent = greet + ' 👋';
-    wt.textContent = '관리자님';
+    nm.textContent = '관리자';
+    btn.style.color = '#fdba74';
   }else{
-    smNm.textContent = s.name + (s.position ? ' '+s.position : '');
-    let sub = '';
-    if(s.factory) sub += s.factory;
-    if(s.dept) sub += (sub?' · ':'') + s.dept;
-    smSub.textContent = sub;
-    smAv.textContent = s.name ? s.name.charAt(0) : '👤';
-    wg.textContent = greet + ' 👋';
-    wt.textContent = s.name + '님';
+    let label = s.name;
+    if(s.factory)label = s.factory + ' · ' + label;
+    if(s.position)label += ' ' + s.position;
+    nm.textContent = label;
+    btn.style.color = '#7dd3fc';
   }
-
-  // 사이드 메뉴 사용자 클릭 → 세션 정보
-  smu.onclick = ()=>{
+  // 사용자 버튼: 세션 정보 alert (정보 확인용)
+  btn.onclick = ()=>{
     const expDate = new Date(s.exp);
     const remainDays = Math.max(0, Math.ceil((s.exp - Date.now()) / (24*60*60*1000)));
     const info =
@@ -846,8 +605,7 @@ function applySession(){
       '(' + expDate.toLocaleDateString('ko-KR') + ' ' + expDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ')';
     alert(info);
   };
-  smu.style.cursor = 'pointer';
-
+  // 로그아웃 버튼: 세션 삭제 → PIN 입력 화면
   lo.onclick = ()=>{
     if(!confirm('로그아웃 하시겠습니까?\n다시 접속하려면 PIN을 입력해야 합니다.'))return;
     clearSession();
@@ -856,38 +614,7 @@ function applySession(){
   };
 }
 
-/* ============= 사이드 메뉴 동작 ============= */
-function openMenu(){
-  document.getElementById('sidemenu').classList.add('open');
-  document.getElementById('backdrop').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeMenu(){
-  document.getElementById('sidemenu').classList.remove('open');
-  document.getElementById('backdrop').classList.remove('open');
-  document.body.style.overflow = '';
-}
-document.getElementById('hambBtn').addEventListener('click', openMenu);
-document.getElementById('smClose').addEventListener('click', closeMenu);
-document.getElementById('backdrop').addEventListener('click', closeMenu);
-
-// 스와이프로 닫기 (왼쪽으로 드래그)
-let touchStartX = 0;
-const sm = document.getElementById('sidemenu');
-sm.addEventListener('touchstart', e=>{
-  touchStartX = e.touches[0].clientX;
-}, {passive:true});
-sm.addEventListener('touchend', e=>{
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  if(dx < -60) closeMenu();
-}, {passive:true});
-
-// ESC로 닫기
-document.addEventListener('keydown', e=>{
-  if(e.key === 'Escape') closeMenu();
-});
-
-/* 키보드 PIN 입력 */
+/* 키보드 입력 지원 */
 document.addEventListener('keydown', function(e){
   if(!document.body.classList.contains('locked'))return;
   if(e.key >= '0' && e.key <= '9') pinPress(e.key);
@@ -898,6 +625,7 @@ document.addEventListener('keydown', function(e){
 (function init(){
   const s = getSession();
   if(s && s.exp > Date.now()){
+    // 세션 유효 → 만료 시점 유지(매주 1회 재입력 정책), 그대로 사용
     unlock();
     return;
   }
