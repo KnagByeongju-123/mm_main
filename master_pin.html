@@ -201,12 +201,12 @@ body.locked{overflow:hidden}
     <div class="acc-body">
       <div class="msg" id="addMsg"></div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <select class="inp" id="addFactory" style="flex:0 0 110px"></select>
-        <input type="text" class="inp" id="addName" placeholder="이름" maxlength="20" style="flex:1">
-        <input type="text" class="inp pin" id="addPin" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="flex:0 0 90px">
+        <select class="inp" id="addFactory" style="flex:1"></select>
+        <select class="inp" id="addDept" style="flex:1"></select>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:10px">
-        <select class="inp" id="addDept" style="flex:1"></select>
+        <input type="text" class="inp" id="addName" placeholder="이름" maxlength="20" style="flex:1">
+        <input type="text" class="inp pin" id="addPin" placeholder="PIN" maxlength="4" inputmode="numeric" pattern="[0-9]*" style="flex:0 0 90px">
         <button class="btn btn-pri" id="addBtn" style="flex-shrink:0">등록</button>
       </div>
       <div class="help">• 이름·PIN 중복 금지 (4자리 숫자)</div>
@@ -754,20 +754,18 @@ function renderList(){
     return txt.includes(kw);
   });
 
-  // 정렬: 공장(마스터 sort_order) → 부서(마스터 sort_order) → 이름(가나다)
-  const factOrder={};
-  factoryCache.forEach((f,i)=>factOrder[f.name]=f.sort_order??(i+1));
-  const deptOrder={};
-  deptCache.forEach((d,i)=>deptOrder[d.name]=d.sort_order??(i+1));
-  const HUGE=999999;
+  // 정렬: 공장(가나다) → 부서(가나다) → 이름(가나다) — 모두 오름차순
+  const HUGE = '힣힣힣힣힣'; // 미지정은 맨 뒤
   list.sort((a,b)=>{
-    const fa=a.factory?(factOrder[a.factory]??HUGE):HUGE+1;  // 미지정은 맨 뒤
-    const fb=b.factory?(factOrder[b.factory]??HUGE):HUGE+1;
-    if(fa!==fb)return fa-fb;
-    const da=a.dept?(deptOrder[a.dept]??HUGE):HUGE+1;
-    const db=b.dept?(deptOrder[b.dept]??HUGE):HUGE+1;
-    if(da!==db)return da-db;
-    return (a.name||'').localeCompare(b.name||'','ko');
+    const fa = a.factory || HUGE;
+    const fb = b.factory || HUGE;
+    const fcmp = fa.localeCompare(fb, 'ko');
+    if(fcmp !== 0) return fcmp;
+    const da = a.dept || HUGE;
+    const db = b.dept || HUGE;
+    const dcmp = da.localeCompare(db, 'ko');
+    if(dcmp !== 0) return dcmp;
+    return (a.name||'').localeCompare(b.name||'', 'ko');
   });
 
   if(list.length===0){
