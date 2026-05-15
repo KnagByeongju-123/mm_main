@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>🛡 보안 마스터 · msm</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<link rel="stylesheet" href="data:text/css,">
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -45,21 +43,6 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','A
 .content{flex:1;overflow:hidden;position:relative}
 .pane{position:absolute;inset:0;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .pane.active{display:block}
-
-/* ========== 지도 ========== */
-#map{width:100%;height:100%}
-.leaflet-container{background:#0b1220 !important;font-family:inherit}
-.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.7)}
-.leaflet-control-attribution{background:rgba(15,23,42,.8) !important;color:#94a3b8 !important;font-size:9px !important}
-.leaflet-control-attribution a{color:#7dd3fc !important}
-.leaflet-control-zoom a{background:#1e293b !important;color:#e2e8f0 !important;border-color:#334155 !important}
-.leaflet-control-zoom a:hover{background:#334155 !important}
-.leaflet-popup-content-wrapper{background:#1e293b;color:#e2e8f0;border-radius:10px;border:1px solid #334155;box-shadow:0 4px 16px rgba(0,0,0,.5)}
-.leaflet-popup-tip{background:#1e293b;border:1px solid #334155}
-.leaflet-popup-content{margin:10px 12px;font-size:12px;line-height:1.5}
-.leaflet-popup-content b{color:#7dd3fc}
-.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(56,189,248,.2) !important}
-.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:rgba(56,189,248,.7) !important;color:#0b1220 !important;font-weight:700 !important}
 
 /* ========== 리스트 ========== */
 .list{padding:8px}
@@ -275,7 +258,7 @@ body.locked .entry-lock{display:flex}
 <!-- 헤더 -->
 <div class="hdr">
   <a class="back" href="index.html">←</a>
-  <div class="title">🛡 보안 마스터 <span style="font-size:11px;color:#94a3b8;font-weight:500">v1.1</span></div>
+  <div class="title">🛡 보안 마스터 <span id="verTag" style="font-size:11px;color:#94a3b8;font-weight:500;cursor:pointer" onclick="showChangelog()">Rev 1.2</span></div>
   <div class="cnt-badge" id="cntBadge">0건</div>
 </div>
 
@@ -292,7 +275,6 @@ body.locked .entry-lock{display:flex}
 <div class="body">
   <div class="tabs">
     <button class="tab active" data-tab="pin" onclick="switchTab('pin')">👥 PIN</button>
-    <button class="tab" data-tab="map" onclick="switchTab('map')">🗺 지도</button>
     <button class="tab" data-tab="list" onclick="switchTab('list')">📋 목록</button>
     <button class="tab" data-tab="stats" onclick="switchTab('stats')">📊 통계</button>
     <button class="tab" data-tab="sec" onclick="switchTab('sec')">🛡 보안<span class="alarm" id="alarmBadge">0</span></button>
@@ -310,7 +292,6 @@ body.locked .entry-lock{display:flex}
         <div class="pin-list" id="pinList"></div>
       </div>
     </div>
-    <div class="pane" id="paneMap"><div id="map"></div></div>
     <div class="pane" id="paneList">
       <div class="list-toolbar">
         <div class="info" id="listInfo">총 <b>0</b>건</div>
@@ -348,21 +329,21 @@ body.locked .entry-lock{display:flex}
             <label>해외 접속</label>
             <input type="text" id="cfgHome" value="South Korea" placeholder="기준 국가명">
           </div>
-          <div class="cfg-help">위 국가가 아닌 곳에서 접속 시 의심 처리</div>
+          <div class="cfg-help">위 국가가 아닌 곳에서 접속 시 의심 처리 (IP의 국가코드 기준)</div>
 
           <div class="cfg-row" style="margin-top:10px">
-            <label>다중지역</label>
+            <label>다중 IP</label>
             <input type="number" id="cfgWindowMin" value="60" min="5" max="1440">
             <span style="color:#94a3b8;font-size:12px">분 내</span>
             <input type="number" id="cfgCityCnt" value="2" min="2" max="10" style="max-width:60px">
-            <span style="color:#94a3b8;font-size:12px">곳 이상</span>
+            <span style="color:#94a3b8;font-size:12px">개 IP</span>
           </div>
-          <div class="cfg-help">동일 사용자가 짧은 시간에 여러 도시에서 접속 시 의심</div>
+          <div class="cfg-help">동일 사용자가 짧은 시간에 여러 IP에서 접속 시 의심 (도시 정보는 부정확하여 사용 안 함)</div>
 
           <div class="cfg-row" style="margin-top:14px;border-top:1px solid #334155;padding-top:10px">
-            <label style="min-width:110px">🆕 새 위치</label>
+            <label style="min-width:110px">🆕 새 IP</label>
             <input type="checkbox" id="cfgAlertNewLoc" style="width:18px;height:18px;cursor:pointer" checked>
-            <span style="color:#94a3b8;font-size:12px;flex:1">평소 안 쓰던 IP/도시 첫 접속</span>
+            <span style="color:#94a3b8;font-size:12px;flex:1">평소 안 쓰던 IP에서 첫 접속</span>
           </div>
 
           <div class="cfg-row" style="margin-top:6px">
@@ -393,8 +374,9 @@ body.locked .entry-lock{display:flex}
             <span style="color:#94a3b8;font-size:12px;flex:1">PIN 5회 연속 실패 (계정잠금)</span>
           </div>
 
-          <div class="cfg-row" style="margin-top:14px">
+          <div class="cfg-row" style="margin-top:14px;flex-wrap:wrap">
             <button class="mini" onclick="saveCfg();detectSuspicious();toast('규칙 저장 & 재분석','ok')">💾 저장 & 재분석</button>
+            <button class="mini gray" onclick="showWhitelist()" id="btnWhitelist">📋 면제목록</button>
           </div>
         </div>
 
@@ -505,8 +487,7 @@ body.locked .entry-lock{display:flex}
 
 <div class="toast" id="toast"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
 
 <script>
 /* ============================================================
@@ -521,6 +502,7 @@ const NTFY_SV = 'https://ntfy.sh';
 
 const LK_CFG = 'mm_sec_cfg';
 const LK_ALERTED = 'mm_sec_alerted';   // 이미 알림 발송한 의심건 ID 캐시
+const LK_WHITELIST = 'mm_sec_whitelist'; // 사용자별 의심 규칙 면제 ({uid: ['weekend','night',...]})
 
 let map = null, cluster = null;
 let allRows = [];           // 위치 데이터
@@ -589,24 +571,17 @@ function nameInitial(name){
   return s.slice(0, s.length > 2 ? 2 : s.length);
 }
 
-function makePinIcon(name, suspicious){
-  const color = suspicious ? '#dc2626' : nameColor(name);
-  const txt = nameInitial(name);
-  const ring = suspicious ? '<circle cx="17" cy="17" r="14" fill="none" stroke="#fef08a" stroke-width="1.5"/>' : '';
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44">' +
-    '<defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.5"/></filter></defs>' +
-    '<path d="M17 0 C7 0 0 7 0 17 C0 28 17 44 17 44 C17 44 34 28 34 17 C34 7 27 0 17 0 Z" fill="'+color+'" stroke="#fff" stroke-width="2" filter="url(#s)"/>' +
-    ring +
-    '<circle cx="17" cy="17" r="11" fill="rgba(255,255,255,0.15)"/>' +
-    '<text x="17" y="21" text-anchor="middle" font-family="system-ui,sans-serif" font-size="'+(txt.length>1?10:13)+'" font-weight="700" fill="#fff">'+txt+'</text>' +
-    '</svg>';
-  return L.divIcon({
-    html: svg,
-    className: 'pin-marker',
-    iconSize: [34, 44],
-    iconAnchor: [17, 44],
-    popupAnchor: [0, -40]
-  });
+/* 지역 단순 표시 — 위치 정확도 부족으로 도시 단위 무시, 국내/국외만 */
+function regionLabel(country){
+  if(!country) return '🌐 미상';
+  const c = String(country).toLowerCase();
+  if(c === 'south korea' || c === 'korea, republic of' || c.includes('korea') || c === '대한민국') return '🇰🇷 국내';
+  return '🌐 국외 ('+country+')';
+}
+function isForeign(country){
+  if(!country) return false;
+  const c = String(country).toLowerCase();
+  return !(c === 'south korea' || c === 'korea, republic of' || c.includes('korea') || c === '대한민국');
 }
 
 /* ============================================================
@@ -628,9 +603,6 @@ function switchTab(name){
     document.body.classList.remove('no-filter');
   }
 
-  if(name==='map' && map){
-    setTimeout(()=>map.invalidateSize(), 100);
-  }
   if(name==='sec'){
     renderSecPane();
   }
@@ -639,28 +611,6 @@ function switchTab(name){
     if(allUsers.length === 0) loadPinUsers();
     else renderPinList();
   }
-}
-
-/* ============================================================
-   지도 초기화
-   ============================================================ */
-function initMap(){
-  map = L.map('map', {
-    center: [36.5, 127.8],
-    zoom: 7,
-    zoomControl: true,
-    attributionControl: true
-  });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 19
-  }).addTo(map);
-  cluster = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    spiderfyOnMaxZoom: true,
-    maxClusterRadius: 50
-  });
-  map.addLayer(cluster);
 }
 
 /* ============================================================
@@ -1104,19 +1054,33 @@ function detectSuspicious(){
   const masterCollisionUids = new Set(
     allUsers.filter(u=>u._masterPinCollision).map(u=>u.id)
   );
+
+  /* ★ 사용자별 화이트리스트(면제 규칙) 로드 */
+  let whitelist = {};
+  try{ whitelist = JSON.parse(localStorage.getItem(LK_WHITELIST)||'{}'); }catch(e){}
+
+  /* 규칙 면제 여부 체크 */
+  const isExempt = (uid, type)=>{
+    if(uid == null) return false;
+    const rules = whitelist[uid];
+    if(!Array.isArray(rules)) return false;
+    return rules.includes(type) || rules.includes('all');
+  };
+
   /* 분석 대상 행만 필터 (충돌 사용자 제외) */
   const analyzeRows = allRows.filter(r=>!masterCollisionUids.has(r.user_id));
 
-  // 1) 해외 접속
+  // 1) 해외 접속 (국가 기준만)
   analyzeRows.forEach(r=>{
-    if(r.country && r.country !== cfg.homeCountry && !r.error_code){
+    if(isExempt(r.user_id, 'foreign')) return;
+    if(r.country && isForeign(r.country) && !r.error_code){
       suspGroups.push({
         type: 'foreign',
         user_id: r.user_id,
         user_name: r.user_name,
         factory: r.factory,
         dept: r.dept,
-        reason: '🌍 해외 접속 감지: '+r.country+(r.city?' / '+r.city:''),
+        reason: '🌐 국외 접속: '+r.country+' · IP '+(r.ip||'-'),
         rows: [r],
         ts: r.recorded_at,
         key: 'F:'+(r.user_id||r.user_name)+':'+r.id
@@ -1135,27 +1099,29 @@ function detectSuspicious(){
 
   const windowMs = cfg.windowMin * 60 * 1000;
   byUser.forEach((rows, k)=>{
+    if(rows[0] && isExempt(rows[0].user_id, 'multi')) return;
     const sorted = rows.slice().sort((a,b)=>new Date(a.recorded_at)-new Date(b.recorded_at));
     for(let i=0; i<sorted.length; i++){
       const start = new Date(sorted[i].recorded_at).getTime();
       const group = [sorted[i]];
-      const cities = new Set([sorted[i].city || sorted[i].ip || '?']);
+      /* IP 기준으로만 비교 (city는 정확도 낮음) */
+      const ips = new Set([sorted[i].ip || '?']);
       for(let j=i+1; j<sorted.length; j++){
         const t = new Date(sorted[j].recorded_at).getTime();
         if(t - start > windowMs) break;
         group.push(sorted[j]);
-        cities.add(sorted[j].city || sorted[j].ip || '?');
+        ips.add(sorted[j].ip || '?');
       }
-      if(cities.size >= cfg.cityCnt){
+      if(ips.size >= cfg.cityCnt){
         suspGroups.push({
           type: 'multi',
           user_id: sorted[i].user_id,
           user_name: sorted[i].user_name,
           factory: sorted[i].factory,
           dept: sorted[i].dept,
-          reason: '⚡ '+cfg.windowMin+'분 내 '+cities.size+'개 지역 동시 접속',
+          reason: '⚡ '+cfg.windowMin+'분 내 '+ips.size+'개 IP에서 접속',
           rows: group,
-          cities: Array.from(cities),
+          ips: Array.from(ips),
           ts: sorted[i].recorded_at,
           key: 'M:'+k+':'+sorted[i].id
         });
@@ -1175,17 +1141,18 @@ function detectSuspicious(){
       const k = r.user_id || ('n_'+r.user_name);
       if(!seenByUser.has(k)) seenByUser.set(k, new Set());
       const seen = seenByUser.get(k);
-      const loc = (r.ip||'?')+'|'+(r.city||'?');
+      /* IP만 기준 */
+      const loc = r.ip || '?';
       const firstLogin = (seen.size === 0);
-      if(!seen.has(loc) && !firstLogin){
-        /* 두 번째 위치부터, 처음 보는 IP/도시 조합 = 새 위치 */
+      if(!seen.has(loc) && !firstLogin && !isExempt(r.user_id, 'newloc')){
+        /* 두 번째 위치부터, 처음 보는 IP = 새 위치 */
         suspGroups.push({
           type: 'newloc',
           user_id: r.user_id,
           user_name: r.user_name,
           factory: r.factory,
           dept: r.dept,
-          reason: '🆕 새 위치 첫 접속: '+(r.city||'?')+(r.country?'/'+r.country:'')+' · '+(r.ip||'-'),
+          reason: '🆕 새 IP 첫 접속: '+(r.ip||'-')+' ('+regionLabel(r.country)+')',
           rows: [r],
           ts: r.recorded_at,
           key: 'N:'+k+':'+r.id
@@ -1200,6 +1167,7 @@ function detectSuspicious(){
     const nf = cfg.nightFrom, nt = cfg.nightTo;
     analyzeRows.forEach(r=>{
       if(r.error_code) return;
+      if(isExempt(r.user_id, 'night')) return;
       const d = new Date(r.recorded_at);
       if(isNaN(d)) return;
       const h = d.getHours();
@@ -1220,7 +1188,7 @@ function detectSuspicious(){
           user_name: r.user_name,
           factory: r.factory,
           dept: r.dept,
-          reason: '🌙 심야 접속: '+hh+':'+mm+' ('+(r.city||'?')+')',
+          reason: '🌙 심야 접속: '+hh+':'+mm+' · IP '+(r.ip||'-'),
           rows: [r],
           ts: r.recorded_at,
           key: 'T:'+(r.user_id||r.user_name)+':'+r.id
@@ -1233,6 +1201,7 @@ function detectSuspicious(){
   if(cfg.alertWeekend){
     analyzeRows.forEach(r=>{
       if(r.error_code) return;
+      if(isExempt(r.user_id, 'weekend')) return;
       const d = new Date(r.recorded_at);
       if(isNaN(d)) return;
       const dow = d.getDay();   // 0=일, 6=토
@@ -1244,7 +1213,7 @@ function detectSuspicious(){
           user_name: r.user_name,
           factory: r.factory,
           dept: r.dept,
-          reason: '📅 주말 접속: '+dayName+' ('+(r.city||'?')+')',
+          reason: '📅 주말 접속: '+dayName+' · IP '+(r.ip||'-'),
           rows: [r],
           ts: r.recorded_at,
           key: 'W:'+(r.user_id||r.user_name)+':'+r.id
@@ -1263,7 +1232,7 @@ function detectSuspicious(){
           user_name: r.user_name,
           factory: r.factory,
           dept: r.dept,
-          reason: '🚫 차단 계정 로그인 시도: '+(r.city||'?')+(r.ip?' / '+r.ip:''),
+          reason: '🚫 차단 계정 로그인 시도: IP '+(r.ip||'-')+' ('+regionLabel(r.country)+')',
           rows: [r],
           ts: r.recorded_at,
           key: 'B:'+(r.user_id||r.user_name)+':'+r.id
@@ -1436,30 +1405,74 @@ function showTopicQR(){
 }
 
 /* ============================================================
-   지도 렌더
+   변경 이력 (헤더 Rev 클릭)
    ============================================================ */
-function renderMap(){
-  if(!map) return;
-  cluster.clearLayers();
-  const valid = allRows.filter(r => r.lat != null && r.lng != null);
-  const bounds = [];
-  valid.forEach(r=>{
-    const ll = [parseFloat(r.lat), parseFloat(r.lng)];
-    if(isNaN(ll[0])||isNaN(ll[1])) return;
-    bounds.push(ll);
-    const html =
-      '<b>'+(r.user_name||'(이름없음)')+'</b>' +
-      (r.factory?' · '+r.factory:'') +
-      (r.dept?' / '+r.dept:'') +
-      (r._suspicious?' <span style="color:#dc2626;font-weight:700">⚠ 의심</span>':'') +
-      '<br>📍 '+(r.city||'')+' '+(r.region||'')+
-      '<br>🌐 '+(r.ip||'-')+(r.org?' ('+r.org+')':'')+
-      '<br>⏱ '+fmtTs(r.recorded_at);
-    const m = L.marker(ll, {icon: makePinIcon(r.user_name, r._suspicious)}).bindPopup(html);
-    cluster.addLayer(m);
-  });
-  if(bounds.length > 0) map.fitBounds(bounds, {padding:[40,40], maxZoom:14});
+function showChangelog(){
+  const log =
+    '🛡 보안 마스터 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'Rev 1.2 (현재)\n' +
+    '• 지도 탭 제거 (위치 정확도 부족)\n' +
+    '• 도시 정보 제거 — IP만 사용\n' +
+    '• 지역 표시: 🇰🇷 국내 / 🌐 국외\n' +
+    '• 다중지역 → 다중 IP 감지\n' +
+    '• 통계에 국내/국외 카드 추가\n\n' +
+    'Rev 1.1\n' +
+    '• 의심 정상처리 시 DB 일괄 삭제\n' +
+    '• 사용자별 의심규칙 면제(화이트리스트)\n' +
+    '• 마스터PIN 충돌 사용자 자동 식별\n' +
+    '• PIN 등록/재설정 시 마스터PIN 차단\n' +
+    '• index에서 마스터 인증 후 자동 통과\n' +
+    '• 인증 후에만 데이터 로드\n\n' +
+    'Rev 1.0\n' +
+    '• PIN관리 + 로그인위치 통합\n' +
+    '• 4개 탭 (PIN/목록/통계/보안)\n' +
+    '• 7가지 알람 조건 자동 감지\n' +
+    '• ntfy 푸시 알림 + QR 구독\n' +
+    '• 진입 마스터 PIN 잠금화면';
+  alert(log);
 }
+
+/* ============================================================
+   화이트리스트 관리 (사용자별 의심규칙 면제)
+   ============================================================ */
+function showWhitelist(){
+  let wl = {};
+  try{ wl = JSON.parse(localStorage.getItem(LK_WHITELIST)||'{}'); }catch(e){}
+
+  const typeLabel = {
+    foreign:'해외접속', multi:'다중지역', newloc:'새위치',
+    night:'심야', weekend:'주말'
+  };
+
+  const entries = Object.entries(wl);
+  if(entries.length === 0){
+    alert('📋 면제 목록\n\n현재 면제된 사용자가 없습니다.\n\n의심사례에서 [✓ 정상] 누르면 자동 등록됩니다.');
+    return;
+  }
+
+  let txt = '📋 의심규칙 면제 사용자\n\n';
+  entries.forEach(([uid, rules])=>{
+    const u = allUsers.find(x=>x.id == uid);
+    const name = u ? u.name : '(ID '+uid+')';
+    const factory = u && u.factory ? u.factory : '';
+    const ruleNames = (rules||[]).map(r=>typeLabel[r]||r).join(', ');
+    txt += '• '+name+(factory?' ['+factory+']':'')+'\n   → '+ruleNames+'\n';
+  });
+  txt += '\n[확인]을 누르면 면제 목록을 모두 초기화합니다.\n(취소하면 그대로 유지)';
+
+  if(confirm(txt)){
+    localStorage.removeItem(LK_WHITELIST);
+    detectSuspicious();
+    renderSuspList();
+    toast('면제 목록 초기화','ok');
+  }
+}
+
+/* ============================================================
+   지도 (제거됨 - 위치 정확도 부족으로 IP만 사용)
+   ============================================================ */
+function renderMap(){ /* no-op */ }
 
 /* ============================================================
    목록 렌더 + 삭제
@@ -1493,7 +1506,7 @@ function renderList(){
     if(r._suspicious) html += '<span class="badge susp">⚠ 의심</span>';
     html += '</div>';
     if(r.error_code) html += '<div class="err">⚠ '+r.error_code+'</div>';
-    else html += '<div class="loc">📍 '+(r.city||'-')+' '+(r.region||'')+' · '+(r.ip||'-')+'</div>';
+    else html += '<div class="loc">🌐 '+regionLabel(r.country)+' · IP '+(r.ip||'-')+(r.org?' · '+r.org:'')+'</div>';
     html += '<div class="ts">⏱ '+fmtTs(r.recorded_at)+(r.country?' · '+r.country:'')+'</div>';
     html += '</div>';
     html += '<button class="del-btn" data-loc-id="'+r.id+'" title="삭제">🗑</button>';
@@ -1510,7 +1523,7 @@ function renderList(){
     /* 삭제 버튼 */
     row.querySelector('.del-btn').addEventListener('click', (e)=>{
       e.stopPropagation();
-      deleteSingleLocation(r.id, r.user_name, r.city);
+      deleteSingleLocation(r.id, r.user_name, r.ip);
     });
 
     box.appendChild(row);
@@ -1562,8 +1575,8 @@ async function deleteLocationsByIds(ids){
   return ids.length;
 }
 
-async function deleteSingleLocation(id, name, city){
-  if(!confirm('이 위치 기록을 삭제할까요?\n\n'+(name||'(이름없음)')+' · '+(city||'-')+'\n\n지도/통계에서도 즉시 제거됩니다.')) return;
+async function deleteSingleLocation(id, name, ip){
+  if(!confirm('이 위치 기록을 삭제할까요?\n\n'+(name||'(이름없음)')+' · IP '+(ip||'-')+'\n\n목록/통계에서도 즉시 제거됩니다.')) return;
   try{
     await deleteLocationsByIds([id]);
     selectedLocIds.delete(id);
@@ -1623,31 +1636,38 @@ function renderStats(){
     return;
   }
   const userMap = new Map();
-  const cityMap = new Map();
+  const ipMap = new Map();
   let errCnt = 0;
   let suspCnt = 0;
+  let domesticCnt = 0;
+  let foreignCnt = 0;
   allRows.forEach(r=>{
     if(r.error_code) errCnt++;
     if(r._suspicious) suspCnt++;
+    if(!r.error_code){
+      if(isForeign(r.country)) foreignCnt++;
+      else if(r.country) domesticCnt++;
+    }
     const k = r.user_id || ('n_'+r.user_name);
     if(!userMap.has(k)){
-      userMap.set(k, {name:r.user_name||'(이름없음)', factory:r.factory||'', dept:r.dept||'', count:0, cities:new Map()});
+      userMap.set(k, {name:r.user_name||'(이름없음)', factory:r.factory||'', dept:r.dept||'', count:0, ips:new Map()});
     }
     const u = userMap.get(k);
     u.count++;
-    const city = r.city || (r.error_code?'(오류)':'(미상)');
-    u.cities.set(city, (u.cities.get(city)||0)+1);
-    cityMap.set(city, (cityMap.get(city)||0)+1);
+    const ip = r.ip || (r.error_code?'(오류)':'(미상)');
+    u.ips.set(ip, (u.ips.get(ip)||0)+1);
+    ipMap.set(ip, (ipMap.get(ip)||0)+1);
   });
   const totalUsers = userMap.size;
   const totalRecs = allRows.length;
-  const topCity = Array.from(cityMap.entries()).sort((a,b)=>b[1]-a[1])[0];
-  const okRate = totalRecs ? Math.round((totalRecs-errCnt)/totalRecs*100) : 0;
+  const topIp = Array.from(ipMap.entries()).sort((a,b)=>b[1]-a[1])[0];
 
   statsBox.innerHTML =
     '<div class="stat"><div class="lbl">총 기록</div><div class="val">'+totalRecs+'</div><div class="sub">건</div></div>' +
     '<div class="stat"><div class="lbl">접속 인원</div><div class="val">'+totalUsers+'</div><div class="sub">명</div></div>' +
-    '<div class="stat"><div class="lbl">최다 지역</div><div class="val" style="font-size:14px;line-height:1.4">'+(topCity?topCity[0]:'-')+'</div><div class="sub">'+(topCity?topCity[1]+'건':'')+'</div></div>' +
+    '<div class="stat"><div class="lbl">🇰🇷 국내</div><div class="val">'+domesticCnt+'</div><div class="sub">건</div></div>' +
+    '<div class="stat"><div class="lbl">🌐 국외</div><div class="val '+(foreignCnt>0?'warn':'')+'">'+foreignCnt+'</div><div class="sub">건</div></div>' +
+    '<div class="stat"><div class="lbl">최다 IP</div><div class="val" style="font-size:13px;line-height:1.3;font-family:monospace">'+(topIp?topIp[0]:'-')+'</div><div class="sub">'+(topIp?topIp[1]+'건':'')+'</div></div>' +
     '<div class="stat"><div class="lbl">의심 건수</div><div class="val '+(suspCnt>0?'warn':'')+'">'+suspCnt+'</div><div class="sub">건</div></div>';
 
   const arr = Array.from(userMap.values()).sort((a,b)=>b.count-a.count);
@@ -1665,8 +1685,8 @@ function renderStats(){
     html += '<div class="cnt">'+u.count+'회</div>';
     html += '</div>';
     html += '<div class="usr-locs">';
-    Array.from(u.cities.entries()).sort((a,b)=>b[1]-a[1]).forEach(([c,n])=>{
-      html += '<div class="usr-loc">'+c+' <b>'+n+'</b></div>';
+    Array.from(u.ips.entries()).sort((a,b)=>b[1]-a[1]).forEach(([ip,n])=>{
+      html += '<div class="usr-loc" style="font-family:monospace">'+ip+' <b>'+n+'</b></div>';
     });
     html += '</div></div>';
   });
@@ -1705,7 +1725,7 @@ function renderSuspList(){
 
     let detail = '<div class="detail">';
     g.rows.slice(0, 3).forEach(r=>{
-      detail += '<b>•</b> '+fmtTs(r.recorded_at)+' · '+(r.city||'?')+(r.country?'/'+r.country:'')+' · '+(r.ip||'-')+'<br>';
+      detail += '<b>•</b> '+fmtTs(r.recorded_at)+' · '+regionLabel(r.country)+' · IP '+(r.ip||'-')+'<br>';
     });
     if(g.rows.length > 3) detail += '<small style="color:#64748b">... 외 '+(g.rows.length-3)+'건</small>';
     detail += '</div>';
@@ -1771,28 +1791,56 @@ function handleSuspAction(act, idx){
   if(!g) return;
 
   if(act === 'dismiss'){
-    /* ★ 정상 처리: DB의 해당 위치기록도 함께 삭제 (지도/목록/통계에서 즉시 제거) */
-    const ids = (g.rows||[]).map(r=>r.id).filter(x=>x!=null);
-    if(ids.length === 0){
-      /* DB id가 없으면 캐시만 정리 */
-      let alerted = [];
-      try{ alerted = JSON.parse(localStorage.getItem(LK_ALERTED)||'[]'); }catch(e){}
-      if(!alerted.includes(g.key)) alerted.push(g.key);
-      localStorage.setItem(LK_ALERTED, JSON.stringify(alerted));
-      suspGroups.splice(idx, 1);
-      renderSuspList();
-      toast('정상 처리','ok');
-      return;
+    /* ★ 정상 처리: 동일 사용자+동일 유형 의심사례를 한 번에 처리 */
+    const sameKindGroups = suspGroups.filter(x=>
+      x.type === g.type && (x.user_id||'_'+x.user_name) === (g.user_id||'_'+g.user_name)
+    );
+    /* 해당 그룹들의 모든 row id 수집 */
+    const ids = [];
+    sameKindGroups.forEach(sg=>{
+      (sg.rows||[]).forEach(r=>{ if(r.id!=null) ids.push(r.id); });
+    });
+
+    const typeLabel = {
+      foreign: '해외 접속',
+      multi:   '다중지역',
+      newloc:  '새 위치',
+      night:   '심야 접속',
+      weekend: '주말 접속',
+      blocked: '차단 시도'
+    }[g.type] || g.type;
+
+    const userName = g.user_name || '(이름없음)';
+    let msg = '['+userName+']의 ['+typeLabel+'] 의심 '+sameKindGroups.length+'건을 정상 처리합니다.\n\n';
+    msg += '✓ DB 위치기록 '+ids.length+'건 영구 삭제\n';
+    if(g.user_id && g.type !== 'blocked'){
+      msg += '✓ 앞으로 이 사용자의 ['+typeLabel+'] 의심은 자동 무시\n\n';
+      msg += '계속하시겠습니까?';
+    } else {
+      msg += '\n계속하시겠습니까?';
     }
-    if(!confirm('정상 처리하시겠습니까?\n\n해당 위치기록 ' + ids.length + '건이 DB에서도 영구 삭제됩니다.\n(지도·목록·통계에서 즉시 제거)')) return;
+    if(!confirm(msg)) return;
 
     (async ()=>{
       try{
-        await deleteLocationsByIds(ids);
-        /* 알림 캐시에도 추가 (혹시 모를 재발송 방지) */
+        /* DB 삭제 */
+        if(ids.length > 0){
+          await deleteLocationsByIds(ids);
+        }
+        /* 화이트리스트 등록 (차단시도 제외) */
+        if(g.user_id && g.type !== 'blocked'){
+          let wl = {};
+          try{ wl = JSON.parse(localStorage.getItem(LK_WHITELIST)||'{}'); }catch(e){}
+          if(!Array.isArray(wl[g.user_id])) wl[g.user_id] = [];
+          if(!wl[g.user_id].includes(g.type)) wl[g.user_id].push(g.type);
+          localStorage.setItem(LK_WHITELIST, JSON.stringify(wl));
+        }
+        /* 알림 캐시에도 추가 */
         let alerted = [];
         try{ alerted = JSON.parse(localStorage.getItem(LK_ALERTED)||'[]'); }catch(e){}
-        if(!alerted.includes(g.key)) alerted.push(g.key);
+        sameKindGroups.forEach(sg=>{
+          if(!alerted.includes(sg.key)) alerted.push(sg.key);
+        });
         localStorage.setItem(LK_ALERTED, JSON.stringify(alerted));
         /* 전체 화면 갱신 */
         document.getElementById('cntBadge').textContent = allRows.length+'건';
@@ -1801,9 +1849,9 @@ function handleSuspAction(act, idx){
         renderMap();
         renderList();
         renderStats();
-        toast('🗑 '+ids.length+'건 삭제 (정상 처리)','ok');
+        toast('🗑 '+ids.length+'건 삭제 · 정상 처리','ok');
       }catch(e){
-        toast('삭제 실패: '+e.message, 'err');
+        toast('처리 실패: '+e.message, 'err');
       }
     })();
     return;
@@ -2076,8 +2124,7 @@ async function entryPinDone(){
   /* 진입 잠금 키패드 */
   renderEntryKeypad();
 
-  /* UI/지도/설정 초기화만 (데이터는 로드하지 않음) */
-  initMap();
+  /* UI/설정 초기화만 (데이터는 로드하지 않음) */
   setDefaultRange();
   loadCfg();
   renderMKeypad();
