@@ -228,17 +228,17 @@ body.locked{overflow:hidden}
     </div>
   </div>
 
-  <!-- 서버 동기화 -->
+  <!-- 서버 저장 -->
   <div class="card">
     <div class="card-title" style="margin-bottom:8px">
-      💾 서버 동기화 확인
-      <span class="badge" id="syncBadge" style="margin-left:auto;background:#e3f7ec;color:#15803d">동기화됨</span>
+      💾 서버 저장
+      <span class="badge" id="syncBadge" style="margin-left:auto;background:#e3f7ec;color:#15803d">저장됨</span>
     </div>
     <div style="font-size:11px;color:#6e809e;line-height:1.6;margin-bottom:10px;padding:10px;background:#eef4ff;border:1px solid #c7d8f5;border-radius:8px">
       💡 모든 작업은 <b style="color:#15803d">즉시 서버 저장</b>됩니다. 이 버튼은 <b style="color:#b45309">안전 확인용</b>입니다.
     </div>
     <div id="syncStat" style="font-size:12px;color:#1a2a44;margin-bottom:10px;padding:10px;background:#f8fafd;border-radius:8px;line-height:1.7;display:none"></div>
-    <button class="btn btn-grn" id="syncCheckBtn" style="width:100%;justify-content:center">🔍 서버 동기화 상태 확인</button>
+    <button class="btn btn-grn" id="syncCheckBtn" style="width:100%;justify-content:center">🔍 서버 저장 상태 확인</button>
     <button class="btn btn-sec" id="syncForceBtn" style="width:100%;justify-content:center;margin-top:6px;display:none">🔄 누락 항목 재전송</button>
     <div class="msg" id="syncMsg"></div>
   </div>
@@ -362,7 +362,7 @@ function updateSyncBadge(){
     b.style.background='#fff0f0';b.style.color='#b91c1c';
     const fb=document.getElementById('syncForceBtn');if(fb)fb.style.display='';
   }else{
-    b.textContent='동기화됨';
+    b.textContent='저장됨';
     b.style.background='#e3f7ec';b.style.color='#15803d';
     const fb=document.getElementById('syncForceBtn');if(fb)fb.style.display='none';
   }
@@ -747,11 +747,27 @@ function renderList(){
   const kw=(document.getElementById('searchName').value||'').trim().toLowerCase();
   const factFilter=document.getElementById('filterFactory').value;
 
-  let list=empCache;
+  let list=empCache.slice(); // 캐시 복사
   if(factFilter)list=list.filter(x=>(x.factory||'')===factFilter);
   if(kw)list=list.filter(x=>{
     const txt=((x.name||'')+' '+(x.dept||'')+' '+(x.position||'')+' '+(x.factory||'')).toLowerCase();
     return txt.includes(kw);
+  });
+
+  // 정렬: 공장(마스터 sort_order) → 부서(마스터 sort_order) → 이름(가나다)
+  const factOrder={};
+  factoryCache.forEach((f,i)=>factOrder[f.name]=f.sort_order??(i+1));
+  const deptOrder={};
+  deptCache.forEach((d,i)=>deptOrder[d.name]=d.sort_order??(i+1));
+  const HUGE=999999;
+  list.sort((a,b)=>{
+    const fa=a.factory?(factOrder[a.factory]??HUGE):HUGE+1;  // 미지정은 맨 뒤
+    const fb=b.factory?(factOrder[b.factory]??HUGE):HUGE+1;
+    if(fa!==fb)return fa-fb;
+    const da=a.dept?(deptOrder[a.dept]??HUGE):HUGE+1;
+    const db=b.dept?(deptOrder[b.dept]??HUGE):HUGE+1;
+    if(da!==db)return da-db;
+    return (a.name||'').localeCompare(b.name||'','ko');
   });
 
   if(list.length===0){
@@ -901,7 +917,7 @@ async function addSingleEmp(){
 }
 
 /* ============================================================
-   서버 동기화
+   서버 저장 상태 확인
    ============================================================ */
 async function checkServerSync(){
   const stat=document.getElementById('syncStat');
@@ -938,13 +954,13 @@ async function checkServerSync(){
     });
 
     stat.innerHTML=html;stat.style.display='';
-    if(failed===0)showMsg('syncMsg','✅ 동기화됨 (서버 '+serverCount+'명)','ok');
+    if(failed===0)showMsg('syncMsg','✅ 저장됨 (서버 '+serverCount+'명)','ok');
     else showMsg('syncMsg','⚠️ '+failed+'건 실패 - [재전송] 클릭','warn');
     empCache=serverData;
     document.getElementById('empCount').textContent=serverCount;
     if(document.getElementById('empListPanel').style.display!=='none')renderList();
   }catch(err){showMsg('syncMsg','❌ '+err.message,'err')}
-  finally{btn.disabled=false;btn.textContent='🔍 서버 동기화 상태 확인'}
+  finally{btn.disabled=false;btn.textContent='🔍 서버 저장 상태 확인'}
 }
 
 async function forceResync(){
