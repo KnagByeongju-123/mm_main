@@ -204,7 +204,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f4fa;color:#1a2a44;min-
       </div>
       <div class="file-area" id="fileArea">
         <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
-        <div class="file-area-text">📁 엑셀 파일 <b>클릭</b> 또는 <b>드래그</b><br><span style="font-size:10px">재질|두께|폭|피치|매핑기종|금형재번|기종코드|비중|소요량|월발주량|원자재발주량|고객사|메모</span></div>
+        <div class="file-area-text">📁 엑셀 파일 <b>클릭</b> 또는 <b>드래그</b><br><span style="font-size:10px">재질|두께|폭|피치|매핑기종|금형재번|기종코드|비중|소요량|고객사|메모</span></div>
       </div>
     </div>
   </div>
@@ -280,19 +280,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f4fa;color:#1a2a44;min-
         <input type="text" class="inp" id="fUsage" placeholder="28.6" inputmode="decimal">
       </div>
       <div class="modal-row">
-        <label>월발주량</label>
-        <input type="text" class="inp" id="fMonthly" placeholder="70000" inputmode="numeric">
-      </div>
-    </div>
-
-    <div class="row-2">
-      <div class="modal-row">
-        <label>원자재 발주량 (kg)</label>
-        <input type="text" class="inp" id="fRawOrder" placeholder="0" inputmode="decimal">
-      </div>
-      <div class="modal-row">
         <label>고객사</label>
-        <input type="text" class="inp" id="fVendor" placeholder="예: 부강스프링" maxlength="30" list="vendorDataList">
+        <input type="text" class="inp" id="fVendor" placeholder="고객사명" maxlength="30" list="vendorDataList">
         <datalist id="vendorDataList"></datalist>
       </div>
     </div>
@@ -444,7 +433,6 @@ function renderList(){
       const nums=[];
       if(m.density)nums.push('비중 <span class="num">'+escHtml(String(m.density))+'</span>');
       if(m.usage_g)nums.push('소요량 <span class="num">'+escHtml(String(m.usage_g))+'g</span>');
-      if(m.monthly_qty)nums.push('월 <span class="num">'+Number(m.monthly_qty).toLocaleString()+'</span>');
       if(nums.length)meta.push(nums.join('<sep>·</sep>'));
       if(m.memo)meta.push('<span style="color:#8aa2c0">'+escHtml(m.memo)+'</span>');
 
@@ -499,8 +487,6 @@ function openModal(m){
   document.getElementById('fModelCode').value=m?m.model_code||'':'';
   document.getElementById('fDensity').value=m?(m.density??''):'';
   document.getElementById('fUsage').value=m?(m.usage_g??''):'';
-  document.getElementById('fMonthly').value=m?(m.monthly_qty??''):'';
-  document.getElementById('fRawOrder').value=m?(m.raw_order_kg??''):'';
   document.getElementById('fVendor').value=m?m.vendor||'':'';
   document.getElementById('fMemo').value=m?m.memo||'':'';
 
@@ -545,8 +531,6 @@ async function saveMold(){
     model_code:document.getElementById('fModelCode').value.trim()||null,
     density:document.getElementById('fDensity').value?parseFloat(document.getElementById('fDensity').value):null,
     usage_g:document.getElementById('fUsage').value?parseFloat(document.getElementById('fUsage').value):null,
-    monthly_qty:document.getElementById('fMonthly').value?parseInt(document.getElementById('fMonthly').value):null,
-    raw_order_kg:document.getElementById('fRawOrder').value?parseFloat(document.getElementById('fRawOrder').value):null,
     vendor:document.getElementById('fVendor').value.trim()||null,
     memo:document.getElementById('fMemo').value.trim()||null
   };
@@ -591,32 +575,32 @@ async function delFromModal(){
 function downloadTemplate(){
   const wb=XLSX.utils.book_new();
   const ws=XLSX.utils.aoa_to_sheet([
-    ['재질','두께','폭','피치','매핑기종','금형재번','기종코드','비중','소요량','월발주량','원자재발주량','고객사','메모'],
-    ['SPCC',1.6,160,261,'45624-2F010-L','23BKA004A','SPRING U/D BRAKE',7.85,28.6,70000,0,'부강스프링',''],
-    ['SUS430',0.6,80,78,'1862-0041-21','20DHA203A','FORD V713 (FL)',7.7,12.5,30000,0,'우창산업','']
+    ['재질','두께','폭','피치','매핑기종','금형재번','기종코드','비중','소요량','고객사','메모'],
+    ['SPCC',1.6,160,261,'45624-2F010-L','23BKA004A','SPRING U/D BRAKE',7.85,28.6,'고객사명',''],
+    ['SUS430',0.6,80,78,'1862-0041-21','20DHA203A','FORD V713 (FL)',7.7,12.5,'고객사명','']
   ]);
-  ws['!cols']=[{wch:8},{wch:6},{wch:6},{wch:7},{wch:24},{wch:14},{wch:18},{wch:6},{wch:8},{wch:10},{wch:12},{wch:14},{wch:20}];
-  XLSX.utils.book_append_sheet(wb,ws,'금형재마스터');
-  XLSX.writeFile(wb,'금형재_템플릿.xlsx');
+  ws['!cols']=[{wch:8},{wch:6},{wch:6},{wch:7},{wch:24},{wch:14},{wch:18},{wch:6},{wch:8},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,'금형마스터');
+  XLSX.writeFile(wb,'금형마스터_템플릿.xlsx');
 }
 
 function downloadCurrent(){
   if(molds.length===0){showMsg('uploadMsg','등록된 데이터가 없습니다','warn');return}
   const wb=XLSX.utils.book_new();
-  const rows=[['조합코드','재질','두께','폭','피치','매핑기종','금형재번','기종코드','비중','소요량','월발주량','원자재발주량','고객사','메모']];
+  const rows=[['조합코드','재질','두께','폭','피치','매핑기종','금형재번','기종코드','비중','소요량','고객사','메모']];
   molds.forEach(m=>{
     rows.push([
       makeCode(m.material,m.thick,m.width,m.pitch),
       m.material||'',m.thick??'',m.width??'',m.pitch??'',
       m.mapping||'',m.mold_no||'',m.model_code||'',
-      m.density??'',m.usage_g??'',m.monthly_qty??'',m.raw_order_kg??'',
+      m.density??'',m.usage_g??'',
       m.vendor||'',m.memo||''
     ]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:22},{wch:8},{wch:6},{wch:6},{wch:7},{wch:24},{wch:14},{wch:18},{wch:6},{wch:8},{wch:10},{wch:12},{wch:14},{wch:20}];
-  XLSX.utils.book_append_sheet(wb,ws,'금형재마스터');
-  XLSX.writeFile(wb,'금형재_현재목록.xlsx');
+  ws['!cols']=[{wch:22},{wch:8},{wch:6},{wch:6},{wch:7},{wch:24},{wch:14},{wch:18},{wch:6},{wch:8},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,'금형마스터');
+  XLSX.writeFile(wb,'금형마스터_현재목록.xlsx');
   showMsg('uploadMsg','✓ 다운로드 완료','ok');
 }
 
@@ -630,7 +614,7 @@ function handleFile(file){
       const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
 
       // 헤더 매핑
-      const colMap={material:-1,thick:-1,width:-1,pitch:-1,mapping:-1,mold_no:-1,model_code:-1,density:-1,usage_g:-1,monthly_qty:-1,raw_order_kg:-1,vendor:-1,memo:-1};
+      const colMap={material:-1,thick:-1,width:-1,pitch:-1,mapping:-1,mold_no:-1,model_code:-1,density:-1,usage_g:-1,vendor:-1,memo:-1};
       let startRow=0;
       for(let i=0;i<Math.min(3,raw.length);i++){
         const row=raw[i].map(c=>String(c).trim());
@@ -645,8 +629,6 @@ function handleFile(file){
           else if(v==='기종코드'||v==='기종'||v==='model_code')colMap.model_code=j;
           else if(v==='비중'||v==='density')colMap.density=j;
           else if(v==='소요량'||v==='소요량(g)'||v==='usage')colMap.usage_g=j;
-          else if(v==='월발주량'||v==='monthly')colMap.monthly_qty=j;
-          else if(v==='원자재발주량'||v==='원자재발주량(kg)'||v==='raw_order')colMap.raw_order_kg=j;
           else if(v==='고객사'||v==='거래처'||v==='vendor')colMap.vendor=j;
           else if(v==='메모'||v==='비고'||v==='memo')colMap.memo=j;
         }
@@ -671,8 +653,6 @@ function handleFile(file){
           model_code:get('model_code')||null,
           density:get('density')?parseFloat(get('density')):null,
           usage_g:get('usage_g')?parseFloat(get('usage_g')):null,
-          monthly_qty:get('monthly_qty')?parseInt(get('monthly_qty')):null,
-          raw_order_kg:get('raw_order_kg')?parseFloat(get('raw_order_kg')):null,
           vendor:get('vendor')||null,
           memo:get('memo')||null,
           code:makeCode(material,thick,width,pitch)
@@ -751,4 +731,4 @@ if(checkSession()){
 </script>
 </body>
 </html>
-<!-- build: 20260515-120650 -->
+<!-- build: 20260515-122640 -->
