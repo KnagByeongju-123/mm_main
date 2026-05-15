@@ -96,43 +96,6 @@ body {
   font-size: 11px; color: #aab2bd;
 }
 
-/* 내 정보 모달 */
-.modal-bg {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  display: none; align-items: center; justify-content: center;
-  z-index: 1000; padding: 16px;
-}
-.modal-bg.show { display: flex; }
-.modal {
-  background: white; border-radius: 14px; padding: 20px;
-  width: 100%; max-width: 380px;
-}
-.modal h2 {
-  margin: 0 0 6px 0; font-size: 18px; color: #1a3a5c;
-}
-.modal .sub {
-  margin: 0 0 16px 0; font-size: 12px; color: #888; line-height: 1.5;
-}
-.modal label {
-  display: block; font-size: 13px; font-weight: 600;
-  color: #555; margin-bottom: 6px; margin-top: 12px;
-}
-.modal label:first-of-type { margin-top: 0; }
-.modal input {
-  width: 100%; padding: 10px 12px; border: 1px solid #ccc;
-  border-radius: 6px; font-size: 15px; font-family: inherit;
-}
-.modal input:focus { outline: none; border-color: #1a3a5c; }
-.modal-btns {
-  display: flex; gap: 8px; margin-top: 18px;
-}
-.modal-btns button {
-  flex: 1; padding: 11px; border: none; border-radius: 6px;
-  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-}
-.btn-cancel { background: #e9ecef; color: #333; }
-.btn-save { background: #1a3a5c; color: white; }
-
 /* 사용자 표시 배지 */
 .user-badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -200,96 +163,81 @@ body {
   </div>
 </div>
 
-<!-- 내 정보 모달 -->
-<div class="modal-bg" id="modalUser">
-  <div class="modal">
-    <h2>👤 내 정보</h2>
-    <p class="sub">한 번 등록해두면 보고서 작성·재고 입출고 시 자동으로 채워집니다.<br>이 폰에만 저장됩니다.</p>
-
-    <label>부서명</label>
-    <input type="text" id="inpDept" placeholder="예: 생산팀, 품질관리팀">
-
-    <label>이름</label>
-    <input type="text" id="inpName" placeholder="예: 홍길동">
-
-    <div class="modal-btns">
-      <button class="btn-cancel" id="btnCancel" type="button">취소</button>
-      <button class="btn-save" id="btnSave" type="button">저장</button>
-    </div>
-  </div>
-</div>
-
 <script>
 'use strict';
 (function() {
-  // 공용 사용자 정보 키 (재고관리/보고서가 같이 읽음)
+  // PIN 인증 세션 키 (index.html에서 저장)
+  const LK_AUTH = 'mm_user_session';
+  // 다른 페이지(재고관리/보고서) 호환용 키
   const K_DEPT = 'msmUser_dept';
   const K_NAME = 'msmUser_name';
 
-  function $(id) { return document.getElementById(id); }
+  function $(id){return document.getElementById(id)}
 
-  function refreshBadge() {
-    const dept = localStorage.getItem(K_DEPT) || '';
-    const name = localStorage.getItem(K_NAME) || '';
-    const badge = $('userBadge');
-    const text = $('userBadgeText');
-    if (dept || name) {
-      badge.classList.remove('empty');
-      text.textContent = (name || '') + (dept ? ' · ' + dept : '');
-    } else {
-      badge.classList.add('empty');
-      text.textContent = '내 정보 등록 (탭)';
+  function getSession(){
+    try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+  }
+
+  /* 세션 정보를 다른 페이지(stock_mold/stock_report) 호환 키에 자동 미러링 */
+  function mirrorToLegacyKeys(s){
+    if(!s) return;
+    if(s.role === 'admin'){
+      localStorage.setItem(K_NAME, '관리자');
+      localStorage.setItem(K_DEPT, '');
+    }else{
+      localStorage.setItem(K_NAME, s.name || '');
+      localStorage.setItem(K_DEPT, s.dept || '');
     }
   }
 
-  function openModal() {
-    $('inpDept').value = localStorage.getItem(K_DEPT) || '';
-    $('inpName').value = localStorage.getItem(K_NAME) || '';
-    $('modalUser').classList.add('show');
-    setTimeout(() => $('inpName').focus(), 100);
-  }
-
-  function closeModal() {
-    $('modalUser').classList.remove('show');
-  }
-
-  function saveInfo() {
-    const dept = $('inpDept').value.trim();
-    const name = $('inpName').value.trim();
-    if (dept) localStorage.setItem(K_DEPT, dept);
-    else localStorage.removeItem(K_DEPT);
-    if (name) localStorage.setItem(K_NAME, name);
-    else localStorage.removeItem(K_NAME);
-    refreshBadge();
-    closeModal();
-  }
-
-  // 카드/배지 탭 → 모달 열기 (모바일 중복 발화 방지)
-  function tap(elOrId, handler) {
-    const el = typeof elOrId === 'string' ? $(elOrId) : elOrId;
-    if (!el) return;
-    let touched = false;
-    el.addEventListener('touchend', e => {
-      touched = true;
-      e.preventDefault();
-      handler(e);
-      setTimeout(() => { touched = false; }, 500);
-    }, { passive: false });
-    el.addEventListener('click', e => {
-      if (touched) return;
-      handler(e);
-    });
+  function refreshBadge(s){
+    const badge = $('userBadge');
+    const text = $('userBadgeText');
+    if(!s){
+      badge.classList.add('empty');
+      text.textContent = '로그인 필요';
+      return;
+    }
+    badge.classList.remove('empty');
+    if(s.role === 'admin'){
+      text.textContent = '관리자';
+      badge.style.color = '#dc3545';
+    }else{
+      let label = s.name || '';
+      if(s.factory) label = s.factory + ' · ' + label;
+      if(s.dept)    label += ' · ' + s.dept;
+      if(s.position) label += ' ' + s.position;
+      text.textContent = label;
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    refreshBadge();
-    tap('userBadge', openModal);
-    tap('btnCancel', closeModal);
-    tap('btnSave', saveInfo);
+    const s = getSession();
 
-    // 모달 배경 탭 시 닫기
-    $('modalUser').addEventListener('click', e => {
-      if (e.target.id === 'modalUser') closeModal();
+    // 1) 미인증 또는 세션 만료 → 메인으로 강제 이동
+    if(!s || !s.exp || s.exp <= Date.now()){
+      try{localStorage.removeItem(LK_AUTH)}catch(e){}
+      location.replace('index.html');
+      return;
+    }
+
+    // 2) 세션을 호환 키에 미러링 (다른 페이지 자동 채움용)
+    mirrorToLegacyKeys(s);
+
+    // 3) 상단 배지 표시
+    refreshBadge(s);
+
+    // 4) 배지 클릭 시 세션 정보 안내
+    $('userBadge').addEventListener('click', () => {
+      const expDate = new Date(s.exp);
+      const remainDays = Math.max(0, Math.ceil((s.exp - Date.now())/(24*60*60*1000)));
+      alert(
+        '👤 ' + (s.role === 'admin' ? '관리자' : (s.name || '-')) + '\n' +
+        (s.factory ? '🏭 공장: ' + s.factory + '\n' : '') +
+        (s.dept    ? '📂 부서: ' + s.dept + '\n' : '') +
+        (s.position? '🎖 직위: ' + s.position + '\n' : '') +
+        '\n⏱ 자동 잠금까지: ' + remainDays + '일'
+      );
     });
   });
 })();
