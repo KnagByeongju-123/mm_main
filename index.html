@@ -18,7 +18,6 @@ html, body {
   min-height: 100vh; color: #e2e8f0;
 }
 
-/* 헤더 */
 .header {
   padding: 26px 16px 16px; text-align: center;
   background: linear-gradient(180deg, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.6) 100%);
@@ -37,23 +36,16 @@ html, body {
 }
 .header h1 .ver {
   display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  color: #7dd3fc;
+  font-size: 11px; font-weight: 700; color: #7dd3fc;
   background: rgba(56,189,248,0.12);
   border: 1px solid rgba(56,189,248,0.3);
-  padding: 3px 8px;
-  border-radius: 10px;
-  margin-left: 8px;
-  vertical-align: middle;
+  padding: 3px 8px; border-radius: 10px;
+  margin-left: 8px; vertical-align: middle;
   -webkit-text-fill-color: #7dd3fc;
   letter-spacing: .3px;
 }
 
-/* 헤더 버튼 그룹 */
-.top-btns {
-  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-}
+.top-btns { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .top-btn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 12px; border-radius: 9px;
@@ -63,18 +55,11 @@ html, body {
   box-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 .top-btn:active { transform: scale(0.97); }
-.top-btn .ic { font-size: 13px; }
 .top-btn.user   { color: #7dd3fc; border-color: transparent; background: transparent; box-shadow: none; }
 .top-btn.logout { color: #fda4af; border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.12); }
-.top-btn.lock   { color: #fda4af; border-color: rgba(244,63,94,0.35); background: rgba(244,63,94,0.12); }
 
-/* 컨테이너 */
-.container {
-  padding: 14px 12px 40px;
-  max-width: 720px; margin: 0 auto;
-}
+.container { padding: 14px 12px 40px; max-width: 720px; margin: 0 auto; }
 
-/* 아코디언 카드 */
 .acc {
   background: rgba(30,41,59,0.55);
   backdrop-filter: blur(8px);
@@ -86,102 +71,58 @@ html, body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.25);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.acc[open] {
-  border-color: rgba(56,189,248,0.5);
-  box-shadow: 0 2px 12px rgba(56,189,248,0.15);
-}
+.acc[open] { border-color: rgba(56,189,248,0.5); box-shadow: 0 2px 12px rgba(56,189,248,0.15); }
 .acc summary {
-  list-style: none;
-  cursor: pointer;
+  list-style: none; cursor: pointer;
   padding: 14px 16px;
   display: flex; align-items: center; gap: 14px;
   user-select: none;
 }
 .acc summary::-webkit-details-marker { display: none; }
 .acc summary::marker { display: none; }
-
 .acc .icon {
   width: 46px; height: 46px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-size: 26px; flex-shrink: 0;
 }
-.acc .title {
-  flex: 1; font-size: 19px; font-weight: 700; color: #f1f5f9;
-  letter-spacing: -0.3px;
-}
+.acc .title { flex: 1; font-size: 19px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px; }
 .acc .count {
   font-size: 14px; color: #7dd3fc; font-weight: 700;
   min-width: 26px; text-align: center;
   background: rgba(56,189,248,0.15); border-radius: 10px;
   padding: 2px 8px;
 }
-.acc .arrow {
-  font-size: 18px; color: #64748b;
-  transition: transform 0.25s;
-  margin-left: 2px;
-}
+.acc .arrow { font-size: 18px; color: #64748b; transition: transform 0.25s; margin-left: 2px; }
 .acc[open] .arrow { transform: rotate(90deg); color: #38bdf8; }
 
-/* 아코디언 색상 (다크 테마) */
 .acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
 .acc.c-f1 .icon     { background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.3)); color: #5eead4; }
 .acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
 .acc.c-f3 .icon     { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
 
-/* 서브 메뉴 영역 */
-.acc-body {
-  padding: 4px 8px 10px 8px;
-  border-top: 1px solid rgba(71,85,105,0.4);
-  background: rgba(15,23,42,0.5);
-}
+.acc-body { padding: 4px 8px 10px 8px; border-top: 1px solid rgba(71,85,105,0.4); background: rgba(15,23,42,0.5); }
 .sub-item {
   display: flex; align-items: center; gap: 12px;
-  padding: 12px 10px;
-  border-radius: 10px;
-  text-decoration: none; color: inherit;
-  cursor: pointer;
+  padding: 12px 10px; border-radius: 10px;
+  text-decoration: none; color: inherit; cursor: pointer;
 }
 .sub-item:active { background: rgba(56,189,248,0.1); }
-.sub-item + .sub-item {
-  border-top: 1px solid rgba(71,85,105,0.25);
-}
+.sub-item + .sub-item { border-top: 1px solid rgba(71,85,105,0.25); }
 .sub-item .s-icon {
   width: 34px; height: 34px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   font-size: 17px; flex-shrink: 0;
   background: rgba(56,189,248,0.15); color: #7dd3fc;
 }
-.sub-item .s-text {
-  flex: 1; min-width: 0;
-}
-.sub-item .s-label {
-  font-size: 14px; font-weight: 600; color: #e2e8f0;
-  margin-bottom: 2px;
-}
-.sub-item .s-desc {
-  font-size: 11px; color: #94a3b8; line-height: 1.3;
-}
-.sub-item .s-arrow {
-  font-size: 15px; color: #64748b;
-}
+.sub-item .s-text { flex: 1; min-width: 0; }
+.sub-item .s-label { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+.sub-item .s-desc { font-size: 11px; color: #94a3b8; line-height: 1.3; }
+.sub-item .s-arrow { font-size: 15px; color: #64748b; }
 
-.sub-item.coming-soon { opacity: 0.5; cursor: default; pointer-events: none; }
-.sub-item.coming-soon .s-arrow { display: none; }
-.sub-item.coming-soon::after {
-  content: "준비중"; font-size: 10px;
-  padding: 2px 7px; border-radius: 8px;
-  background: rgba(71,85,105,0.4); color: #94a3b8; font-weight: 600;
-}
+.footer { text-align: center; margin-top: 24px; font-size: 11px; color: #64748b; }
 
-.footer {
-  text-align: center; margin-top: 24px;
-  font-size: 11px; color: #64748b;
-}
-
-/* ============= PIN 잠금 화면 ============= */
 body.locked { overflow: hidden; }
-
 .pin-lock {
   position: fixed; inset: 0; z-index: 9999;
   background:
@@ -197,19 +138,11 @@ body.locked { overflow: hidden; }
   background: linear-gradient(135deg, #38bdf8, #60a5fa 50%, #a78bfa);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.pin-lock .sub {
-  font-size: 12px; color: #94a3b8; margin-bottom: 32px;
-}
-.pin-lock .hint {
-  font-size: 13px; color: #7dd3fc; margin-bottom: 16px;
-  min-height: 19px; font-weight: 600;
-}
+.pin-lock .sub { font-size: 12px; color: #94a3b8; margin-bottom: 32px; }
+.pin-lock .hint { font-size: 13px; color: #7dd3fc; margin-bottom: 16px; min-height: 19px; font-weight: 600; }
 .pin-lock .hint.err { color: #fda4af; }
 .pin-lock .hint.ok { color: #6ee7b7; }
-
-.pl-dots {
-  display: flex; gap: 14px; margin-bottom: 26px;
-}
+.pl-dots { display: flex; gap: 14px; margin-bottom: 26px; }
 .pl-dot {
   width: 14px; height: 14px; border-radius: 50%;
   background: rgba(30,41,59,0.6);
@@ -222,22 +155,12 @@ body.locked { overflow: hidden; }
   box-shadow: 0 0 12px rgba(56,189,248,.55);
 }
 .pl-dot.err { animation: pl-shake .4s; }
-@keyframes pl-shake {
-  0%,100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
-}
-
-.pl-keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 68px);
-  gap: 14px; justify-content: center;
-}
+@keyframes pl-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.pl-keypad { display: grid; grid-template-columns: repeat(3, 68px); gap: 14px; justify-content: center; }
 .pl-key {
   width: 68px; height: 68px; border-radius: 50%;
   background: rgba(30,41,59,0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1.5px solid rgba(71,85,105,0.6);
   color: #f1f5f9; font-size: 23px; font-weight: 600;
   cursor: pointer; font-family: inherit;
@@ -248,20 +171,12 @@ body.locked { overflow: hidden; }
   border-color: rgba(56,189,248,0.5);
   transform: scale(.92);
 }
-.pl-key.fn {
-  background: transparent; border: none;
-  font-size: 18px; color: #94a3b8; box-shadow: none;
-}
-
-.pl-lockout {
-  color: #fda4af; font-size: 12px; font-weight: 700;
-  margin-bottom: 12px;
-}
+.pl-key.fn { background: transparent; border: none; font-size: 18px; color: #94a3b8; box-shadow: none; }
+.pl-lockout { color: #fda4af; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
 </style>
 </head>
 <body class="locked">
 
-<!-- PIN 잠금 화면 -->
 <div class="pin-lock" id="pinLock">
   <div class="logo">🌙 스마트팩토리</div>
   <div class="sub">PIN을 입력하세요</div>
@@ -286,134 +201,82 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="container">
-
-  <!-- 본사 -->
   <details class="acc c-hq">
-    <summary>
-      <div class="icon">🏢</div>
-      <div class="title">본사</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
+    <summary><div class="icon">🏢</div><div class="title">본사</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="head_moldpart.html">
         <div class="s-icon">📦</div>
-        <div class="s-text">
-          <div class="s-label">금형부품 재고관리</div>
-          <div class="s-desc">소모품 입출고 / 재고 조회</div>
-        </div>
+        <div class="s-text"><div class="s-label">금형부품 재고관리</div><div class="s-desc">소모품 입출고 / 재고 조회</div></div>
         <div class="s-arrow">›</div>
       </a>
     </div>
   </details>
-
-  <!-- 1공장 -->
   <details class="acc c-f1">
-    <summary>
-      <div class="icon">①</div>
-      <div class="title">1공장</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
+    <summary><div class="icon">①</div><div class="title">1공장</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="first_factory.html">
         <div class="s-icon">🏭</div>
-        <div class="s-text">
-          <div class="s-label">1공장 메인</div>
-          <div class="s-desc">생산 · 품질 · 설비</div>
-        </div>
+        <div class="s-text"><div class="s-label">1공장 메인</div><div class="s-desc">생산 · 품질 · 설비</div></div>
         <div class="s-arrow">›</div>
       </a>
     </div>
   </details>
-
-  <!-- 2공장 -->
   <details class="acc c-f2">
-    <summary>
-      <div class="icon">②</div>
-      <div class="title">2공장</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
+    <summary><div class="icon">②</div><div class="title">2공장</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="second_factory.html">
         <div class="s-icon">🏭</div>
-        <div class="s-text">
-          <div class="s-label">2공장 메인</div>
-          <div class="s-desc">생산 · 품질 · 설비</div>
-        </div>
+        <div class="s-text"><div class="s-label">2공장 메인</div><div class="s-desc">생산 · 품질 · 설비</div></div>
         <div class="s-arrow">›</div>
       </a>
     </div>
   </details>
-
-  <!-- 3공장 -->
   <details class="acc c-f3">
-    <summary>
-      <div class="icon">③</div>
-      <div class="title">3공장</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
+    <summary><div class="icon">③</div><div class="title">3공장</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="third_factory.html">
         <div class="s-icon">🏭</div>
-        <div class="s-text">
-          <div class="s-label">3공장 메인</div>
-          <div class="s-desc">생산 · 품질 · 설비</div>
-        </div>
+        <div class="s-text"><div class="s-label">3공장 메인</div><div class="s-desc">생산 · 품질 · 설비</div></div>
         <div class="s-arrow">›</div>
       </a>
     </div>
   </details>
-
-  <!-- 마스터 -->
   <details class="acc c-master">
-    <summary>
-      <div class="icon">⚙️</div>
-      <div class="title">마스터</div>
-      <div class="count">2</div>
-      <div class="arrow">›</div>
-    </summary>
+    <summary><div class="icon">⚙️</div><div class="title">마스터</div><div class="count">3</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="pin_master.html">
         <div class="s-icon">🔢</div>
-        <div class="s-text">
-          <div class="s-label">PIN 관리</div>
-          <div class="s-desc">관리자 PIN 등록 / 변경</div>
-        </div>
+        <div class="s-text"><div class="s-label">PIN 관리</div><div class="s-desc">관리자 PIN 등록 / 변경</div></div>
         <div class="s-arrow">›</div>
       </a>
       <a class="sub-item" href="mold_master.html">
         <div class="s-icon">🧱</div>
-        <div class="s-text">
-          <div class="s-label">금형마스터</div>
-          <div class="s-desc">소재 / 매핑기종 / 금형재번 / 고객사</div>
-        </div>
+        <div class="s-text"><div class="s-label">금형마스터</div><div class="s-desc">소재 / 매핑기종 / 금형재번 / 고객사</div></div>
+        <div class="s-arrow">›</div>
+      </a>
+      <a class="sub-item" href="login_location.html">
+        <div class="s-icon">📍</div>
+        <div class="s-text"><div class="s-label">로그인 위치 조회</div><div class="s-desc">직원별 접속 위치 / 외근 동선 확인</div></div>
         <div class="s-arrow">›</div>
       </a>
     </div>
   </details>
 
-  <div class="footer">
-    v1.0 · msm Smart Factory
-  </div>
+  <div class="footer">v1.0 · msm Smart Factory</div>
 </div>
 
 <script>
-/* ============================================================
-   PIN 인증 (mm_main 진입 게이트)
-   ============================================================ */
 const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL_USER = 'mm_user_pin';
+const TBL_LOC  = 'mm_user_location';
 
-/* 마스터 PIN 2580 → SHA-256 */
 const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
 
-const LK_AUTH   = 'mm_user_session';   // 인증 세션
-const LK_FAIL   = 'mm_pin_fail';       // 실패 카운트
-const SESSION_DAYS = 7;                // 자동 세션 유지 (일) - 매주 PIN 재입력
+const LK_AUTH = 'mm_user_session';
+const LK_FAIL = 'mm_pin_fail';
+const LK_LAST_LOC = 'mm_last_loc';   // ★ 마지막 위치 캐시 (장소 변경 감지용)
+const SESSION_DAYS = 7;
 const MAX_FAIL = 5;
 const LOCKOUT_SEC = 60;
 
@@ -426,19 +289,13 @@ async function sha256hex(s){
   return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
-function getSession(){
-  try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
-}
-function setSession(s){
-  s.exp = Date.now() + SESSION_DAYS*24*60*60*1000;
-  localStorage.setItem(LK_AUTH, JSON.stringify(s));
-}
+function getSession(){try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}}
+function setSession(s){s.exp=Date.now()+SESSION_DAYS*24*60*60*1000;localStorage.setItem(LK_AUTH,JSON.stringify(s))}
 function clearSession(){localStorage.removeItem(LK_AUTH)}
 function getFail(){try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count":0,"until":0}')}catch(e){return{count:0,until:0}}}
-function setFail(f){localStorage.setItem(LK_FAIL, JSON.stringify(f))}
+function setFail(f){localStorage.setItem(LK_FAIL,JSON.stringify(f))}
 function clearFail(){localStorage.removeItem(LK_FAIL)}
 
-/* 키패드 렌더링 */
 function renderKeypad(){
   const kp = document.getElementById('plKeypad');
   kp.innerHTML = '';
@@ -450,25 +307,20 @@ function renderKeypad(){
     kp.appendChild(b);
   });
 }
-
 function updateDots(){
   document.querySelectorAll('#plDots .pl-dot').forEach((d,i)=>{
     d.classList.remove('err');
-    if(i<curPin.length)d.classList.add('filled');
-    else d.classList.remove('filled');
+    if(i<curPin.length)d.classList.add('filled'); else d.classList.remove('filled');
   });
 }
-
 function shakeDots(){
   document.querySelectorAll('#plDots .pl-dot').forEach(d=>d.classList.add('err'));
   setTimeout(()=>{curPin='';updateDots()},400);
 }
-
 function pinPress(n){
   if(curPin.length>=4)return;
   const f=getFail();if(f.until>Date.now())return;
-  curPin += n;
-  updateDots();
+  curPin+=n; updateDots();
   if(curPin.length===4)setTimeout(pinDone,150);
 }
 function pinDel(){if(!curPin)return;curPin=curPin.slice(0,-1);updateDots()}
@@ -477,27 +329,20 @@ async function pinDone(){
   const hint = document.getElementById('plHint');
   hint.className = 'hint';
   hint.textContent = '확인 중...';
-
   try{
     const h = await sha256hex(curPin);
 
-    // 1) 마스터 PIN 체크
     if(h === MASTER_PIN_HASH){
       clearFail();
       setSession({role:'admin', name:'관리자', factory:'', dept:''});
-      hint.classList.add('ok');
-      hint.textContent = '✓ 관리자 인증';
+      hint.classList.add('ok'); hint.textContent = '✓ 관리자 인증';
       setTimeout(unlock, 300);
       return;
     }
 
-    // 2) Supabase 조회 (mm_user_pin)
     const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER
       +'?select=id,name,factory,dept,position&pin_hash=eq.'+h, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer '+SUPABASE_KEY
-      }
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
     });
     if(!r.ok)throw new Error('서버 응답 오류');
     const list = await r.json();
@@ -505,28 +350,22 @@ async function pinDone(){
     if(list && list.length > 0){
       const u = list[0];
       clearFail();
-      setSession({
-        role: 'user',
-        id: u.id,
-        name: u.name,
-        factory: u.factory||'',
-        dept: u.dept||'',
-        position: u.position||''
-      });
+      setSession({role:'user',id:u.id,name:u.name,factory:u.factory||'',dept:u.dept||'',position:u.position||''});
       hint.classList.add('ok');
       hint.textContent = '✓ '+u.name+'님 환영합니다';
+
+      /* PIN 입력 직후 → 강제 기록 (로그인 자체는 무조건 남김) */
+      trackLocation(u, true);
+
       setTimeout(unlock, 400);
       return;
     }
 
-    // 3) 실패
     const f = getFail();
     f.count = (f.count||0) + 1;
     if(f.count >= MAX_FAIL){
-      f.until = Date.now() + LOCKOUT_SEC*1000;
-      f.count = 0;
-      setFail(f);
-      checkLockout();
+      f.until = Date.now() + LOCKOUT_SEC*1000; f.count = 0;
+      setFail(f); checkLockout();
     }else{
       setFail(f);
       hint.classList.add('err');
@@ -534,9 +373,7 @@ async function pinDone(){
     }
     shakeDots();
   }catch(err){
-    hint.classList.add('err');
-    hint.textContent = '❌ '+err.message;
-    shakeDots();
+    hint.classList.add('err'); hint.textContent = '❌ '+err.message; shakeDots();
   }
 }
 
@@ -549,12 +386,9 @@ function checkLockout(){
     const upd = ()=>{
       const r = Math.ceil((f.until - Date.now())/1000);
       if(r <= 0){
-        msg.style.display = 'none';
-        clearFail();
-        clearInterval(lockTimer);
+        msg.style.display='none'; clearFail(); clearInterval(lockTimer);
         const hint = document.getElementById('plHint');
-        hint.textContent = '4자리 PIN';
-        hint.className = 'hint';
+        hint.textContent='4자리 PIN'; hint.className='hint';
         return;
       }
       msg.textContent = '🔒 '+r+'초 후 재시도';
@@ -562,9 +396,7 @@ function checkLockout(){
     upd();
     clearInterval(lockTimer);
     lockTimer = setInterval(upd, 1000);
-  }else{
-    msg.style.display = 'none';
-  }
+  }else msg.style.display='none';
 }
 
 function unlock(){
@@ -576,23 +408,18 @@ function unlock(){
 function applySession(){
   const s = getSession();
   if(!s)return;
-  // 상단 사용자 버튼 표시
   const btn = document.getElementById('userBtn');
   const nm = document.getElementById('userName');
   const lo = document.getElementById('logoutBtn');
-  btn.style.display = '';
-  lo.style.display = '';
+  btn.style.display = ''; lo.style.display = '';
   if(s.role === 'admin'){
-    nm.textContent = '관리자';
-    btn.style.color = '#fdba74';
+    nm.textContent = '관리자'; btn.style.color = '#fdba74';
   }else{
     let label = s.name;
     if(s.factory)label = s.factory + ' · ' + label;
     if(s.position)label += ' ' + s.position;
-    nm.textContent = label;
-    btn.style.color = '#7dd3fc';
+    nm.textContent = label; btn.style.color = '#7dd3fc';
   }
-  // 사용자 버튼: 세션 정보 alert (정보 확인용)
   btn.onclick = ()=>{
     const expDate = new Date(s.exp);
     const remainDays = Math.max(0, Math.ceil((s.exp - Date.now()) / (24*60*60*1000)));
@@ -605,16 +432,90 @@ function applySession(){
       '(' + expDate.toLocaleDateString('ko-KR') + ' ' + expDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ')';
     alert(info);
   };
-  // 로그아웃 버튼: 세션 삭제 → PIN 입력 화면
   lo.onclick = ()=>{
     if(!confirm('로그아웃 하시겠습니까?\n다시 접속하려면 PIN을 입력해야 합니다.'))return;
-    clearSession();
-    curPin = '';
-    location.reload();
+    localStorage.removeItem(LK_LAST_LOC);   // 위치 캐시도 초기화
+    clearSession(); curPin = ''; location.reload();
   };
 }
 
-/* 키보드 입력 지원 */
+/* ============================================================
+   위치 추적 (장소 변경 시만 기록)
+   - forceRecord: true → 무조건 기록 (PIN 입력 직후)
+   - forceRecord: false → IP가 캐시와 다를 때만 기록 (자동 진입)
+   ============================================================ */
+function trackLocation(user, forceRecord){
+  if(!user || !user.id)return;
+
+  const sendRow = (loc, errCode)=>{
+    const payload = {
+      user_id: user.id,
+      user_name: user.name || null,
+      factory: user.factory || null,
+      dept: user.dept || null,
+      lat: loc ? loc.latitude : null,
+      lng: loc ? loc.longitude : null,
+      ip: loc ? loc.ip : null,
+      city: loc ? loc.city : null,
+      region: loc ? loc.region : null,
+      country: loc ? loc.country : null,
+      org: loc ? loc.org : null,
+      device_info: (navigator.userAgent||'').slice(0,200),
+      error_code: errCode || null,
+      recorded_at: new Date().toISOString()
+    };
+    fetch(SUPABASE_URL+'/rest/v1/'+TBL_LOC, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    }).then(r => {
+      if(r.ok && loc){
+        // 성공 시 마지막 위치 캐시 업데이트
+        localStorage.setItem(LK_LAST_LOC, JSON.stringify({
+          ip: loc.ip, city: loc.city, ts: Date.now()
+        }));
+      }
+    }).catch(()=>{});
+  };
+
+  fetch('https://ipapi.co/json/')
+    .then(r => {
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(d => {
+      const cur = {
+        latitude: d.latitude, longitude: d.longitude,
+        ip: d.ip, city: d.city, region: d.region,
+        country: d.country_name, org: d.org
+      };
+
+      // 강제 기록이면 무조건 INSERT
+      if(forceRecord){
+        sendRow(cur, null);
+        return;
+      }
+
+      // 장소 변경 감지 - IP 또는 도시가 바뀐 경우만 기록
+      let last = null;
+      try{ last = JSON.parse(localStorage.getItem(LK_LAST_LOC)||'null') }catch(e){}
+
+      if(!last || last.ip !== cur.ip || last.city !== cur.city){
+        sendRow(cur, null);
+      }
+      // 동일 장소 → 아무것도 안 함 (DB 부담 없음)
+    })
+    .catch(err => {
+      // 강제 기록일 때만 에러 로그도 남김
+      if(forceRecord) sendRow(null, 'fetch_failed');
+    });
+}
+
 document.addEventListener('keydown', function(e){
   if(!document.body.classList.contains('locked'))return;
   if(e.key >= '0' && e.key <= '9') pinPress(e.key);
@@ -625,8 +526,11 @@ document.addEventListener('keydown', function(e){
 (function init(){
   const s = getSession();
   if(s && s.exp > Date.now()){
-    // 세션 유효 → 만료 시점 유지(매주 1회 재입력 정책), 그대로 사용
     unlock();
+    /* 세션 유효해서 자동 진입 시 → 장소 변경 체크 후 기록 */
+    if(s.role !== 'admin' && s.id){
+      trackLocation(s, false);
+    }
     return;
   }
   if(s) clearSession();
