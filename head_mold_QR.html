@@ -150,7 +150,7 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 <div class="app-header">
   <h1>🔳 위치 QR 생성기 <span class="ver">v1.0</span></h1>
-  <a href="head_stock.html">🏠</a>
+  <a href="head_moldpart.html">🏠</a>
 </div>
 
 <div class="container">
@@ -170,7 +170,7 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
       <button class="btn btn-primary" id="btnGenSingle" type="button">🔳 QR 생성</button>
       <div class="hint">
         💡 이 QR을 찍으면 해당 위치에 등록된 품목 리스트가 자동으로 표시됩니다.<br>
-        대상 페이지: <code>head_stock_mold.html?loc=위치코드</code>
+        대상 페이지: <code>head_moldpart_input.html?loc=위치코드</code>
       </div>
     </div>
 
@@ -224,7 +224,7 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
   // 베이스 URL = 현재 페이지가 있는 경로
   function getBaseURL() {
     const path = window.location.pathname.replace(/\/[^/]*$/, '/');
-    return window.location.origin + path + 'head_stock_mold.html';
+    return window.location.origin + path + 'head_moldpart_input.html';
   }
 
   function buildTargetURL(loc) {
