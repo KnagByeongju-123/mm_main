@@ -75,6 +75,27 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','A
 .row .ts{font-size:10px;color:#64748b;margin-top:2px}
 .row .err{font-size:10px;color:#f87171;margin-top:2px}
 .row .susp-reason{font-size:11px;color:#fca5a5;margin-top:3px;font-weight:600}
+.row .del-btn{background:#dc2626;border:none;color:#fff;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:14px;flex-shrink:0;font-family:inherit}
+.row .del-btn:active{background:#b91c1c}
+.row .del-btn.all{width:auto;padding:0 10px;height:34px;font-size:12px;font-weight:700}
+
+/* 목록 툴바 */
+.list-toolbar{display:flex;gap:6px;padding:6px 8px 0;align-items:center}
+.list-toolbar .info{flex:1;font-size:11px;color:#94a3b8}
+.list-toolbar .info b{color:#7dd3fc}
+.list-toolbar button{height:32px;padding:0 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.list-toolbar .b-del-all{background:#7f1d1d;color:#fecaca;border:1px solid #991b1b}
+.list-toolbar .b-del-all:active{background:#991b1b}
+.list-toolbar .b-del-sel{background:#dc2626;color:#fff;display:none}
+.list-toolbar .b-del-sel.show{display:inline-block}
+.list-toolbar .b-sel{background:#1e293b;color:#7dd3fc;border:1px solid #334155}
+
+/* 선택 모드 */
+.row.selectable{cursor:pointer}
+.row .sel-chk{width:22px;height:22px;border-radius:4px;border:2px solid #475569;background:#0b1220;flex-shrink:0;display:none;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700}
+body.list-sel .row .sel-chk{display:flex}
+body.list-sel .row.checked .sel-chk{background:#38bdf8;border-color:#38bdf8;color:#0b1220}
+body.list-sel .row .del-btn{display:none}
 
 /* ========== 통계 ========== */
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px}
@@ -220,9 +241,36 @@ body.no-filter .body{top:98px}    /* 필터바 숨겨질 때 본문 상단 조�
 .edit-btns button{flex:1;height:42px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .edit-btns .b-save{background:#38bdf8;color:#0b1220}
 .edit-btns .b-cancel{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+
+/* ========== 진입 잠금화면 ========== */
+body.locked{overflow:hidden}
+body.locked .hdr,body.locked .fbar,body.locked .body{filter:blur(8px);pointer-events:none;user-select:none}
+.entry-lock{position:fixed;inset:0;background:rgba(11,18,32,.97);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;z-index:5000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+body.locked .entry-lock{display:flex}
+.entry-box{background:#0f172a;border:1px solid #334155;border-radius:18px;padding:24px 20px;width:100%;max-width:340px;box-shadow:0 16px 48px rgba(0,0,0,.7);text-align:center}
+.entry-ic{font-size:48px;margin-bottom:8px}
+.entry-title{font-size:18px;font-weight:700;color:#7dd3fc;margin-bottom:6px}
+.entry-sub{font-size:12px;color:#94a3b8;margin-bottom:16px}
+.entry-back{display:inline-block;margin-top:12px;color:#64748b;font-size:12px;font-weight:600;text-decoration:none;padding:6px 14px;border-radius:6px}
+.entry-back:active{background:#1e293b}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<!-- 진입 잠금화면 (마스터 PIN 한 번만 입력) -->
+<div class="entry-lock" id="entryLock">
+  <div class="entry-box">
+    <div class="entry-ic">🛡️</div>
+    <div class="entry-title">보안 마스터</div>
+    <div class="entry-sub">관리자 PIN 4자리를 입력하세요</div>
+    <div class="m-dots" id="entryDots">
+      <div class="m-dot"></div><div class="m-dot"></div><div class="m-dot"></div><div class="m-dot"></div>
+    </div>
+    <div class="m-keypad" id="entryKeypad"></div>
+    <div class="m-hint" id="entryHint">&nbsp;</div>
+    <a href="index.html" class="entry-back">← 메인으로</a>
+  </div>
+</div>
 
 <!-- 헤더 -->
 <div class="hdr">
@@ -263,7 +311,15 @@ body.no-filter .body{top:98px}    /* 필터바 숨겨질 때 본문 상단 조�
       </div>
     </div>
     <div class="pane" id="paneMap"><div id="map"></div></div>
-    <div class="pane" id="paneList"><div class="list" id="listBox"></div></div>
+    <div class="pane" id="paneList">
+      <div class="list-toolbar">
+        <div class="info" id="listInfo">총 <b>0</b>건</div>
+        <button class="b-sel" onclick="toggleSelectMode()" id="btnSelMode">☑ 선택</button>
+        <button class="b-del-sel" onclick="deleteSelectedLocations()" id="btnDelSel">🗑 선택삭제 (<span id="selCnt">0</span>)</button>
+        <button class="b-del-all" onclick="deleteAllShownLocations()">🗑 전체삭제</button>
+      </div>
+      <div class="list" id="listBox"></div>
+    </div>
     <div class="pane" id="paneStats">
       <div class="stats" id="statsBox"></div>
       <div id="userStatsBox"></div>
@@ -370,9 +426,11 @@ body.no-filter .body{top:98px}    /* 필터바 숨겨질 때 본문 상단 조�
       <label>공장</label>
       <select id="edFactory">
         <option value="">선택안함</option>
+        <option value="본사">본사</option>
         <option value="1공장">1공장</option>
         <option value="2공장">2공장</option>
         <option value="3공장">3공장</option>
+        <option value="기타">기타</option>
       </select>
     </div>
     <div class="edit-row">
@@ -785,15 +843,15 @@ function handlePinAction(act, uid){
   if(!u && act !== 'edit') return;
 
   if(act === 'edit'){
-    requestMaster('🔐 정보 수정', u.name+' 정보를 수정합니다', ()=>openPinEdit(uid));
+    openPinEdit(uid);
   } else if(act === 'pin'){
-    requestMaster('🔄 PIN 재설정', u.name+' PIN을 재설정합니다', ()=>resetUserPin(uid, u.name));
+    resetUserPin(uid, u.name);
   } else if(act === 'block'){
-    requestMaster('🚫 차단', u.name+' 사용자를 차단합니다', ()=>blockUser(uid, u.name, '수동 차단'));
+    blockUser(uid, u.name, '수동 차단');
   } else if(act === 'unblock'){
-    requestMaster('✅ 차단 해제', u.name+' 차단을 해제합니다', ()=>unblockUser(uid, u.name));
+    unblockUser(uid, u.name);
   } else if(act === 'del'){
-    requestMaster('🗑 삭제', u.name+' 사용자를 영구 삭제합니다', ()=>deleteUser(uid, u.name));
+    deleteUser(uid, u.name);
   }
 }
 
@@ -1136,12 +1194,18 @@ function renderMap(){
 }
 
 /* ============================================================
-   목록 렌더
+   목록 렌더 + 삭제
    ============================================================ */
+let selectedLocIds = new Set();
+
 function renderList(){
   const box = document.getElementById('listBox');
+  document.getElementById('listInfo').innerHTML = '총 <b>'+allRows.length+'</b>건';
+
   if(allRows.length === 0){
     box.innerHTML = '<div class="empty"><div class="ic">📭</div>조회 결과가 없습니다</div>';
+    selectedLocIds.clear();
+    updateSelCount();
     return;
   }
   box.innerHTML = '';
@@ -1149,8 +1213,11 @@ function renderList(){
     const color = nameColor(r.user_name);
     const ini = nameInitial(r.user_name);
     const row = document.createElement('div');
-    row.className = 'row' + (r._suspicious?' suspicious':'');
-    let html = '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    row.className = 'row selectable' + (r._suspicious?' suspicious':'') + (selectedLocIds.has(r.id)?' checked':'');
+    row.dataset.locId = r.id;
+
+    let html = '<div class="sel-chk">✓</div>';
+    html += '<div class="pin" style="background:'+color+'">'+ini+'</div>';
     html += '<div class="info">';
     html += '<div class="nm">'+(r.user_name||'(이름없음)');
     if(r.factory) html += '<span class="badge">'+r.factory+'</span>';
@@ -1161,9 +1228,119 @@ function renderList(){
     else html += '<div class="loc">📍 '+(r.city||'-')+' '+(r.region||'')+' · '+(r.ip||'-')+'</div>';
     html += '<div class="ts">⏱ '+fmtTs(r.recorded_at)+(r.country?' · '+r.country:'')+'</div>';
     html += '</div>';
+    html += '<button class="del-btn" data-loc-id="'+r.id+'" title="삭제">🗑</button>';
+
     row.innerHTML = html;
+
+    /* 행 클릭: 선택모드일 때만 토글 */
+    row.addEventListener('click', (e)=>{
+      if(e.target.closest('.del-btn')) return;
+      if(document.body.classList.contains('list-sel')){
+        toggleLocSelect(r.id, row);
+      }
+    });
+    /* 삭제 버튼 */
+    row.querySelector('.del-btn').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      deleteSingleLocation(r.id, r.user_name, r.city);
+    });
+
     box.appendChild(row);
   });
+}
+
+function toggleSelectMode(){
+  document.body.classList.toggle('list-sel');
+  const on = document.body.classList.contains('list-sel');
+  document.getElementById('btnSelMode').textContent = on ? '✕ 취소' : '☑ 선택';
+  if(!on){
+    selectedLocIds.clear();
+    document.querySelectorAll('.row.checked').forEach(r=>r.classList.remove('checked'));
+  }
+  updateSelCount();
+}
+
+function toggleLocSelect(id, rowEl){
+  if(selectedLocIds.has(id)){
+    selectedLocIds.delete(id);
+    rowEl.classList.remove('checked');
+  } else {
+    selectedLocIds.add(id);
+    rowEl.classList.add('checked');
+  }
+  updateSelCount();
+}
+
+function updateSelCount(){
+  const n = selectedLocIds.size;
+  document.getElementById('selCnt').textContent = n;
+  document.getElementById('btnDelSel').classList.toggle('show', n>0);
+}
+
+async function deleteLocationsByIds(ids){
+  if(!ids || ids.length === 0) return 0;
+  const url = SUPABASE_URL+'/rest/v1/'+TBL_LOC+'?id=in.('+ids.join(',')+')';
+  const r = await fetch(url, {
+    method: 'DELETE',
+    headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  });
+  if(!r.ok){
+    const t = await r.text().catch(()=>'');
+    throw new Error('HTTP '+r.status+(t?': '+t.slice(0,150):''));
+  }
+  /* 로컬 데이터에서도 제거 */
+  const idSet = new Set(ids);
+  allRows = allRows.filter(x=>!idSet.has(x.id));
+  return ids.length;
+}
+
+async function deleteSingleLocation(id, name, city){
+  if(!confirm('이 위치 기록을 삭제할까요?\n\n'+(name||'(이름없음)')+' · '+(city||'-')+'\n\n지도/통계에서도 즉시 제거됩니다.')) return;
+  try{
+    await deleteLocationsByIds([id]);
+    selectedLocIds.delete(id);
+    renderList();
+    renderMap();
+    renderStats();
+    detectSuspicious();
+    document.getElementById('cntBadge').textContent = allRows.length+'건';
+    toast('🗑 삭제됨','ok');
+  }catch(e){ toast('삭제 실패: '+e.message,'err'); }
+}
+
+async function deleteSelectedLocations(){
+  const ids = Array.from(selectedLocIds);
+  if(ids.length === 0){ toast('선택된 항목 없음','err'); return; }
+  if(!confirm(ids.length+'건의 위치 기록을 삭제할까요?\n지도/통계에서도 즉시 제거됩니다.')) return;
+  try{
+    await deleteLocationsByIds(ids);
+    selectedLocIds.clear();
+    /* 선택 모드 종료 */
+    document.body.classList.remove('list-sel');
+    document.getElementById('btnSelMode').textContent = '☑ 선택';
+    renderList();
+    renderMap();
+    renderStats();
+    detectSuspicious();
+    document.getElementById('cntBadge').textContent = allRows.length+'건';
+    toast('🗑 '+ids.length+'건 삭제됨','ok');
+  }catch(e){ toast('삭제 실패: '+e.message,'err'); }
+}
+
+async function deleteAllShownLocations(){
+  if(allRows.length === 0){ toast('삭제할 항목 없음','err'); return; }
+  if(!confirm('⚠ 현재 조회된 '+allRows.length+'건을 모두 삭제할까요?\n\n조회 필터(날짜/사용자)에 해당하는 기록만 삭제됩니다.\n지도/통계에서도 즉시 제거됩니다.')) return;
+  try{
+    const ids = allRows.map(r=>r.id);
+    await deleteLocationsByIds(ids);
+    selectedLocIds.clear();
+    renderList();
+    renderMap();
+    renderStats();
+    detectSuspicious();
+    document.getElementById('cntBadge').textContent = '0건';
+    toast('🗑 '+ids.length+'건 삭제됨','ok');
+  }catch(e){ toast('삭제 실패: '+e.message,'err'); }
 }
 
 /* ============================================================
@@ -1342,13 +1519,9 @@ function handleSuspAction(act, idx){
     return;
   }
   if(act === 'block'){
-    requestMaster('🚫 차단 인증', g.user_name+' 사용자를 차단합니다', ()=>{
-      blockUser(g.user_id, g.user_name, g.reason);
-    });
+    blockUser(g.user_id, g.user_name, g.reason);
   } else if(act === 'reset'){
-    requestMaster('🔄 PIN 재설정', g.user_name+' 사용자의 PIN을 변경합니다', ()=>{
-      resetUserPin(g.user_id, g.user_name);
-    });
+    resetUserPin(g.user_id, g.user_name);
   }
 }
 
@@ -1356,17 +1529,11 @@ function handleUserAction(act, uid){
   const u = allUsers.find(x=>x.id === uid);
   if(!u) return;
   if(act === 'block-user'){
-    requestMaster('🚫 차단 인증', u.name+' 사용자를 차단합니다', ()=>{
-      blockUser(uid, u.name, '수동 차단');
-    });
+    blockUser(uid, u.name, '수동 차단');
   } else if(act === 'unblock'){
-    requestMaster('✅ 차단 해제', u.name+' 사용자의 차단을 해제합니다', ()=>{
-      unblockUser(uid, u.name);
-    });
+    unblockUser(uid, u.name);
   } else if(act === 'reset-user'){
-    requestMaster('🔄 PIN 재설정', u.name+' 사용자의 PIN을 변경합니다', ()=>{
-      resetUserPin(uid, u.name);
-    });
+    resetUserPin(uid, u.name);
   }
 }
 
@@ -1533,6 +1700,67 @@ async function mPinDone(){
 }
 
 /* ============================================================
+   진입 잠금화면
+   ============================================================ */
+let entryPin = '';
+
+function renderEntryKeypad(){
+  const kp = document.getElementById('entryKeypad');
+  kp.innerHTML = '';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+    const b = document.createElement('button');
+    if(k===''){ b.className='m-key fn'; b.style.visibility='hidden'; }
+    else if(k==='⌫'){ b.className='m-key fn'; b.textContent=k; b.addEventListener('click', entryPinDel); }
+    else { b.className='m-key'; b.textContent=k; b.addEventListener('click', ()=>entryPinPress(k)); }
+    kp.appendChild(b);
+  });
+}
+function updateEntryDots(){
+  document.querySelectorAll('#entryDots .m-dot').forEach((d,i)=>{
+    d.classList.remove('err');
+    if(i<entryPin.length) d.classList.add('filled');
+    else d.classList.remove('filled');
+  });
+}
+function shakeEntryDots(){
+  document.querySelectorAll('#entryDots .m-dot').forEach(d=>d.classList.add('err'));
+  setTimeout(()=>{entryPin='';updateEntryDots();}, 400);
+}
+function entryPinPress(n){
+  if(entryPin.length >= 4) return;
+  entryPin += n;
+  updateEntryDots();
+  if(entryPin.length === 4) setTimeout(entryPinDone, 150);
+}
+function entryPinDel(){
+  if(!entryPin) return;
+  entryPin = entryPin.slice(0,-1);
+  updateEntryDots();
+}
+async function entryPinDone(){
+  const hint = document.getElementById('entryHint');
+  hint.textContent = '확인 중...';
+  hint.className = 'm-hint';
+  try{
+    const h = await sha256hex(entryPin);
+    if(h === MASTER_PIN_HASH){
+      hint.textContent = '✓ 인증 성공';
+      hint.className = 'm-hint ok';
+      setTimeout(()=>{
+        document.body.classList.remove('locked');
+      }, 300);
+    } else {
+      hint.textContent = '❌ PIN 불일치';
+      hint.className = 'm-hint err';
+      shakeEntryDots();
+    }
+  }catch(e){
+    hint.textContent = '❌ '+e.message;
+    hint.className = 'm-hint err';
+  }
+}
+
+/* ============================================================
    초기화
    ============================================================ */
 (function init(){
@@ -1540,12 +1768,15 @@ async function mPinDone(){
   document.getElementById('filterBar').style.display = 'none';
   document.body.classList.add('no-filter');
 
+  /* 진입 잠금 키패드 */
+  renderEntryKeypad();
+
   initMap();
   setDefaultRange();
   loadCfg();
   renderMKeypad();
-  loadPinUsers();    /* 사용자 목록 먼저 */
-  loadData();        /* 위치 데이터도 백그라운드 로드 */
+  loadPinUsers();
+  loadData();
 })();
 </script>
 
