@@ -258,7 +258,7 @@ body.locked .entry-lock{display:flex}
 <!-- 헤더 -->
 <div class="hdr">
   <a class="back" href="index.html">←</a>
-  <div class="title">🛡 보안 마스터 <span id="verTag" style="font-size:11px;color:#94a3b8;font-weight:500;cursor:pointer" onclick="showChangelog()">Rev 1.4</span></div>
+  <div class="title">🛡 보안 마스터 <span id="verTag" style="font-size:11px;color:#94a3b8;font-weight:500;cursor:pointer" onclick="showChangelog()">Rev 1.5</span></div>
   <div class="cnt-badge" id="cntBadge">0건</div>
 </div>
 
@@ -1429,7 +1429,11 @@ function showChangelog(){
   const log =
     '🛡 보안 마스터 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'Rev 1.4 (현재)\n' +
+    'Rev 1.5 (현재)\n' +
+    '• DELETE 정책 누락 자동 감지 (에러 알림)\n' +
+    '• 실제 삭제된 행 수 검증\n' +
+    '• Prefer: return=representation 헤더 추가\n\n' +
+    'Rev 1.4\n' +
     '• 기본 조회 100건 (선택: 100/200/500/1000/5000)\n' +
     '• 기본 날짜 범위 7일 → 30일\n' +
     '• 목록에 상한 도달 시 안내 표시\n\n' +
@@ -1591,16 +1595,26 @@ async function deleteLocationsByIds(ids){
   const url = SUPABASE_URL+'/rest/v1/'+TBL_LOC+'?id=in.('+ids.join(',')+')';
   const r = await fetch(url, {
     method: 'DELETE',
-    headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer '+SUPABASE_KEY,
+      'Prefer': 'return=representation'   /* ★ 실제 삭제된 row 반환받아 검증 */
+    }
   });
   if(!r.ok){
     const t = await r.text().catch(()=>'');
     throw new Error('HTTP '+r.status+(t?': '+t.slice(0,150):''));
   }
+  /* ★ 실제 삭제된 행 수 확인 */
+  let deleted = [];
+  try{ deleted = await r.json(); }catch(e){ deleted = []; }
+  if(deleted.length === 0 && ids.length > 0){
+    throw new Error('DELETE 정책 누락! Supabase에서 fix_delete_policy.sql 실행 필요\n(요청 '+ids.length+'건, 실제 삭제 0건)');
+  }
   /* 로컬 데이터에서도 제거 */
-  const idSet = new Set(ids);
+  const idSet = new Set(deleted.map(x=>x.id));
   allRows = allRows.filter(x=>!idSet.has(x.id));
-  return ids.length;
+  return deleted.length;
 }
 
 async function deleteSingleLocation(id, name, ip){
