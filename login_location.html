@@ -333,7 +333,18 @@ async function loadData(){
         'Authorization': 'Bearer ' + SUPABASE_KEY
       }
     });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(!r.ok){
+      let detail = '';
+      try{ detail = await r.text(); }catch(e){}
+      console.error('Supabase 응답:', r.status, detail);
+      let hint = '';
+      if(r.status === 404){
+        hint = '\n→ 테이블이 없습니다. SQL Editor에서 mm_user_location 테이블을 먼저 생성하세요.';
+      } else if(r.status === 401 || r.status === 403){
+        hint = '\n→ RLS 정책이 SELECT를 막고 있습니다. anon SELECT 정책을 추가하세요.';
+      }
+      throw new Error('HTTP ' + r.status + hint + (detail ? '\n응답: '+detail.slice(0,200) : ''));
+    }
     allRows = await r.json();
 
     document.getElementById('cntBadge').textContent = allRows.length + '건';
@@ -349,7 +360,8 @@ async function loadData(){
     }
   } catch(e){
     console.error(e);
-    toast('조회 실패: ' + e.message, 'err');
+    toast('조회 실패 (콘솔 확인)', 'err');
+    setTimeout(()=>alert('❌ 조회 실패\n\n' + e.message), 100);
     document.getElementById('cntBadge').textContent = '0건';
   } finally {
     loading.style.display = 'none';
