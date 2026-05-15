@@ -104,6 +104,26 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f4fa;color:#1a2a44;min-
 }
 .fab:active{transform:scale(.94)}
 
+/* 마스터 잠금 */
+.master-lock{position:fixed;inset:0;background:linear-gradient(180deg,#fff,#eaf2fc);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.ml-title{font-size:22px;font-weight:800;color:#b91c1c;margin-bottom:6px}
+.ml-sub{font-size:12px;color:#6e809e;margin-bottom:32px}
+.ml-hint{font-size:12px;color:#6e809e;margin-bottom:18px;min-height:18px}
+.ml-hint.err{color:#b91c1c}
+.ml-hint.ok{color:#15803d}
+.pin-dots{display:flex;gap:12px;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#d6e2f2;border:2px solid #d6e2f2;transition:all .15s}
+.pin-dot.filled{background:#b91c1c;border-color:#b91c1c;box-shadow:0 0 10px rgba(185,28,28,.3)}
+.pin-dot.err{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.keypad{display:grid;grid-template-columns:repeat(3,64px);gap:12px;justify-content:center}
+.key{width:64px;height:64px;border-radius:50%;background:#fff;border:1.5px solid #c7d8f5;color:#1a2a44;font-size:22px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(30,58,138,.06)}
+.key:active{background:#eaf2fc;transform:scale(.92)}
+.key.fn{background:transparent;border:none;font-size:18px;color:#6e809e;box-shadow:none}
+.back-link{margin-top:20px;color:#6e809e;font-size:12px;text-decoration:none;padding:8px 12px}
+.lockout{color:#b91c1c;font-size:12px;font-weight:700;margin-bottom:14px}
+body.locked{overflow:hidden}
+
 /* 모달 */
 .modal-bg{position:fixed;inset:0;background:rgba(30,58,138,.4);z-index:9998;display:none;align-items:flex-end;justify-content:center;padding:0}
 .modal-bg.show{display:flex}
@@ -159,12 +179,26 @@ body{font-family:'Noto Sans KR',sans-serif;background:#f0f4fa;color:#1a2a44;min-
 .acc.open .acc-body{max-height:1500px}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<!-- 마스터 잠금 -->
+<div class="master-lock" id="masterLock">
+  <div class="ml-title">🔐 관리자 인증</div>
+  <div class="ml-sub">마스터 PIN을 입력하세요</div>
+  <div class="ml-hint" id="mlHint">4자리 PIN</div>
+  <div class="pin-dots" id="mlDots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+  </div>
+  <div class="lockout" id="mlLockout" style="display:none"></div>
+  <div class="keypad" id="mlKeypad"></div>
+  <a href="index.html" class="back-link">← 메인으로</a>
+</div>
 
 <div class="hdr">
   <a href="index.html" class="back-btn">‹ 메인</a>
   <div class="hdr-title">🧱 금형재 마스터</div>
   <div class="hdr-sub">소재·금형·기종 마스터 데이터 관리</div>
+  <button class="logout" id="logoutBtn">🔒 잠금</button>
 </div>
 
 <div class="wrap">
@@ -310,10 +344,22 @@ const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL = 'mm_mold_master';
 
-/* 세션 키 (index.html의 PIN 인증 세션) */
-const LK_AUTH = 'mm_user_session';
+/* 마스터 PIN 2580 → SHA-256 */
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
 
-let molds=[],editingId=null;
+const LK_ADMIN = 'mm_admin_auth';
+const LK_FAIL  = 'mm_admin_fail';
+const ADMIN_TTL_MIN = 30;
+const MAX_FAIL = 5;
+const LOCKOUT_SEC = 60;
+
+let curPin='',lockTimer=null,molds=[],editingId=null;
+
+async function sha256hex(s){
+  const b=new TextEncoder().encode(s);
+  const h=await crypto.subtle.digest('SHA-256',b);
+  return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
 
 /* Supabase REST */
 async function sbReq(method,path,body){
@@ -330,20 +376,77 @@ async function sbReq(method,path,body){
   return null;
 }
 
-/* 세션 가드: PIN 인증 안 됐으면 메인으로 리다이렉트 */
-function checkSession(){
-  try{
-    const s=JSON.parse(localStorage.getItem(LK_AUTH)||'null');
-    if(!s||!s.exp||s.exp<=Date.now()){
-      try{localStorage.removeItem(LK_AUTH)}catch(e){}
-      location.replace('index.html');
-      return false;
-    }
-    return true;
-  }catch(e){
-    location.replace('index.html');
-    return false;
+/* 마스터 잠금 */
+function getAdminAuth(){try{return JSON.parse(localStorage.getItem(LK_ADMIN)||'null')}catch(e){return null}}
+function setAdminAuth(){localStorage.setItem(LK_ADMIN,JSON.stringify({exp:Date.now()+ADMIN_TTL_MIN*60*1000}))}
+function clearAdminAuth(){localStorage.removeItem(LK_ADMIN)}
+function getFail(){try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count":0,"until":0}')}catch(e){return{count:0,until:0}}}
+function setFailF(f){localStorage.setItem(LK_FAIL,JSON.stringify(f))}
+function clearFailF(){localStorage.removeItem(LK_FAIL)}
+
+function initLock(){
+  const a=getAdminAuth();
+  if(a&&a.exp>Date.now()){unlockAdmin();return}
+  renderKeypad();checkAdminLockout();
+}
+function renderKeypad(){
+  const kp=document.getElementById('mlKeypad');kp.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+    const b=document.createElement('button');
+    if(k===''){b.className='key fn';b.style.visibility='hidden'}
+    else if(k==='⌫'){b.className='key fn';b.textContent=k;b.onclick=()=>mPinDel()}
+    else{b.className='key';b.textContent=k;b.onclick=()=>mPinPress(k)}
+    kp.appendChild(b);
+  });
+}
+function mUpdateDots(){
+  document.querySelectorAll('#mlDots .pin-dot').forEach((d,i)=>{
+    d.classList.remove('err');
+    if(i<curPin.length)d.classList.add('filled');else d.classList.remove('filled');
+  });
+}
+function mShakeDots(){
+  document.querySelectorAll('#mlDots .pin-dot').forEach(d=>d.classList.add('err'));
+  setTimeout(()=>{curPin='';mUpdateDots()},400);
+}
+function mPinPress(n){
+  if(curPin.length>=4)return;
+  const f=getFail();if(f.until>Date.now())return;
+  curPin+=n;mUpdateDots();
+  if(curPin.length===4)setTimeout(mPinDone,150);
+}
+function mPinDel(){if(!curPin)return;curPin=curPin.slice(0,-1);mUpdateDots()}
+
+async function mPinDone(){
+  const h=await sha256hex(curPin);
+  if(h===MASTER_PIN_HASH){
+    clearFailF();setAdminAuth();
+    const hint=document.getElementById('mlHint');
+    hint.textContent='인증 완료';hint.className='ml-hint ok';
+    setTimeout(unlockAdmin,300);
+  }else{
+    const f=getFail();f.count=(f.count||0)+1;
+    if(f.count>=MAX_FAIL){f.until=Date.now()+LOCKOUT_SEC*1000;f.count=0;setFailF(f);checkAdminLockout()}
+    else{setFailF(f);const h2=document.getElementById('mlHint');h2.textContent='PIN 불일치 ('+f.count+'/'+MAX_FAIL+')';h2.className='ml-hint err'}
+    mShakeDots();
   }
+}
+function checkAdminLockout(){
+  const f=getFail(),msg=document.getElementById('mlLockout'),remain=f.until-Date.now();
+  if(remain>0){
+    msg.style.display='block';
+    const upd=()=>{
+      const r=Math.ceil((f.until-Date.now())/1000);
+      if(r<=0){msg.style.display='none';clearFailF();clearInterval(lockTimer);const h=document.getElementById('mlHint');h.textContent='4자리 PIN';h.className='ml-hint';return}
+      msg.textContent='🔒 '+r+'초 후 재시도';
+    };
+    upd();clearInterval(lockTimer);lockTimer=setInterval(upd,1000);
+  }else msg.style.display='none';
+}
+async function unlockAdmin(){
+  document.body.classList.remove('locked');
+  document.getElementById('masterLock').style.display='none';
+  await loadList();
 }
 
 /* ============================================================
@@ -710,6 +813,7 @@ function hideMsg(id){const e=document.getElementById(id);if(e)e.classList.remove
 function escHtml(s){if(s==null)return '';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function escAttr(s){return escHtml(s)}
 
+document.getElementById('logoutBtn').onclick=()=>{if(!confirm('관리자 잠금?'))return;clearAdminAuth();location.reload()};
 document.getElementById('btnAdd').onclick=()=>openModal(null);
 document.getElementById('btnClose').onclick=closeModal;
 document.getElementById('btnSave').onclick=saveMold;
@@ -735,10 +839,14 @@ fa.ondragover=(e)=>{e.preventDefault();fa.classList.add('drag')};
 fa.ondragleave=()=>{fa.classList.remove('drag')};
 fa.ondrop=(e)=>{e.preventDefault();fa.classList.remove('drag');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])};
 
-// 진입: 세션 체크 후 목록 로드
-if(checkSession()){
-  loadList();
-}
+// 잠금 키보드 입력
+document.addEventListener('keydown',function(e){
+  if(!document.body.classList.contains('locked'))return;
+  if(e.key>='0'&&e.key<='9')mPinPress(e.key);
+  else if(e.key==='Backspace')mPinDel();
+});
+
+initLock();
 </script>
 </body>
 </html>
