@@ -3,367 +3,500 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0b1220">
-<title>로그인 위치 조회</title>
+<title>📍 로그인 위치 조회 · msm</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 
 <style>
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-html, body {
-  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  height: 100vh; overflow: hidden;
-  background: #0b1220; color: #e2e8f0;
-}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0b1220;color:#e2e8f0;overflow:hidden}
 
-/* 헤더 */
-.header {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px;
-  background: rgba(15,23,42,0.92);
-  border-bottom: 1px solid rgba(56,189,248,0.15);
-  flex-shrink: 0;
-}
-.back-btn {
-  width: 36px; height: 36px; border-radius: 9px;
-  border: 1px solid rgba(71,85,105,0.5);
-  background: rgba(30,41,59,0.6); color: #e2e8f0;
-  font-size: 17px; cursor: pointer; font-family: inherit;
-  display: flex; align-items: center; justify-content: center;
-}
-.header h1 {
-  flex: 1; font-size: 16px; font-weight: 800; color: #7dd3fc;
-}
-.cnt {
-  font-size: 11px; font-weight: 700;
-  padding: 4px 10px; border-radius: 10px;
-  background: rgba(56,189,248,0.15); color: #7dd3fc;
-}
+/* ========== 헤더 ========== */
+.hdr{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;padding:0 12px;gap:10px;background:rgba(15,23,42,.92);backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;z-index:1000}
+.back{width:40px;height:40px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:18px;color:#cbd5e1;text-decoration:none;border:none;cursor:pointer}
+.back:active{background:#334155}
+.title{font-size:17px;font-weight:700;color:#7dd3fc;flex:1}
+.cnt-badge{background:#1e293b;color:#7dd3fc;font-size:12px;font-weight:700;padding:6px 12px;border-radius:14px;border:1px solid #334155}
 
-/* 필터 바 */
-.filter-bar {
-  display: grid; grid-template-columns: 1fr 1fr 1.2fr auto;
-  gap: 6px;
-  padding: 8px 10px;
-  background: rgba(15,23,42,0.85);
-  border-bottom: 1px solid rgba(71,85,105,0.4);
-  flex-shrink: 0;
-}
-.filter-bar input, .filter-bar select {
-  padding: 8px 8px; border-radius: 7px;
-  border: 1px solid rgba(71,85,105,0.5);
-  background: rgba(30,41,59,0.55); color: #e2e8f0;
-  font-size: 12px; font-family: inherit;
-  min-width: 0;
-}
-.filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: #38bdf8; }
-.btn-load {
-  padding: 8px 12px; border-radius: 7px;
-  border: 1px solid #0ea5e9;
-  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
-  color: white; font-size: 13px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-}
-.btn-load:active { transform: scale(0.95); }
+/* ========== 필터 바 ========== */
+.fbar{position:fixed;top:56px;left:0;right:0;display:flex;gap:6px;padding:8px;background:#0f172a;border-bottom:1px solid #1e293b;z-index:999;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.fbar::-webkit-scrollbar{display:none}
+.f-date{flex:1;min-width:115px;height:40px;padding:0 10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-weight:600;font-family:inherit}
+.f-date:focus{outline:none;border-color:#38bdf8}
+.f-sel{flex:1;min-width:80px;max-width:120px;height:40px;padding:0 8px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-weight:600;font-family:inherit}
+.f-sel:focus{outline:none;border-color:#38bdf8}
+.f-btn{height:40px;min-width:48px;padding:0 12px;border-radius:8px;background:#38bdf8;border:none;color:#0b1220;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.f-btn:active{background:#0ea5e9}
+.f-btn.alt{background:#1e293b;color:#7dd3fc;border:1px solid #334155;font-size:12px;min-width:auto;padding:0 10px;gap:4px}
+.f-btn.alt:active{background:#334155}
 
-/* 지도 영역 (남은 공간 전부) */
-.map-area {
-  flex: 1;
-  position: relative;
-  background: #1e293b;
-}
-#map { width: 100%; height: 100%; background: #1e293b; }
+/* ========== 본문 ========== */
+.body{position:fixed;top:112px;left:0;right:0;bottom:0;display:flex;flex-direction:column}
+.tabs{display:flex;background:#0f172a;border-bottom:1px solid #1e293b;height:42px;flex-shrink:0}
+.tab{flex:1;background:none;border:none;color:#94a3b8;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
+.tab.active{color:#7dd3fc;border-bottom-color:#38bdf8;background:rgba(56,189,248,.05)}
 
-/* 다크 타일 */
-.leaflet-tile-pane {
-  filter: brightness(0.85) saturate(0.9) hue-rotate(170deg) invert(0.9);
-}
-.leaflet-control-zoom a {
-  background: rgba(15,23,42,0.9) !important;
-  color: #e2e8f0 !important;
-  border-color: rgba(71,85,105,0.5) !important;
-}
-.leaflet-control-attribution {
-  background: rgba(15,23,42,0.85) !important;
-  color: #94a3b8 !important;
-  font-size: 9px !important;
-}
-.leaflet-control-attribution a { color: #7dd3fc !important; }
-.leaflet-popup-content-wrapper {
-  background: rgba(15,23,42,0.96) !important;
-  color: #e2e8f0 !important;
-  border-radius: 10px !important;
-  border: 1px solid rgba(56,189,248,0.3) !important;
-}
-.leaflet-popup-tip { background: rgba(15,23,42,0.96) !important; }
-.leaflet-popup-close-button { color: #94a3b8 !important; }
-.marker-cluster div {
-  background-color: rgba(56,189,248,0.85) !important;
-  color: white !important; font-weight: bold !important;
-}
-.marker-cluster {
-  background-color: rgba(56,189,248,0.4) !important;
-}
-.custom-marker { background: transparent; border: none; }
+.content{flex:1;overflow:hidden;position:relative}
+.pane{position:absolute;inset:0;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pane.active{display:block}
 
-/* 팝업 */
-.iw { padding: 4px 2px; min-width: 160px; font-size: 12px; }
-.iw .iw-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #f1f5f9; }
-.iw .iw-row { color: #cbd5e1; margin: 2px 0; }
+/* ========== 지도 ========== */
+#map{width:100%;height:100%}
+.leaflet-container{background:#0b1220 !important;font-family:inherit}
+.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.7)}
+.leaflet-control-attribution{background:rgba(15,23,42,.8) !important;color:#94a3b8 !important;font-size:9px !important}
+.leaflet-control-attribution a{color:#7dd3fc !important}
+.leaflet-control-zoom a{background:#1e293b !important;color:#e2e8f0 !important;border-color:#334155 !important}
+.leaflet-control-zoom a:hover{background:#334155 !important}
+.leaflet-popup-content-wrapper{background:#1e293b;color:#e2e8f0;border-radius:10px;border:1px solid #334155;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.leaflet-popup-tip{background:#1e293b;border:1px solid #334155}
+.leaflet-popup-content{margin:10px 12px;font-size:12px;line-height:1.5}
+.leaflet-popup-content b{color:#7dd3fc}
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(56,189,248,.2) !important}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:rgba(56,189,248,.7) !important;color:#0b1220 !important;font-weight:700 !important}
 
-/* 전체보기 버튼 */
-.fitall {
-  position: absolute; bottom: 12px; left: 12px;
-  background: rgba(15,23,42,0.92);
-  border: 1px solid rgba(56,189,248,0.4);
-  color: #7dd3fc; border-radius: 7px;
-  padding: 7px 11px;
-  font-size: 12px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-  z-index: 1000;
-}
-.fitall:active { transform: scale(0.95); }
+/* ========== 리스트 ========== */
+.list{padding:8px}
+.row{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.row .pin{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px;flex-shrink:0}
+.row .info{flex:1;min-width:0}
+.row .nm{font-size:13px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.row .nm .badge{font-size:10px;background:#334155;color:#cbd5e1;padding:2px 6px;border-radius:8px;font-weight:600}
+.row .nm .badge.adm{background:#7c2d12;color:#fed7aa}
+.row .loc{font-size:11px;color:#94a3b8;margin-top:3px;display:flex;align-items:center;gap:4px}
+.row .ts{font-size:10px;color:#64748b;margin-top:2px}
+.row .err{font-size:10px;color:#f87171;margin-top:2px}
 
-/* 빈 상태 */
-.empty-state {
-  display: flex; align-items: center; justify-content: center;
-  height: 100%;
-  color: #64748b; font-size: 13px;
-  pointer-events: none;
-  text-align: center;
-}
-.loading-state {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(15,23,42,0.6);
-  color: #7dd3fc; font-size: 13px;
-  z-index: 500;
-}
-.loading-state::after { content: '...'; animation: dots 1.5s infinite; }
-@keyframes dots { 0%,20%{content:'.';} 40%{content:'..';} 60%,100%{content:'...';} }
+/* ========== 통계 ========== */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px}
+.stat{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px}
+.stat .lbl{font-size:11px;color:#94a3b8;font-weight:600}
+.stat .val{font-size:20px;font-weight:700;color:#7dd3fc;margin-top:2px}
+.stat .sub{font-size:10px;color:#64748b;margin-top:2px}
+
+.usr-block{background:#1e293b;border:1px solid #334155;border-radius:10px;margin:8px;padding:10px 12px}
+.usr-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.usr-head .pin{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:12px}
+.usr-head .nm{font-size:13px;font-weight:700;color:#e2e8f0;flex:1}
+.usr-head .cnt{font-size:11px;color:#7dd3fc;font-weight:700;background:#0f172a;padding:3px 8px;border-radius:8px}
+.usr-locs{display:flex;flex-wrap:wrap;gap:4px}
+.usr-loc{font-size:11px;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:3px 8px;color:#cbd5e1}
+.usr-loc b{color:#7dd3fc}
+
+/* ========== 빈/로딩 ========== */
+.empty{text-align:center;color:#64748b;font-size:13px;padding:60px 20px}
+.empty .ic{font-size:36px;margin-bottom:8px;opacity:.5}
+.loading{position:absolute;inset:0;background:rgba(11,18,32,.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:500}
+.loading .spin{width:40px;height:40px;border:3px solid #1e293b;border-top-color:#38bdf8;border-radius:50%;animation:spin 1s linear infinite}
+.loading .msg{font-size:13px;color:#94a3b8}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 토스트 */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:10px 16px;border-radius:8px;font-size:13px;z-index:2000;box-shadow:0 4px 16px rgba(0,0,0,.5);opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.toast.err{border-color:#7f1d1d;color:#fecaca}
+.toast.ok{border-color:#14532d;color:#bbf7d0}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <button class="back-btn" onclick="history.back()" type="button">←</button>
-  <h1>📍 로그인 위치</h1>
-  <span class="cnt" id="cnt">0건</span>
+<!-- 헤더 -->
+<div class="hdr">
+  <a class="back" href="index.html">←</a>
+  <div class="title">📍 로그인 위치</div>
+  <div class="cnt-badge" id="cntBadge">0건</div>
 </div>
 
-<div class="filter-bar">
-  <input type="date" id="fStart">
-  <input type="date" id="fEnd">
-  <select id="fName" onchange="filterByName()">
-    <option value="">전체 직원</option>
-  </select>
-  <button class="btn-load" onclick="loadData()" type="button">🔍</button>
+<!-- 필터 -->
+<div class="fbar">
+  <input type="date" id="fFrom" class="f-date">
+  <input type="date" id="fTo" class="f-date">
+  <select id="fUser" class="f-sel"><option value="">전체</option></select>
+  <button class="f-btn" onclick="loadData()">🔍</button>
+  <button class="f-btn alt" onclick="setRangeAll()">⌐ 전체보기</button>
 </div>
 
-<div class="map-area">
-  <div id="map"><div class="empty-state">조회 중...</div></div>
-  <button class="fitall" onclick="fitAll()" type="button">⛶ 전체보기</button>
+<!-- 본문 -->
+<div class="body">
+  <div class="tabs">
+    <button class="tab active" data-tab="map" onclick="switchTab('map')">🗺 지도</button>
+    <button class="tab" data-tab="list" onclick="switchTab('list')">📋 목록</button>
+    <button class="tab" data-tab="stats" onclick="switchTab('stats')">📊 통계</button>
+  </div>
+
+  <div class="content">
+    <div class="pane active" id="paneMap"><div id="map"></div></div>
+    <div class="pane" id="paneList"><div class="list" id="listBox"></div></div>
+    <div class="pane" id="paneStats">
+      <div class="stats" id="statsBox"></div>
+      <div id="userStatsBox"></div>
+    </div>
+    <div class="loading" id="loading" style="display:none">
+      <div class="spin"></div>
+      <div class="msg">불러오는 중...</div>
+    </div>
+  </div>
 </div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script>
+/* ============================================================
+   설정
+   ============================================================ */
 const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL_LOC = 'mm_user_location';
-const LK_AUTH = 'mm_user_session';
 
-let curData = [];
-let filtered = [];
 let map = null;
-let markersLayer = null;
-let markers = [];
+let cluster = null;
+let allRows = [];
 
-const COLORS = ['#38bdf8','#fb923c','#a78bfa','#34d399','#fbbf24','#f472b6','#60a5fa','#fb7185','#22d3ee','#facc15','#c084fc','#4ade80','#f87171','#818cf8','#2dd4bf'];
-function colorOf(name){
+/* ============================================================
+   유틸
+   ============================================================ */
+function toast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function ymd(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+function fmtTs(s){
+  if(!s)return '';
+  const d = new Date(s);
+  if(isNaN(d))return s;
+  const M = String(d.getMonth()+1).padStart(2,'0');
+  const D = String(d.getDate()).padStart(2,'0');
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  return M+'/'+D+' '+h+':'+m;
+}
+
+/* 이름 해시 → HSL 색상 */
+function nameColor(name){
   let h = 0;
-  for(let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
-  return COLORS[h % COLORS.length];
+  const s = String(name||'?');
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return 'hsl('+(h%360)+', 65%, 50%)';
+}
+function nameInitial(name){
+  const s = String(name||'?').trim();
+  if(!s) return '?';
+  return s.slice(0, s.length > 2 ? 2 : s.length);
 }
 
-function checkAuth(){
-  let s = null;
-  try{ s = JSON.parse(localStorage.getItem(LK_AUTH)||'null') }catch(e){}
-  if(!s || s.exp < Date.now()){
-    alert('로그인이 필요합니다');
-    location.href = 'index.html';
-    return false;
-  }
-  if(s.role !== 'admin'){
-    alert('관리자만 접근 가능합니다');
-    location.href = 'index.html';
-    return false;
-  }
-  return true;
-}
-
-function toDateStr(d){
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-function setDefaultDates(){
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 7);
-  document.getElementById('fStart').value = toDateStr(start);
-  document.getElementById('fEnd').value = toDateStr(end);
-}
-
-async function loadData(){
-  const start = document.getElementById('fStart').value;
-  const end = document.getElementById('fEnd').value;
-  if(!start || !end){ alert('날짜를 선택하세요'); return; }
-
-  const mapEl = document.getElementById('map');
-  mapEl.innerHTML = '<div class="loading-state">조회중</div>';
-
-  const startIso = new Date(start + 'T00:00:00').toISOString();
-  const endIso = new Date(end + 'T23:59:59').toISOString();
-
-  const url = SUPABASE_URL+'/rest/v1/'+TBL_LOC
-    + '?select=*'
-    + '&recorded_at=gte.'+startIso
-    + '&recorded_at=lte.'+endIso
-    + '&order=recorded_at.desc'
-    + '&limit=1000';
-
-  try{
-    const r = await fetch(url, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer '+SUPABASE_KEY }
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    curData = await r.json();
-    buildNameOptions();
-    filterByName();
-  }catch(err){
-    mapEl.innerHTML = '<div class="empty-state">❌ '+err.message+'</div>';
-    document.getElementById('cnt').textContent = '0건';
-  }
-}
-
-function buildNameOptions(){
-  const names = [...new Set(curData.map(d => d.user_name).filter(Boolean))].sort();
-  const sel = document.getElementById('fName');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">전체 직원 ('+names.length+'명)</option>';
-  names.forEach(n => {
-    const opt = document.createElement('option');
-    opt.value = n; opt.textContent = n;
-    sel.appendChild(opt);
+/* SVG 핀 마커 */
+function makePinIcon(name){
+  const color = nameColor(name);
+  const txt = nameInitial(name);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44">
+    <defs><filter id="s" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.5"/></filter></defs>
+    <path d="M17 0 C7 0 0 7 0 17 C0 28 17 44 17 44 C17 44 34 28 34 17 C34 7 27 0 17 0 Z"
+      fill="${color}" stroke="#fff" stroke-width="2" filter="url(#s)"/>
+    <circle cx="17" cy="17" r="11" fill="rgba(255,255,255,0.15)"/>
+    <text x="17" y="21" text-anchor="middle" font-family="system-ui,sans-serif"
+      font-size="${txt.length>1?10:13}" font-weight="700" fill="#fff">${txt}</text>
+  </svg>`;
+  return L.divIcon({
+    html: svg,
+    className: 'pin-marker',
+    iconSize: [34, 44],
+    iconAnchor: [17, 44],
+    popupAnchor: [0, -40]
   });
-  if(cur && names.includes(cur)) sel.value = cur;
 }
 
-function filterByName(){
-  const name = document.getElementById('fName').value;
-  filtered = name ? curData.filter(d => d.user_name === name) : curData;
-  document.getElementById('cnt').textContent = filtered.length + '건';
-  renderMap();
+/* ============================================================
+   탭 전환
+   ============================================================ */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pane'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  if(name==='map' && map){
+    setTimeout(()=>map.invalidateSize(), 100);
+  }
 }
 
-function renderMap(){
-  const valid = filtered.filter(d => d.lat != null && d.lng != null);
-  const mapEl = document.getElementById('map');
+/* ============================================================
+   지도 초기화
+   ============================================================ */
+function initMap(){
+  map = L.map('map', {
+    center: [36.5, 127.8],
+    zoom: 7,
+    zoomControl: true,
+    attributionControl: true
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+  cluster = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 50
+  });
+  map.addLayer(cluster);
+}
 
-  if(!valid.length){
-    if(map){ map.remove(); map = null; }
-    mapEl.innerHTML = '<div class="empty-state">📍 위치 정보가 있는 기록이 없습니다</div>';
+/* ============================================================
+   날짜 기본값 / 전체보기
+   ============================================================ */
+function setDefaultRange(){
+  const today = new Date();
+  const wk = new Date();
+  wk.setDate(today.getDate() - 7);
+  document.getElementById('fFrom').value = ymd(wk);
+  document.getElementById('fTo').value = ymd(today);
+}
+
+function setRangeAll(){
+  document.getElementById('fFrom').value = '2020-01-01';
+  document.getElementById('fTo').value = ymd(new Date());
+  loadData();
+}
+
+/* ============================================================
+   사용자 목록 채우기
+   ============================================================ */
+function fillUserSelect(rows){
+  const sel = document.getElementById('fUser');
+  const cur = sel.value;
+  const seen = new Map();
+  rows.forEach(r=>{
+    const k = r.user_id || ('n_'+r.user_name);
+    if(!seen.has(k)) seen.set(k, r.user_name || '(이름없음)');
+  });
+  sel.innerHTML = '<option value="">전체</option>';
+  Array.from(seen.entries())
+    .sort((a,b)=>String(a[1]).localeCompare(String(b[1]),'ko'))
+    .forEach(([k,n])=>{
+      const o = document.createElement('option');
+      o.value = k; o.textContent = n;
+      sel.appendChild(o);
+    });
+  if(cur) sel.value = cur;
+}
+
+/* ============================================================
+   데이터 로드
+   ============================================================ */
+async function loadData(){
+  const from = document.getElementById('fFrom').value;
+  const to   = document.getElementById('fTo').value;
+  const uid  = document.getElementById('fUser').value;
+
+  if(!from || !to){
+    toast('날짜를 선택하세요', 'err');
     return;
   }
 
-  mapEl.innerHTML = '';
-  if(map){ map.remove(); map = null; }
+  const loading = document.getElementById('loading');
+  loading.style.display = 'flex';
 
-  const first = valid[0];
-  map = L.map('map', { zoomControl: true, attributionControl: true })
-    .setView([first.lat, first.lng], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+  try{
+    const fromISO = from + 'T00:00:00';
+    const toISO   = to   + 'T23:59:59';
 
-  markersLayer = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    disableClusteringAtZoom: 14
-  });
-  markers = [];
+    let url = SUPABASE_URL + '/rest/v1/' + TBL_LOC
+      + '?select=*'
+      + '&recorded_at=gte.' + encodeURIComponent(fromISO)
+      + '&recorded_at=lte.' + encodeURIComponent(toISO)
+      + '&order=recorded_at.desc'
+      + '&limit=1000';
 
-  // 동일 좌표 분산
-  const coordCount = {};
-  valid.forEach(d => {
-    const k = d.lat.toFixed(4)+','+d.lng.toFixed(4);
-    coordCount[k] = (coordCount[k] || 0) + 1;
-  });
-  const coordIdx = {};
-
-  valid.forEach(d => {
-    const k = d.lat.toFixed(4)+','+d.lng.toFixed(4);
-    coordIdx[k] = (coordIdx[k] || 0) + 1;
-    let lat = d.lat, lng = d.lng;
-    if(coordCount[k] > 1){
-      const angle = (coordIdx[k] / coordCount[k]) * 2 * Math.PI;
-      lat += Math.cos(angle) * 0.001;
-      lng += Math.sin(angle) * 0.001;
+    if(uid){
+      if(uid.startsWith('n_')){
+        url += '&user_name=eq.' + encodeURIComponent(uid.slice(2));
+      } else {
+        url += '&user_id=eq.' + encodeURIComponent(uid);
+      }
     }
-    const name = d.user_name || '(이름없음)';
-    const color = colorOf(name);
-    const marker = L.marker([lat, lng], { icon: createIcon(color), title: name });
-    marker.bindPopup(buildPopup(d));
-    markersLayer.addLayer(marker);
-    markers.push(marker);
+
+    const r = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    allRows = await r.json();
+
+    document.getElementById('cntBadge').textContent = allRows.length + '건';
+    fillUserSelect(allRows);
+    renderMap();
+    renderList();
+    renderStats();
+
+    if(allRows.length === 0){
+      toast('조회 결과 없음');
+    } else {
+      toast(allRows.length + '건 조회', 'ok');
+    }
+  } catch(e){
+    console.error(e);
+    toast('조회 실패: ' + e.message, 'err');
+    document.getElementById('cntBadge').textContent = '0건';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+/* ============================================================
+   지도 렌더
+   ============================================================ */
+function renderMap(){
+  if(!map) return;
+  cluster.clearLayers();
+  const valid = allRows.filter(r => r.lat != null && r.lng != null);
+  const bounds = [];
+  valid.forEach(r=>{
+    const ll = [parseFloat(r.lat), parseFloat(r.lng)];
+    if(isNaN(ll[0]) || isNaN(ll[1])) return;
+    bounds.push(ll);
+    const html =
+      '<b>' + (r.user_name||'(이름없음)') + '</b>' +
+      (r.factory ? ' · ' + r.factory : '') +
+      (r.dept ? ' / ' + r.dept : '') + '<br>' +
+      '📍 ' + (r.city||'') + ' ' + (r.region||'') + '<br>' +
+      '🌐 ' + (r.ip||'-') + (r.org ? ' (' + r.org + ')' : '') + '<br>' +
+      '⏱ ' + fmtTs(r.recorded_at);
+    const m = L.marker(ll, { icon: makePinIcon(r.user_name) }).bindPopup(html);
+    cluster.addLayer(m);
+  });
+  if(bounds.length > 0){
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+  }
+}
+
+/* ============================================================
+   목록 렌더
+   ============================================================ */
+function renderList(){
+  const box = document.getElementById('listBox');
+  if(allRows.length === 0){
+    box.innerHTML = '<div class="empty"><div class="ic">📭</div>조회 결과가 없습니다</div>';
+    return;
+  }
+  let html = '';
+  allRows.forEach(r=>{
+    const color = nameColor(r.user_name);
+    const ini = nameInitial(r.user_name);
+    const isErr = r.error_code;
+    html += '<div class="row">';
+    html += '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    html += '<div class="info">';
+    html += '<div class="nm">' + (r.user_name||'(이름없음)');
+    if(r.factory) html += '<span class="badge">'+r.factory+'</span>';
+    if(r.dept)    html += '<span class="badge">'+r.dept+'</span>';
+    html += '</div>';
+    if(isErr){
+      html += '<div class="err">⚠ ' + r.error_code + '</div>';
+    } else {
+      html += '<div class="loc">📍 ' + (r.city||'-') + ' ' + (r.region||'') + ' · ' + (r.ip||'-') + '</div>';
+    }
+    html += '<div class="ts">⏱ ' + fmtTs(r.recorded_at) + '</div>';
+    html += '</div></div>';
+  });
+  box.innerHTML = html;
+}
+
+/* ============================================================
+   통계 렌더
+   ============================================================ */
+function renderStats(){
+  const statsBox = document.getElementById('statsBox');
+  const usrBox = document.getElementById('userStatsBox');
+  if(allRows.length === 0){
+    statsBox.innerHTML = '';
+    usrBox.innerHTML = '<div class="empty"><div class="ic">📊</div>데이터가 없습니다</div>';
+    return;
+  }
+
+  /* 종합 통계 */
+  const userMap = new Map();   // user_id|name -> {name, count, cities:Map}
+  const cityMap = new Map();
+  let errCnt = 0;
+
+  allRows.forEach(r=>{
+    if(r.error_code) errCnt++;
+    const k = r.user_id || ('n_'+r.user_name);
+    if(!userMap.has(k)){
+      userMap.set(k, {
+        name: r.user_name||'(이름없음)',
+        factory: r.factory||'',
+        dept: r.dept||'',
+        count: 0,
+        cities: new Map()
+      });
+    }
+    const u = userMap.get(k);
+    u.count++;
+    const city = r.city || (r.error_code ? '(오류)' : '(미상)');
+    u.cities.set(city, (u.cities.get(city)||0) + 1);
+    cityMap.set(city, (cityMap.get(city)||0) + 1);
   });
 
-  map.addLayer(markersLayer);
-  setTimeout(()=>{ map.invalidateSize(); fitAll(); }, 100);
-}
+  const totalUsers = userMap.size;
+  const totalRecs = allRows.length;
+  const topCity = Array.from(cityMap.entries())
+    .sort((a,b)=>b[1]-a[1])[0];
+  const okRate = totalRecs ? Math.round((totalRecs-errCnt)/totalRecs*100) : 0;
 
-function createIcon(color){
-  const svg =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 28 36">'+
-    '<path d="M14 0 C6 0 0 6 0 14 C0 24 14 36 14 36 C14 36 28 24 28 14 C28 6 22 0 14 0 Z" fill="'+color+'" stroke="white" stroke-width="2"/>'+
-    '<circle cx="14" cy="14" r="5" fill="white"/></svg>';
-  return L.divIcon({
-    html: svg, className: 'custom-marker',
-    iconSize: [24, 32], iconAnchor: [12, 32], popupAnchor: [0, -30]
+  statsBox.innerHTML =
+    '<div class="stat"><div class="lbl">총 기록</div><div class="val">'+totalRecs+'</div><div class="sub">건</div></div>' +
+    '<div class="stat"><div class="lbl">접속 인원</div><div class="val">'+totalUsers+'</div><div class="sub">명</div></div>' +
+    '<div class="stat"><div class="lbl">최다 지역</div><div class="val" style="font-size:14px;line-height:1.4">'+(topCity?topCity[0]:'-')+'</div><div class="sub">'+(topCity?topCity[1]+'건':'')+'</div></div>' +
+    '<div class="stat"><div class="lbl">정상률</div><div class="val">'+okRate+'%</div><div class="sub">'+errCnt+'건 오류</div></div>';
+
+  /* 사용자별 분석 */
+  const arr = Array.from(userMap.values()).sort((a,b)=>b.count-a.count);
+  let html = '';
+  arr.forEach(u=>{
+    const color = nameColor(u.name);
+    const ini = nameInitial(u.name);
+    html += '<div class="usr-block">';
+    html += '<div class="usr-head">';
+    html += '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    html += '<div class="nm">' + u.name;
+    if(u.factory) html += ' <span style="color:#94a3b8;font-size:11px;font-weight:600">· '+u.factory+'</span>';
+    if(u.dept) html += ' <span style="color:#94a3b8;font-size:11px;font-weight:600">/ '+u.dept+'</span>';
+    html += '</div>';
+    html += '<div class="cnt">'+u.count+'회</div>';
+    html += '</div>';
+    html += '<div class="usr-locs">';
+    Array.from(u.cities.entries())
+      .sort((a,b)=>b[1]-a[1])
+      .forEach(([c,n])=>{
+        html += '<div class="usr-loc">'+c+' <b>'+n+'</b></div>';
+      });
+    html += '</div></div>';
   });
+  usrBox.innerHTML = html;
 }
 
-function buildPopup(d){
-  const dt = new Date(d.recorded_at);
-  const t = dt.toLocaleString('ko-KR', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-  const loc = [d.city, d.region].filter(Boolean).join(', ') || '(불명)';
-  return '<div class="iw">'+
-    '<div class="iw-name">👤 '+esc(d.user_name||'(이름없음)')+
-      (d.factory ? ' <span style="font-size:11px;color:#94a3b8;font-weight:600">· '+esc(d.factory)+'</span>' : '')+
-    '</div>'+
-    '<div class="iw-row">📍 '+esc(loc)+'</div>'+
-    (d.org ? '<div class="iw-row">📡 '+esc(d.org)+'</div>' : '')+
-    '<div class="iw-row" style="color:#94a3b8;font-size:11px">🕒 '+t+'</div>'+
-  '</div>';
-}
-
-function fitAll(){
-  if(!markers.length || !map) return;
-  const group = L.featureGroup(markers);
-  map.fitBounds(group.getBounds().pad(0.15));
-}
-
-function esc(s){
-  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
-
-if(checkAuth()){
-  setDefaultDates();
+/* ============================================================
+   초기화
+   ============================================================ */
+(function init(){
+  initMap();
+  setDefaultRange();
   loadData();
-}
+})();
 </script>
-
 </body>
 </html>
