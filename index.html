@@ -47,6 +47,7 @@ html, body {
 .top-btn.daily  { color: #b45309; border-color: #f5d99d; background: #fff7e6; }
 .top-btn.status { color: #6d28d9; border-color: #d8c7f5; background: #f3edff; }
 .top-btn.user   { color: #1d4ed8; border-color: transparent; background: transparent; box-shadow: none; }
+.top-btn.logout { color: #b91c1c; border-color: #f5c7c7; background: #fff0f0; }
 .top-btn.lock   { color: #b91c1c; border-color: #f5c7c7; background: #fff0f0; }
 
 /* 컨테이너 */
@@ -157,15 +158,98 @@ html, body {
   text-align: center; margin-top: 24px;
   font-size: 11px; color: #8aa2c0;
 }
+
+/* ============= PIN 잠금 화면 ============= */
+body.locked { overflow: hidden; }
+
+.pin-lock {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf2fc 60%, #d9e6f7 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.pin-lock .logo {
+  font-size: 28px; font-weight: 800; margin-bottom: 4px;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb 50%, #38bdf8);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.pin-lock .sub {
+  font-size: 12px; color: #6e809e; margin-bottom: 32px;
+}
+.pin-lock .hint {
+  font-size: 13px; color: #5c7a9e; margin-bottom: 16px;
+  min-height: 19px; font-weight: 600;
+}
+.pin-lock .hint.err { color: #b91c1c; }
+.pin-lock .hint.ok { color: #15803d; }
+
+.pl-dots {
+  display: flex; gap: 14px; margin-bottom: 26px;
+}
+.pl-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #d6e2f2; border: 2px solid #d6e2f2;
+  transition: all .15s;
+}
+.pl-dot.filled {
+  background: #1d4ed8; border-color: #1d4ed8;
+  box-shadow: 0 0 10px rgba(29,78,216,.35);
+}
+.pl-dot.err { animation: pl-shake .4s; }
+@keyframes pl-shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.pl-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 68px);
+  gap: 14px; justify-content: center;
+}
+.pl-key {
+  width: 68px; height: 68px; border-radius: 50%;
+  background: white; border: 1.5px solid #c7d8f5;
+  color: #1a2a44; font-size: 23px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 1px 3px rgba(30,58,138,.08);
+}
+.pl-key:active { background: #eaf2fc; transform: scale(.92); }
+.pl-key.fn {
+  background: transparent; border: none;
+  font-size: 18px; color: #6e809e; box-shadow: none;
+}
+
+.pl-lockout {
+  color: #b91c1c; font-size: 12px; font-weight: 700;
+  margin-bottom: 12px;
+}
 </style>
 </head>
-<body>
+<body class="locked">
+
+<!-- PIN 잠금 화면 -->
+<div class="pin-lock" id="pinLock">
+  <div class="logo">🏭 스마트팩토리</div>
+  <div class="sub">PIN을 입력하세요</div>
+  <div class="hint" id="plHint">4자리 PIN</div>
+  <div class="pl-dots" id="plDots">
+    <div class="pl-dot"></div><div class="pl-dot"></div><div class="pl-dot"></div><div class="pl-dot"></div>
+  </div>
+  <div class="pl-lockout" id="plLockout" style="display:none"></div>
+  <div class="pl-keypad" id="plKeypad"></div>
+</div>
 
 <div class="header">
   <h1>스마트팩토리</h1>
   <div class="top-btns">
-    <button class="top-btn edit"   type="button"><span class="ic">🔧</span><span>편집</span></button>
-    <button class="top-btn user"   id="userBtn" type="button"><span class="ic">👤</span><span id="userName">사용자</span></button>
+    <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
+      <span class="ic">👤</span><span id="userName">사용자</span>
+    </button>
+    <button class="top-btn logout" id="logoutBtn" type="button" style="display:none">
+      <span class="ic">🔒</span><span>로그아웃</span>
+    </button>
   </div>
 </div>
 
@@ -285,14 +369,237 @@ html, body {
 </div>
 
 <script>
-// 사용자명 표시 (localStorage)
-(function(){
-  try {
-    var u = JSON.parse(localStorage.getItem('msm_user') || 'null');
-    if (u && u.name) {
-      document.getElementById('userName').textContent = u.name;
+/* ============================================================
+   PIN 인증 (mm_main 진입 게이트)
+   ============================================================ */
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL_USER = 'mm_user_pin';
+
+/* 마스터 PIN 2580 → SHA-256 */
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
+
+const LK_AUTH   = 'mm_user_session';   // 인증 세션
+const LK_FAIL   = 'mm_pin_fail';       // 실패 카운트
+const SESSION_DAYS = 7;                // 자동 세션 유지 (일) - 매주 PIN 재입력
+const MAX_FAIL = 5;
+const LOCKOUT_SEC = 60;
+
+let curPin = '';
+let lockTimer = null;
+
+async function sha256hex(s){
+  const b = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', b);
+  return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function getSession(){
+  try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+}
+function setSession(s){
+  s.exp = Date.now() + SESSION_DAYS*24*60*60*1000;
+  localStorage.setItem(LK_AUTH, JSON.stringify(s));
+}
+function clearSession(){localStorage.removeItem(LK_AUTH)}
+function getFail(){try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count":0,"until":0}')}catch(e){return{count:0,until:0}}}
+function setFail(f){localStorage.setItem(LK_FAIL, JSON.stringify(f))}
+function clearFail(){localStorage.removeItem(LK_FAIL)}
+
+/* 키패드 렌더링 */
+function renderKeypad(){
+  const kp = document.getElementById('plKeypad');
+  kp.innerHTML = '';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+    const b = document.createElement('button');
+    if(k===''){b.className='pl-key fn';b.style.visibility='hidden'}
+    else if(k==='⌫'){b.className='pl-key fn';b.textContent=k;b.onclick=()=>pinDel()}
+    else{b.className='pl-key';b.textContent=k;b.onclick=()=>pinPress(k)}
+    kp.appendChild(b);
+  });
+}
+
+function updateDots(){
+  document.querySelectorAll('#plDots .pl-dot').forEach((d,i)=>{
+    d.classList.remove('err');
+    if(i<curPin.length)d.classList.add('filled');
+    else d.classList.remove('filled');
+  });
+}
+
+function shakeDots(){
+  document.querySelectorAll('#plDots .pl-dot').forEach(d=>d.classList.add('err'));
+  setTimeout(()=>{curPin='';updateDots()},400);
+}
+
+function pinPress(n){
+  if(curPin.length>=4)return;
+  const f=getFail();if(f.until>Date.now())return;
+  curPin += n;
+  updateDots();
+  if(curPin.length===4)setTimeout(pinDone,150);
+}
+function pinDel(){if(!curPin)return;curPin=curPin.slice(0,-1);updateDots()}
+
+async function pinDone(){
+  const hint = document.getElementById('plHint');
+  hint.className = 'hint';
+  hint.textContent = '확인 중...';
+
+  try{
+    const h = await sha256hex(curPin);
+
+    // 1) 마스터 PIN 체크
+    if(h === MASTER_PIN_HASH){
+      clearFail();
+      setSession({role:'admin', name:'관리자', factory:'', dept:''});
+      hint.classList.add('ok');
+      hint.textContent = '✓ 관리자 인증';
+      setTimeout(unlock, 300);
+      return;
     }
-  } catch(e){}
+
+    // 2) Supabase 조회 (mm_user_pin)
+    const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER
+      +'?select=id,name,factory,dept,position&pin_hash=eq.'+h, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer '+SUPABASE_KEY
+      }
+    });
+    if(!r.ok)throw new Error('서버 응답 오류');
+    const list = await r.json();
+
+    if(list && list.length > 0){
+      const u = list[0];
+      clearFail();
+      setSession({
+        role: 'user',
+        id: u.id,
+        name: u.name,
+        factory: u.factory||'',
+        dept: u.dept||'',
+        position: u.position||''
+      });
+      hint.classList.add('ok');
+      hint.textContent = '✓ '+u.name+'님 환영합니다';
+      setTimeout(unlock, 400);
+      return;
+    }
+
+    // 3) 실패
+    const f = getFail();
+    f.count = (f.count||0) + 1;
+    if(f.count >= MAX_FAIL){
+      f.until = Date.now() + LOCKOUT_SEC*1000;
+      f.count = 0;
+      setFail(f);
+      checkLockout();
+    }else{
+      setFail(f);
+      hint.classList.add('err');
+      hint.textContent = 'PIN 불일치 ('+f.count+'/'+MAX_FAIL+')';
+    }
+    shakeDots();
+  }catch(err){
+    hint.classList.add('err');
+    hint.textContent = '❌ '+err.message;
+    shakeDots();
+  }
+}
+
+function checkLockout(){
+  const f = getFail();
+  const msg = document.getElementById('plLockout');
+  const remain = f.until - Date.now();
+  if(remain > 0){
+    msg.style.display = 'block';
+    const upd = ()=>{
+      const r = Math.ceil((f.until - Date.now())/1000);
+      if(r <= 0){
+        msg.style.display = 'none';
+        clearFail();
+        clearInterval(lockTimer);
+        const hint = document.getElementById('plHint');
+        hint.textContent = '4자리 PIN';
+        hint.className = 'hint';
+        return;
+      }
+      msg.textContent = '🔒 '+r+'초 후 재시도';
+    };
+    upd();
+    clearInterval(lockTimer);
+    lockTimer = setInterval(upd, 1000);
+  }else{
+    msg.style.display = 'none';
+  }
+}
+
+function unlock(){
+  document.body.classList.remove('locked');
+  document.getElementById('pinLock').style.display = 'none';
+  applySession();
+}
+
+function applySession(){
+  const s = getSession();
+  if(!s)return;
+  // 상단 사용자 버튼 표시
+  const btn = document.getElementById('userBtn');
+  const nm = document.getElementById('userName');
+  const lo = document.getElementById('logoutBtn');
+  btn.style.display = '';
+  lo.style.display = '';
+  if(s.role === 'admin'){
+    nm.textContent = '관리자';
+    btn.style.color = '#b91c1c';
+  }else{
+    let label = s.name;
+    if(s.factory)label = s.factory + ' · ' + label;
+    if(s.position)label += ' ' + s.position;
+    nm.textContent = label;
+    btn.style.color = '#1d4ed8';
+  }
+  // 사용자 버튼: 세션 정보 alert (정보 확인용)
+  btn.onclick = ()=>{
+    const expDate = new Date(s.exp);
+    const remainDays = Math.max(0, Math.ceil((s.exp - Date.now()) / (24*60*60*1000)));
+    const info =
+      '👤 ' + (s.role === 'admin' ? '관리자' : s.name) + '\n' +
+      (s.factory ? '🏭 공장: ' + s.factory + '\n' : '') +
+      (s.dept ? '📂 부서: ' + s.dept + '\n' : '') +
+      (s.position ? '🎖 직위: ' + s.position + '\n' : '') +
+      '\n⏱ 자동 잠금까지: ' + remainDays + '일\n' +
+      '(' + expDate.toLocaleDateString('ko-KR') + ' ' + expDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ')';
+    alert(info);
+  };
+  // 로그아웃 버튼: 세션 삭제 → PIN 입력 화면
+  lo.onclick = ()=>{
+    if(!confirm('로그아웃 하시겠습니까?\n다시 접속하려면 PIN을 입력해야 합니다.'))return;
+    clearSession();
+    curPin = '';
+    location.reload();
+  };
+}
+
+/* 키보드 입력 지원 */
+document.addEventListener('keydown', function(e){
+  if(!document.body.classList.contains('locked'))return;
+  if(e.key >= '0' && e.key <= '9') pinPress(e.key);
+  else if(e.key === 'Backspace') pinDel();
+});
+
+/* 초기화 */
+(function init(){
+  const s = getSession();
+  if(s && s.exp > Date.now()){
+    // 세션 유효 → 만료 시점 유지(매주 1회 재입력 정책), 그대로 사용
+    unlock();
+    return;
+  }
+  if(s) clearSession();
+  renderKeypad();
+  checkLockout();
 })();
 </script>
 
