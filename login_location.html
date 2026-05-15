@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b1220">
+<title>로그인 위치 조회</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  height: 100vh; overflow: hidden;
+  background: #0b1220; color: #e2e8f0;
+}
+
+/* 헤더 */
+.header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: rgba(15,23,42,0.92);
+  border-bottom: 1px solid rgba(56,189,248,0.15);
+  flex-shrink: 0;
+}
+.back-btn {
+  width: 36px; height: 36px; border-radius: 9px;
+  border: 1px solid rgba(71,85,105,0.5);
+  background: rgba(30,41,59,0.6); color: #e2e8f0;
+  font-size: 17px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+}
+.header h1 {
+  flex: 1; font-size: 16px; font-weight: 800; color: #7dd3fc;
+}
+.cnt {
+  font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 10px;
+  background: rgba(56,189,248,0.15); color: #7dd3fc;
+}
+
+/* 필터 바 */
+.filter-bar {
+  display: grid; grid-template-columns: 1fr 1fr 1.2fr auto;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(15,23,42,0.85);
+  border-bottom: 1px solid rgba(71,85,105,0.4);
+  flex-shrink: 0;
+}
+.filter-bar input, .filter-bar select {
+  padding: 8px 8px; border-radius: 7px;
+  border: 1px solid rgba(71,85,105,0.5);
+  background: rgba(30,41,59,0.55); color: #e2e8f0;
+  font-size: 12px; font-family: inherit;
+  min-width: 0;
+}
+.filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: #38bdf8; }
+.btn-load {
+  padding: 8px 12px; border-radius: 7px;
+  border: 1px solid #0ea5e9;
+  background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+  color: white; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.btn-load:active { transform: scale(0.95); }
+
+/* 지도 영역 (남은 공간 전부) */
+.map-area {
+  flex: 1;
+  position: relative;
+  background: #1e293b;
+}
+#map { width: 100%; height: 100%; background: #1e293b; }
+
+/* 다크 타일 */
+.leaflet-tile-pane {
+  filter: brightness(0.85) saturate(0.9) hue-rotate(170deg) invert(0.9);
+}
+.leaflet-control-zoom a {
+  background: rgba(15,23,42,0.9) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(71,85,105,0.5) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(15,23,42,0.85) !important;
+  color: #94a3b8 !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a { color: #7dd3fc !important; }
+.leaflet-popup-content-wrapper {
+  background: rgba(15,23,42,0.96) !important;
+  color: #e2e8f0 !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(56,189,248,0.3) !important;
+}
+.leaflet-popup-tip { background: rgba(15,23,42,0.96) !important; }
+.leaflet-popup-close-button { color: #94a3b8 !important; }
+.marker-cluster div {
+  background-color: rgba(56,189,248,0.85) !important;
+  color: white !important; font-weight: bold !important;
+}
+.marker-cluster {
+  background-color: rgba(56,189,248,0.4) !important;
+}
+.custom-marker { background: transparent; border: none; }
+
+/* 팝업 */
+.iw { padding: 4px 2px; min-width: 160px; font-size: 12px; }
+.iw .iw-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: #f1f5f9; }
+.iw .iw-row { color: #cbd5e1; margin: 2px 0; }
+
+/* 전체보기 버튼 */
+.fitall {
+  position: absolute; bottom: 12px; left: 12px;
+  background: rgba(15,23,42,0.92);
+  border: 1px solid rgba(56,189,248,0.4);
+  color: #7dd3fc; border-radius: 7px;
+  padding: 7px 11px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  z-index: 1000;
+}
+.fitall:active { transform: scale(0.95); }
+
+/* 빈 상태 */
+.empty-state {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%;
+  color: #64748b; font-size: 13px;
+  pointer-events: none;
+  text-align: center;
+}
+.loading-state {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15,23,42,0.6);
+  color: #7dd3fc; font-size: 13px;
+  z-index: 500;
+}
+.loading-state::after { content: '...'; animation: dots 1.5s infinite; }
+@keyframes dots { 0%,20%{content:'.';} 40%{content:'..';} 60%,100%{content:'...';} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="history.back()" type="button">←</button>
+  <h1>📍 로그인 위치</h1>
+  <span class="cnt" id="cnt">0건</span>
+</div>
+
+<div class="filter-bar">
+  <input type="date" id="fStart">
+  <input type="date" id="fEnd">
+  <select id="fName" onchange="filterByName()">
+    <option value="">전체 직원</option>
+  </select>
+  <button class="btn-load" onclick="loadData()" type="button">🔍</button>
+</div>
+
+<div class="map-area">
+  <div id="map"><div class="empty-state">조회 중...</div></div>
+  <button class="fitall" onclick="fitAll()" type="button">⛶ 전체보기</button>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL_LOC = 'mm_user_location';
+const LK_AUTH = 'mm_user_session';
+
+let curData = [];
+let filtered = [];
+let map = null;
+let markersLayer = null;
+let markers = [];
+
+const COLORS = ['#38bdf8','#fb923c','#a78bfa','#34d399','#fbbf24','#f472b6','#60a5fa','#fb7185','#22d3ee','#facc15','#c084fc','#4ade80','#f87171','#818cf8','#2dd4bf'];
+function colorOf(name){
+  let h = 0;
+  for(let i=0;i<name.length;i++) h = (h*31 + name.charCodeAt(i)) >>> 0;
+  return COLORS[h % COLORS.length];
+}
+
+function checkAuth(){
+  let s = null;
+  try{ s = JSON.parse(localStorage.getItem(LK_AUTH)||'null') }catch(e){}
+  if(!s || s.exp < Date.now()){
+    alert('로그인이 필요합니다');
+    location.href = 'index.html';
+    return false;
+  }
+  if(s.role !== 'admin'){
+    alert('관리자만 접근 가능합니다');
+    location.href = 'index.html';
+    return false;
+  }
+  return true;
+}
+
+function toDateStr(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function setDefaultDates(){
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 7);
+  document.getElementById('fStart').value = toDateStr(start);
+  document.getElementById('fEnd').value = toDateStr(end);
+}
+
+async function loadData(){
+  const start = document.getElementById('fStart').value;
+  const end = document.getElementById('fEnd').value;
+  if(!start || !end){ alert('날짜를 선택하세요'); return; }
+
+  const mapEl = document.getElementById('map');
+  mapEl.innerHTML = '<div class="loading-state">조회중</div>';
+
+  const startIso = new Date(start + 'T00:00:00').toISOString();
+  const endIso = new Date(end + 'T23:59:59').toISOString();
+
+  const url = SUPABASE_URL+'/rest/v1/'+TBL_LOC
+    + '?select=*'
+    + '&recorded_at=gte.'+startIso
+    + '&recorded_at=lte.'+endIso
+    + '&order=recorded_at.desc'
+    + '&limit=1000';
+
+  try{
+    const r = await fetch(url, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer '+SUPABASE_KEY }
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    curData = await r.json();
+    buildNameOptions();
+    filterByName();
+  }catch(err){
+    mapEl.innerHTML = '<div class="empty-state">❌ '+err.message+'</div>';
+    document.getElementById('cnt').textContent = '0건';
+  }
+}
+
+function buildNameOptions(){
+  const names = [...new Set(curData.map(d => d.user_name).filter(Boolean))].sort();
+  const sel = document.getElementById('fName');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체 직원 ('+names.length+'명)</option>';
+  names.forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    sel.appendChild(opt);
+  });
+  if(cur && names.includes(cur)) sel.value = cur;
+}
+
+function filterByName(){
+  const name = document.getElementById('fName').value;
+  filtered = name ? curData.filter(d => d.user_name === name) : curData;
+  document.getElementById('cnt').textContent = filtered.length + '건';
+  renderMap();
+}
+
+function renderMap(){
+  const valid = filtered.filter(d => d.lat != null && d.lng != null);
+  const mapEl = document.getElementById('map');
+
+  if(!valid.length){
+    if(map){ map.remove(); map = null; }
+    mapEl.innerHTML = '<div class="empty-state">📍 위치 정보가 있는 기록이 없습니다</div>';
+    return;
+  }
+
+  mapEl.innerHTML = '';
+  if(map){ map.remove(); map = null; }
+
+  const first = valid[0];
+  map = L.map('map', { zoomControl: true, attributionControl: true })
+    .setView([first.lat, first.lng], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  markersLayer = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    disableClusteringAtZoom: 14
+  });
+  markers = [];
+
+  // 동일 좌표 분산
+  const coordCount = {};
+  valid.forEach(d => {
+    const k = d.lat.toFixed(4)+','+d.lng.toFixed(4);
+    coordCount[k] = (coordCount[k] || 0) + 1;
+  });
+  const coordIdx = {};
+
+  valid.forEach(d => {
+    const k = d.lat.toFixed(4)+','+d.lng.toFixed(4);
+    coordIdx[k] = (coordIdx[k] || 0) + 1;
+    let lat = d.lat, lng = d.lng;
+    if(coordCount[k] > 1){
+      const angle = (coordIdx[k] / coordCount[k]) * 2 * Math.PI;
+      lat += Math.cos(angle) * 0.001;
+      lng += Math.sin(angle) * 0.001;
+    }
+    const name = d.user_name || '(이름없음)';
+    const color = colorOf(name);
+    const marker = L.marker([lat, lng], { icon: createIcon(color), title: name });
+    marker.bindPopup(buildPopup(d));
+    markersLayer.addLayer(marker);
+    markers.push(marker);
+  });
+
+  map.addLayer(markersLayer);
+  setTimeout(()=>{ map.invalidateSize(); fitAll(); }, 100);
+}
+
+function createIcon(color){
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 28 36">'+
+    '<path d="M14 0 C6 0 0 6 0 14 C0 24 14 36 14 36 C14 36 28 24 28 14 C28 6 22 0 14 0 Z" fill="'+color+'" stroke="white" stroke-width="2"/>'+
+    '<circle cx="14" cy="14" r="5" fill="white"/></svg>';
+  return L.divIcon({
+    html: svg, className: 'custom-marker',
+    iconSize: [24, 32], iconAnchor: [12, 32], popupAnchor: [0, -30]
+  });
+}
+
+function buildPopup(d){
+  const dt = new Date(d.recorded_at);
+  const t = dt.toLocaleString('ko-KR', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'});
+  const loc = [d.city, d.region].filter(Boolean).join(', ') || '(불명)';
+  return '<div class="iw">'+
+    '<div class="iw-name">👤 '+esc(d.user_name||'(이름없음)')+
+      (d.factory ? ' <span style="font-size:11px;color:#94a3b8;font-weight:600">· '+esc(d.factory)+'</span>' : '')+
+    '</div>'+
+    '<div class="iw-row">📍 '+esc(loc)+'</div>'+
+    (d.org ? '<div class="iw-row">📡 '+esc(d.org)+'</div>' : '')+
+    '<div class="iw-row" style="color:#94a3b8;font-size:11px">🕒 '+t+'</div>'+
+  '</div>';
+}
+
+function fitAll(){
+  if(!markers.length || !map) return;
+  const group = L.featureGroup(markers);
+  map.fitBounds(group.getBounds().pad(0.15));
+}
+
+function esc(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+if(checkAuth()){
+  setDefaultDates();
+  loadData();
+}
+</script>
+
+</body>
+</html>
