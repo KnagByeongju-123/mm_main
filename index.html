@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v1.0</title>
+<title>스마트팩토리 v1.1</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -189,7 +189,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1>스마트팩토리 <span class="ver">v1.0</span></h1>
+  <h1>스마트팩토리 <span class="ver">v1.1</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -257,7 +257,7 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v1.0 · msm Smart Factory</div>
+  <div class="footer">v1.1 · msm Smart Factory · 보안마스터 통합</div>
 </div>
 
 <script>
@@ -368,9 +368,12 @@ async function pinDone(){
   try{
     const h = await sha256hex(curPin);
 
+    /* ★ 마스터 PIN — 최우선 검증, 기존 일반사용자 세션도 무효화 */
     if(h === MASTER_PIN_HASH){
       clearFail();
-      setSession({role:'admin', name:'관리자', factory:'', dept:''});
+      clearSession();   // 기존 세션 명시적 제거
+      localStorage.removeItem(LK_LAST_LOC);   // 위치 캐시도 초기화
+      setSession({role:'admin', name:'관리자', factory:'', dept:'', position:''});
       hint.classList.add('ok'); hint.textContent = '✓ 관리자 인증';
       setTimeout(unlock, 300);
       return;
