@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🛡 보안 마스터 · msm</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#0b1220;color:#e2e8f0;overflow:hidden}
+
+/* ========== 헤더 ========== */
+.hdr{position:fixed;top:0;left:0;right:0;height:56px;display:flex;align-items:center;padding:0 12px;gap:10px;background:rgba(15,23,42,.92);backdrop-filter:blur(12px);border-bottom:1px solid #1e293b;z-index:1000}
+.back{width:40px;height:40px;border-radius:10px;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:18px;color:#cbd5e1;text-decoration:none;border:none;cursor:pointer}
+.back:active{background:#334155}
+.title{font-size:17px;font-weight:700;color:#7dd3fc;flex:1}
+.cnt-badge{background:#1e293b;color:#7dd3fc;font-size:12px;font-weight:700;padding:6px 12px;border-radius:14px;border:1px solid #334155}
+.cnt-badge.warn{background:#7c2d12;color:#fed7aa;border-color:#9a3412;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* ========== 필터 바 ========== */
+.fbar{position:fixed;top:56px;left:0;right:0;display:flex;gap:6px;padding:8px;background:#0f172a;border-bottom:1px solid #1e293b;z-index:999;align-items:center;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.fbar::-webkit-scrollbar{display:none}
+.f-date{flex:1;min-width:115px;height:40px;padding:0 10px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-weight:600;font-family:inherit}
+.f-date:focus{outline:none;border-color:#38bdf8}
+.f-sel{flex:1;min-width:80px;max-width:120px;height:40px;padding:0 8px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-weight:600;font-family:inherit}
+.f-sel:focus{outline:none;border-color:#38bdf8}
+.f-btn{height:40px;min-width:48px;padding:0 12px;border-radius:8px;background:#38bdf8;border:none;color:#0b1220;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.f-btn:active{background:#0ea5e9}
+.f-btn.alt{background:#1e293b;color:#7dd3fc;border:1px solid #334155;font-size:12px;min-width:auto;padding:0 10px;gap:4px}
+.f-btn.alt:active{background:#334155}
+
+/* ========== 본문 ========== */
+.body{position:fixed;top:112px;left:0;right:0;bottom:0;display:flex;flex-direction:column}
+.tabs{display:flex;background:#0f172a;border-bottom:1px solid #1e293b;height:42px;flex-shrink:0}
+.tab{flex:1;background:none;border:none;color:#94a3b8;font-size:12px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;position:relative;padding:0 4px}
+.tab.active{color:#7dd3fc;border-bottom-color:#38bdf8;background:rgba(56,189,248,.05)}
+.tab .alarm{position:absolute;top:6px;right:8px;min-width:16px;height:16px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 5px}
+.tab .alarm.show{display:inline-flex}
+
+.content{flex:1;overflow:hidden;position:relative}
+.pane{position:absolute;inset:0;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pane.active{display:block}
+
+/* ========== 지도 ========== */
+#map{width:100%;height:100%}
+.leaflet-container{background:#0b1220 !important;font-family:inherit}
+.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.7)}
+.leaflet-control-attribution{background:rgba(15,23,42,.8) !important;color:#94a3b8 !important;font-size:9px !important}
+.leaflet-control-attribution a{color:#7dd3fc !important}
+.leaflet-control-zoom a{background:#1e293b !important;color:#e2e8f0 !important;border-color:#334155 !important}
+.leaflet-control-zoom a:hover{background:#334155 !important}
+.leaflet-popup-content-wrapper{background:#1e293b;color:#e2e8f0;border-radius:10px;border:1px solid #334155;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.leaflet-popup-tip{background:#1e293b;border:1px solid #334155}
+.leaflet-popup-content{margin:10px 12px;font-size:12px;line-height:1.5}
+.leaflet-popup-content b{color:#7dd3fc}
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(56,189,248,.2) !important}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:rgba(56,189,248,.7) !important;color:#0b1220 !important;font-weight:700 !important}
+
+/* ========== 리스트 ========== */
+.list{padding:8px}
+.row{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.row.suspicious{border-color:#dc2626;background:#3f1d1d}
+.row .pin{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px;flex-shrink:0}
+.row .info{flex:1;min-width:0}
+.row .nm{font-size:13px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.row .nm .badge{font-size:10px;background:#334155;color:#cbd5e1;padding:2px 6px;border-radius:8px;font-weight:600}
+.row .nm .badge.adm{background:#7c2d12;color:#fed7aa}
+.row .nm .badge.susp{background:#dc2626;color:#fff}
+.row .loc{font-size:11px;color:#94a3b8;margin-top:3px;display:flex;align-items:center;gap:4px}
+.row .ts{font-size:10px;color:#64748b;margin-top:2px}
+.row .err{font-size:10px;color:#f87171;margin-top:2px}
+.row .susp-reason{font-size:11px;color:#fca5a5;margin-top:3px;font-weight:600}
+
+/* ========== 통계 ========== */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px}
+.stat{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px}
+.stat .lbl{font-size:11px;color:#94a3b8;font-weight:600}
+.stat .val{font-size:20px;font-weight:700;color:#7dd3fc;margin-top:2px}
+.stat .val.warn{color:#fca5a5}
+.stat .sub{font-size:10px;color:#64748b;margin-top:2px}
+
+.usr-block{background:#1e293b;border:1px solid #334155;border-radius:10px;margin:8px;padding:10px 12px}
+.usr-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.usr-head .pin{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:12px}
+.usr-head .nm{font-size:13px;font-weight:700;color:#e2e8f0;flex:1}
+.usr-head .cnt{font-size:11px;color:#7dd3fc;font-weight:700;background:#0f172a;padding:3px 8px;border-radius:8px}
+.usr-locs{display:flex;flex-wrap:wrap;gap:4px}
+.usr-loc{font-size:11px;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:3px 8px;color:#cbd5e1}
+.usr-loc b{color:#7dd3fc}
+
+/* ========== 보안 탭 ========== */
+.sec-section{margin:8px}
+.sec-card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.sec-card.danger{border-color:#dc2626;background:#3f1d1d}
+.sec-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sec-card-head .ic{font-size:18px}
+.sec-card-head .ti{font-size:13px;font-weight:700;color:#e2e8f0;flex:1}
+.sec-card-head .ct{font-size:11px;color:#7dd3fc;font-weight:700;background:#0f172a;padding:3px 8px;border-radius:8px}
+.sec-card-head .ct.warn{color:#fed7aa;background:#7c2d12}
+
+.cfg-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cfg-row label{font-size:12px;color:#94a3b8;font-weight:600;min-width:90px;flex-shrink:0}
+.cfg-row input[type=text],.cfg-row input[type=number]{flex:1;min-width:0;height:34px;padding:0 10px;border-radius:6px;background:#0f172a;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-family:inherit}
+.cfg-row input:focus{outline:none;border-color:#38bdf8}
+.cfg-row .mini{height:34px;padding:0 12px;border-radius:6px;background:#38bdf8;border:none;color:#0b1220;font-size:12px;font-weight:700;cursor:pointer}
+.cfg-row .mini:active{background:#0ea5e9}
+.cfg-row .mini.gray{background:#334155;color:#e2e8f0}
+.cfg-row .mini.danger{background:#dc2626;color:#fff}
+.cfg-help{font-size:11px;color:#64748b;margin-top:4px;line-height:1.4}
+
+.susp-item{background:#0f172a;border:1px solid #7f1d1d;border-radius:8px;padding:10px;margin-bottom:8px}
+.susp-item-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.susp-item-head .pin{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;flex-shrink:0}
+.susp-item-head .nm{font-size:13px;font-weight:700;color:#fca5a5;flex:1}
+.susp-item-head .nm small{color:#94a3b8;font-weight:600;font-size:11px}
+.susp-item .reason{font-size:11px;color:#fed7aa;background:#451a03;border:1px solid #78350f;border-radius:6px;padding:6px 8px;margin-bottom:6px;line-height:1.4}
+.susp-item .detail{font-size:11px;color:#cbd5e1;line-height:1.6;margin-bottom:6px}
+.susp-item .detail b{color:#fca5a5}
+.susp-item .btns{display:flex;gap:6px;flex-wrap:wrap}
+.susp-item .btns button{flex:1;min-width:80px;height:36px;border-radius:6px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.susp-item .btns .b-block{background:#dc2626;color:#fff}
+.susp-item .btns .b-reset{background:#f59e0b;color:#0b1220}
+.susp-item .btns .b-ok{background:#334155;color:#cbd5e1}
+.susp-item .btns button:active{transform:scale(0.97)}
+
+.user-mgmt-item{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.user-mgmt-item.blocked{border-color:#dc2626;background:#3f1d1d}
+.user-mgmt-item .pin{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;flex-shrink:0}
+.user-mgmt-item .nm{flex:1;min-width:0;font-size:13px;color:#e2e8f0;font-weight:600}
+.user-mgmt-item .nm small{display:block;color:#94a3b8;font-size:10px;font-weight:500;margin-top:1px}
+.user-mgmt-item .nm .b-flag{display:inline-block;background:#dc2626;color:#fff;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:700}
+.user-mgmt-item .acts{display:flex;gap:4px;flex-shrink:0}
+.user-mgmt-item .acts button{height:30px;padding:0 8px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.user-mgmt-item .acts .b-block{background:#dc2626;color:#fff}
+.user-mgmt-item .acts .b-unblock{background:#10b981;color:#0b1220}
+.user-mgmt-item .acts .b-reset{background:#f59e0b;color:#0b1220}
+
+/* ========== 마스터 PIN 모달 ========== */
+.modal{position:fixed;inset:0;background:rgba(11,18,32,.92);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:3000;padding:20px}
+.modal.show{display:flex}
+.modal-box{background:#0f172a;border:1px solid #334155;border-radius:16px;padding:20px;width:100%;max-width:320px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+.modal-title{font-size:15px;font-weight:700;color:#fed7aa;text-align:center;margin-bottom:6px}
+.modal-sub{font-size:12px;color:#94a3b8;text-align:center;margin-bottom:14px;line-height:1.4}
+.m-dots{display:flex;justify-content:center;gap:10px;margin-bottom:14px}
+.m-dot{width:14px;height:14px;border-radius:50%;background:#1e293b;border:2px solid #334155;transition:all .15s}
+.m-dot.filled{background:#fed7aa;border-color:#f59e0b}
+.m-dot.err{background:#dc2626;border-color:#7f1d1d;animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.m-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.m-key{height:46px;background:#1e293b;border:1px solid #334155;border-radius:10px;color:#e2e8f0;font-size:18px;font-weight:700;cursor:pointer;font-family:inherit}
+.m-key:active{background:#334155}
+.m-key.fn{background:#0b1220}
+.m-hint{font-size:11px;text-align:center;color:#94a3b8;margin-bottom:10px;min-height:14px}
+.m-hint.err{color:#fca5a5}
+.m-hint.ok{color:#86efac}
+.m-cancel{width:100%;height:38px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#94a3b8;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* ========== 빈/로딩/토스트 ========== */
+.empty{text-align:center;color:#64748b;font-size:13px;padding:60px 20px}
+.empty .ic{font-size:36px;margin-bottom:8px;opacity:.5}
+.loading{position:absolute;inset:0;background:rgba(11,18,32,.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:500}
+.loading .spin{width:40px;height:40px;border:3px solid #1e293b;border-top-color:#38bdf8;border-radius:50%;animation:spin 1s linear infinite}
+.loading .msg{font-size:13px;color:#94a3b8}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:10px 16px;border-radius:8px;font-size:13px;z-index:2000;box-shadow:0 4px 16px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+.toast.err{border-color:#7f1d1d;color:#fecaca}
+.toast.ok{border-color:#14532d;color:#bbf7d0}
+
+/* ========== PIN 관리 탭 ========== */
+body.no-filter .body{top:98px}    /* 필터바 숨겨질 때 본문 상단 조정 */
+.pin-section{padding:8px}
+.pin-toolbar{display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.pin-toolbar input[type=text]{flex:1;min-width:0;height:38px;padding:0 12px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-family:inherit}
+.pin-toolbar input:focus{outline:none;border-color:#38bdf8}
+.pin-toolbar .btn{height:38px;padding:0 14px;border-radius:8px;background:#38bdf8;border:none;color:#0b1220;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.pin-toolbar .btn:active{background:#0ea5e9}
+.pin-toolbar .btn.gray{background:#1e293b;color:#7dd3fc;border:1px solid #334155}
+
+.pin-stat{display:flex;gap:6px;margin-bottom:8px;font-size:11px;color:#94a3b8}
+.pin-stat .chip{background:#1e293b;border:1px solid #334155;padding:4px 10px;border-radius:12px;font-weight:600}
+.pin-stat .chip b{color:#7dd3fc}
+.pin-stat .chip.warn b{color:#fca5a5}
+
+.pin-list{}
+.pin-item{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.pin-item.blocked{border-color:#dc2626;background:#3f1d1d}
+.pin-item .av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px;flex-shrink:0}
+.pin-item .meta{flex:1;min-width:0}
+.pin-item .meta .nm{font-size:14px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pin-item .meta .nm .b-flag{background:#dc2626;color:#fff;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700}
+.pin-item .meta .sub{font-size:11px;color:#94a3b8;margin-top:2px}
+.pin-item .meta .sub .sep{color:#475569;margin:0 4px}
+.pin-item .meta .stamp{font-size:10px;color:#64748b;margin-top:2px}
+.pin-item .acts{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.pin-item .acts button{height:28px;min-width:60px;padding:0 8px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.pin-item .acts .b-edit{background:#38bdf8;color:#0b1220}
+.pin-item .acts .b-pin{background:#f59e0b;color:#0b1220}
+.pin-item .acts .b-block{background:#dc2626;color:#fff}
+.pin-item .acts .b-unblock{background:#10b981;color:#0b1220}
+.pin-item .acts .b-del{background:#475569;color:#fff}
+
+/* PIN 편집 모달 */
+.edit-modal{position:fixed;inset:0;background:rgba(11,18,32,.92);backdrop-filter:blur(8px);display:none;align-items:flex-start;justify-content:center;z-index:2500;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.edit-modal.show{display:flex}
+.edit-box{background:#0f172a;border:1px solid #334155;border-radius:16px;padding:18px;width:100%;max-width:380px;margin-top:30px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+.edit-title{font-size:15px;font-weight:700;color:#7dd3fc;text-align:center;margin-bottom:14px}
+.edit-row{margin-bottom:10px}
+.edit-row label{display:block;font-size:11px;color:#94a3b8;font-weight:600;margin-bottom:4px}
+.edit-row input,.edit-row select{width:100%;height:38px;padding:0 12px;border-radius:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:13px;font-family:inherit}
+.edit-row input:focus,.edit-row select:focus{outline:none;border-color:#38bdf8}
+.edit-row .help{font-size:10px;color:#64748b;margin-top:3px}
+.edit-btns{display:flex;gap:8px;margin-top:14px}
+.edit-btns button{flex:1;height:42px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.edit-btns .b-save{background:#38bdf8;color:#0b1220}
+.edit-btns .b-cancel{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="hdr">
+  <a class="back" href="index.html">←</a>
+  <div class="title">🛡 보안 마스터</div>
+  <div class="cnt-badge" id="cntBadge">0건</div>
+</div>
+
+<!-- 필터 (위치 관련 탭에서만 표시) -->
+<div class="fbar" id="filterBar">
+  <input type="date" id="fFrom" class="f-date">
+  <input type="date" id="fTo" class="f-date">
+  <select id="fUser" class="f-sel"><option value="">전체</option></select>
+  <button class="f-btn" onclick="loadData()">🔍</button>
+  <button class="f-btn alt" onclick="setRangeAll()">⌐ 전체보기</button>
+</div>
+
+<!-- 본문 -->
+<div class="body">
+  <div class="tabs">
+    <button class="tab active" data-tab="pin" onclick="switchTab('pin')">👥 PIN</button>
+    <button class="tab" data-tab="map" onclick="switchTab('map')">🗺 지도</button>
+    <button class="tab" data-tab="list" onclick="switchTab('list')">📋 목록</button>
+    <button class="tab" data-tab="stats" onclick="switchTab('stats')">📊 통계</button>
+    <button class="tab" data-tab="sec" onclick="switchTab('sec')">🛡 보안<span class="alarm" id="alarmBadge">0</span></button>
+  </div>
+
+  <div class="content">
+    <div class="pane active" id="panePin">
+      <div class="pin-section">
+        <div class="pin-toolbar">
+          <input type="text" id="pinSearch" placeholder="🔍 이름/부서/공장 검색" oninput="renderPinList()">
+          <button class="btn" onclick="openPinEdit(null)">+ 추가</button>
+          <button class="btn gray" onclick="loadPinUsers()">🔄</button>
+        </div>
+        <div class="pin-stat" id="pinStat"></div>
+        <div class="pin-list" id="pinList"></div>
+      </div>
+    </div>
+    <div class="pane" id="paneMap"><div id="map"></div></div>
+    <div class="pane" id="paneList"><div class="list" id="listBox"></div></div>
+    <div class="pane" id="paneStats">
+      <div class="stats" id="statsBox"></div>
+      <div id="userStatsBox"></div>
+    </div>
+    <div class="pane" id="paneSec">
+      <div class="sec-section">
+        <!-- 의심사례 카드 -->
+        <div class="sec-card danger" id="suspCard">
+          <div class="sec-card-head">
+            <div class="ic">⚠️</div>
+            <div class="ti">의심 로그인 감지</div>
+            <div class="ct warn" id="suspCount">0건</div>
+          </div>
+          <div id="suspList">
+            <div class="empty" style="padding:20px"><div class="ic">✅</div>의심 사례가 없습니다</div>
+          </div>
+        </div>
+
+        <!-- 감지 규칙 설정 -->
+        <div class="sec-card">
+          <div class="sec-card-head">
+            <div class="ic">⚙️</div>
+            <div class="ti">감지 규칙</div>
+          </div>
+          <div class="cfg-row">
+            <label>해외 접속</label>
+            <input type="text" id="cfgHome" value="South Korea" placeholder="기준 국가명">
+          </div>
+          <div class="cfg-help">위 국가가 아닌 곳에서 접속 시 의심 처리</div>
+          <div class="cfg-row" style="margin-top:10px">
+            <label>다중지역</label>
+            <input type="number" id="cfgWindowMin" value="60" min="5" max="1440">
+            <span style="color:#94a3b8;font-size:12px">분 내</span>
+            <input type="number" id="cfgCityCnt" value="2" min="2" max="10" style="max-width:60px">
+            <span style="color:#94a3b8;font-size:12px">곳 이상</span>
+          </div>
+          <div class="cfg-help">동일 사용자가 짧은 시간에 여러 도시에서 접속 시 의심</div>
+          <div class="cfg-row" style="margin-top:10px">
+            <button class="mini" onclick="saveCfg();detectSuspicious();toast('규칙 저장','ok')">💾 저장 & 재분석</button>
+          </div>
+        </div>
+
+        <!-- 알림 설정 -->
+        <div class="sec-card">
+          <div class="sec-card-head">
+            <div class="ic">🔔</div>
+            <div class="ti">마스터 알림 (ntfy)</div>
+          </div>
+          <div class="cfg-row">
+            <label>ntfy 토픽</label>
+            <input type="text" id="cfgTopic" placeholder="자동생성 또는 직접입력" oninput="refreshTopicInfo()">
+            <button class="mini gray" onclick="genTopic()" title="자동생성">🎲</button>
+          </div>
+          <div class="cfg-help">⚠ 토픽명이 URL이자 비밀번호. 추측 어려운 랜덤 문자열 권장</div>
+          <div class="cfg-row" style="margin-top:10px;flex-wrap:wrap">
+            <button class="mini" onclick="saveTopic()">💾 저장</button>
+            <button class="mini gray" onclick="copyTopicUrl()">📋 URL복사</button>
+            <button class="mini gray" onclick="showTopicQR()">📱 QR</button>
+            <button class="mini gray" onclick="testNtfy()">📤 테스트</button>
+          </div>
+          <div id="topicInfo" style="display:none;margin-top:10px;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:8px;font-size:11px;color:#cbd5e1;line-height:1.6">
+            <div><b style="color:#7dd3fc">📡 구독 URL:</b></div>
+            <div id="topicUrl" style="font-family:monospace;color:#86efac;word-break:break-all;margin:4px 0;padding:6px;background:#020617;border-radius:4px"></div>
+            <div style="color:#94a3b8;font-size:10px">
+              ① 스마트폰에 <b>ntfy</b> 앱 설치 (Play / App Store)<br>
+              ② 앱에서 [+] → Subscribe → Topic name에 토픽명 입력<br>
+              ③ 의심 감지 시 자동 푸시 도착
+            </div>
+          </div>
+          <div id="qrBox" style="display:none;margin-top:10px;padding:14px;background:#fff;border-radius:8px;text-align:center">
+            <img id="qrImg" style="max-width:200px;height:auto" alt="QR">
+            <div style="color:#0b1220;font-size:11px;margin-top:6px;font-weight:600">📱 ntfy 앱에서 QR 스캔으로 구독</div>
+          </div>
+        </div>
+
+        <!-- 사용자 관리 -->
+        <div class="sec-card">
+          <div class="sec-card-head">
+            <div class="ic">👥</div>
+            <div class="ti">사용자 차단/PIN 관리</div>
+            <div class="ct" id="userCount">0명</div>
+          </div>
+          <div class="cfg-help" style="margin-bottom:8px">⚠ 차단/PIN변경은 마스터 PIN 입력 필요</div>
+          <div id="userMgmtList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="loading" id="loading" style="display:none">
+      <div class="spin"></div>
+      <div class="msg">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN 사용자 편집 모달 -->
+<div class="edit-modal" id="editModal">
+  <div class="edit-box">
+    <div class="edit-title" id="editTitle">👤 사용자 추가</div>
+    <div class="edit-row">
+      <label>이름 *</label>
+      <input type="text" id="edName" placeholder="홍길동">
+    </div>
+    <div class="edit-row">
+      <label>공장</label>
+      <select id="edFactory">
+        <option value="">선택안함</option>
+        <option value="1공장">1공장</option>
+        <option value="2공장">2공장</option>
+        <option value="3공장">3공장</option>
+      </select>
+    </div>
+    <div class="edit-row">
+      <label>부서</label>
+      <input type="text" id="edDept" placeholder="예: 품질관리팀">
+    </div>
+    <div class="edit-row">
+      <label>직위</label>
+      <input type="text" id="edPosition" placeholder="예: 팀장">
+    </div>
+    <div class="edit-row" id="rowNewPin">
+      <label>PIN 4자리 *</label>
+      <input type="text" id="edPin" inputmode="numeric" maxlength="4" placeholder="0000">
+      <div class="help">숫자 4자리. 추후 [PIN] 버튼으로 재설정 가능</div>
+    </div>
+    <div class="edit-btns">
+      <button class="b-cancel" onclick="closePinEdit()">취소</button>
+      <button class="b-save" onclick="savePinEdit()">💾 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 마스터 PIN 모달 -->
+<div class="modal" id="masterModal">
+  <div class="modal-box">
+    <div class="modal-title" id="mTitle">🔐 마스터 인증</div>
+    <div class="modal-sub" id="mSub">관리자 PIN 4자리를 입력하세요</div>
+    <div class="m-dots" id="mDots">
+      <div class="m-dot"></div><div class="m-dot"></div><div class="m-dot"></div><div class="m-dot"></div>
+    </div>
+    <div class="m-keypad" id="mKeypad"></div>
+    <div class="m-hint" id="mHint">&nbsp;</div>
+    <button class="m-cancel" onclick="closeMaster()">취소</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+<script>
+/* ============================================================
+   설정
+   ============================================================ */
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL_LOC  = 'mm_user_location';
+const TBL_USER = 'mm_user_pin';
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
+const NTFY_SV = 'https://ntfy.sh';
+
+const LK_CFG = 'mm_sec_cfg';
+const LK_ALERTED = 'mm_sec_alerted';   // 이미 알림 발송한 의심건 ID 캐시
+
+let map = null, cluster = null;
+let allRows = [];           // 위치 데이터
+let allUsers = [];          // PIN 사용자 데이터
+let suspGroups = [];        // 의심사례 그룹
+let cfg = {
+  homeCountry: 'South Korea',
+  windowMin: 60,
+  cityCnt: 2,
+  ntfyTopic: ''
+};
+
+let pendingAction = null;   // 마스터 인증 후 실행할 콜백
+let masterPin = '';
+
+/* ============================================================
+   유틸
+   ============================================================ */
+async function sha256hex(s){
+  const b = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', b);
+  return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function toast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function ymd(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+function fmtTs(s){
+  if(!s)return '';
+  const d = new Date(s);
+  if(isNaN(d))return s;
+  const M = String(d.getMonth()+1).padStart(2,'0');
+  const D = String(d.getDate()).padStart(2,'0');
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  return M+'/'+D+' '+h+':'+m;
+}
+
+function nameColor(name){
+  let h = 0;
+  const s = String(name||'?');
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return 'hsl('+(h%360)+', 65%, 50%)';
+}
+function nameInitial(name){
+  const s = String(name||'?').trim();
+  if(!s) return '?';
+  return s.slice(0, s.length > 2 ? 2 : s.length);
+}
+
+function makePinIcon(name, suspicious){
+  const color = suspicious ? '#dc2626' : nameColor(name);
+  const txt = nameInitial(name);
+  const ring = suspicious ? '<circle cx="17" cy="17" r="14" fill="none" stroke="#fef08a" stroke-width="1.5"/>' : '';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44">' +
+    '<defs><filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.5"/></filter></defs>' +
+    '<path d="M17 0 C7 0 0 7 0 17 C0 28 17 44 17 44 C17 44 34 28 34 17 C34 7 27 0 17 0 Z" fill="'+color+'" stroke="#fff" stroke-width="2" filter="url(#s)"/>' +
+    ring +
+    '<circle cx="17" cy="17" r="11" fill="rgba(255,255,255,0.15)"/>' +
+    '<text x="17" y="21" text-anchor="middle" font-family="system-ui,sans-serif" font-size="'+(txt.length>1?10:13)+'" font-weight="700" fill="#fff">'+txt+'</text>' +
+    '</svg>';
+  return L.divIcon({
+    html: svg,
+    className: 'pin-marker',
+    iconSize: [34, 44],
+    iconAnchor: [17, 44],
+    popupAnchor: [0, -40]
+  });
+}
+
+/* ============================================================
+   탭 전환
+   ============================================================ */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  const targetId = 'pane'+name.charAt(0).toUpperCase()+name.slice(1);
+  document.getElementById(targetId).classList.add('active');
+
+  /* 필터바: 위치 관련 탭에서만 표시 */
+  const fb = document.getElementById('filterBar');
+  if(name === 'pin' || name === 'sec'){
+    fb.style.display = 'none';
+    document.body.classList.add('no-filter');
+  } else {
+    fb.style.display = 'flex';
+    document.body.classList.remove('no-filter');
+  }
+
+  if(name==='map' && map){
+    setTimeout(()=>map.invalidateSize(), 100);
+  }
+  if(name==='sec'){
+    renderSecPane();
+  }
+  if(name==='pin'){
+    /* 첫 진입 시 위치 데이터 없을 때도 사용자 목록 자체는 로드 */
+    if(allUsers.length === 0) loadPinUsers();
+    else renderPinList();
+  }
+}
+
+/* ============================================================
+   지도 초기화
+   ============================================================ */
+function initMap(){
+  map = L.map('map', {
+    center: [36.5, 127.8],
+    zoom: 7,
+    zoomControl: true,
+    attributionControl: true
+  });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+  }).addTo(map);
+  cluster = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 50
+  });
+  map.addLayer(cluster);
+}
+
+/* ============================================================
+   날짜 / 설정
+   ============================================================ */
+function setDefaultRange(){
+  const today = new Date();
+  const wk = new Date();
+  wk.setDate(today.getDate() - 7);
+  document.getElementById('fFrom').value = ymd(wk);
+  document.getElementById('fTo').value = ymd(today);
+}
+function setRangeAll(){
+  document.getElementById('fFrom').value = '2020-01-01';
+  document.getElementById('fTo').value = ymd(new Date());
+  loadData();
+}
+function loadCfg(){
+  try{
+    const o = JSON.parse(localStorage.getItem(LK_CFG)||'null');
+    if(o) cfg = Object.assign(cfg, o);
+  }catch(e){}
+  document.getElementById('cfgHome').value = cfg.homeCountry;
+  document.getElementById('cfgWindowMin').value = cfg.windowMin;
+  document.getElementById('cfgCityCnt').value = cfg.cityCnt;
+  document.getElementById('cfgTopic').value = cfg.ntfyTopic;
+  refreshTopicInfo();
+}
+function saveCfg(){
+  cfg.homeCountry = document.getElementById('cfgHome').value.trim() || 'South Korea';
+  cfg.windowMin = parseInt(document.getElementById('cfgWindowMin').value) || 60;
+  cfg.cityCnt = parseInt(document.getElementById('cfgCityCnt').value) || 2;
+  cfg.ntfyTopic = document.getElementById('cfgTopic').value.trim();
+  localStorage.setItem(LK_CFG, JSON.stringify(cfg));
+}
+
+/* ============================================================
+   사용자 select
+   ============================================================ */
+function fillUserSelect(rows){
+  const sel = document.getElementById('fUser');
+  const cur = sel.value;
+  const seen = new Map();
+  rows.forEach(r=>{
+    const k = r.user_id || ('n_'+r.user_name);
+    if(!seen.has(k)) seen.set(k, r.user_name || '(이름없음)');
+  });
+  sel.innerHTML = '<option value="">전체</option>';
+  Array.from(seen.entries())
+    .sort((a,b)=>String(a[1]).localeCompare(String(b[1]),'ko'))
+    .forEach(([k,n])=>{
+      const o = document.createElement('option');
+      o.value = k; o.textContent = n;
+      sel.appendChild(o);
+    });
+  if(cur) sel.value = cur;
+}
+
+/* ============================================================
+   데이터 로드
+   ============================================================ */
+async function loadData(){
+  const from = document.getElementById('fFrom').value;
+  const to   = document.getElementById('fTo').value;
+  const uid  = document.getElementById('fUser').value;
+
+  if(!from || !to){
+    toast('날짜를 선택하세요', 'err');
+    return;
+  }
+  const loading = document.getElementById('loading');
+  loading.style.display = 'flex';
+
+  try{
+    const fromISO = from + 'T00:00:00';
+    const toISO   = to   + 'T23:59:59';
+
+    let url = SUPABASE_URL + '/rest/v1/' + TBL_LOC
+      + '?select=*'
+      + '&recorded_at=gte.' + encodeURIComponent(fromISO)
+      + '&recorded_at=lte.' + encodeURIComponent(toISO)
+      + '&order=recorded_at.desc&limit=1000';
+
+    if(uid){
+      if(uid.startsWith('n_')){
+        url += '&user_name=eq.' + encodeURIComponent(uid.slice(2));
+      } else {
+        url += '&user_id=eq.' + encodeURIComponent(uid);
+      }
+    }
+
+    const r = await fetch(url, {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(!r.ok){
+      let detail = '';
+      try{ detail = await r.text(); }catch(e){}
+      let hint = '';
+      if(r.status === 404) hint = '\n→ mm_user_location 테이블이 없습니다. setup_security.sql을 실행하세요.';
+      else if(r.status === 401 || r.status === 403) hint = '\n→ RLS 정책이 막고 있습니다.';
+      throw new Error('HTTP '+r.status+hint+(detail?'\n응답: '+detail.slice(0,200):''));
+    }
+    allRows = await r.json();
+
+    document.getElementById('cntBadge').textContent = allRows.length+'건';
+    fillUserSelect(allRows);
+    detectSuspicious();
+    renderMap();
+    renderList();
+    renderStats();
+
+    await loadUsers();
+    renderPinList();
+
+    if(allRows.length === 0) toast('조회 결과 없음');
+    else toast(allRows.length+'건 조회', 'ok');
+  } catch(e){
+    console.error(e);
+    toast('조회 실패 (콘솔 확인)', 'err');
+    setTimeout(()=>alert('❌ 조회 실패\n\n'+e.message), 100);
+    document.getElementById('cntBadge').textContent = '0건';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+async function loadUsers(){
+  try{
+    const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER
+      +'?select=id,name,factory,dept,position,blocked,blocked_at,blocked_reason,pin_changed_at'
+      +'&order=name.asc', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(r.ok) allUsers = await r.json();
+  }catch(e){ console.error(e); }
+}
+
+/* PIN 탭에서 호출 — 로드 + 렌더 */
+async function loadPinUsers(){
+  await loadUsers();
+  renderPinList();
+  /* 보안 탭이 열려있으면 그쪽도 갱신 */
+  if(document.querySelector('.tab[data-tab="sec"]').classList.contains('active')){
+    renderUserMgmt();
+  }
+}
+
+/* ============================================================
+   PIN 사용자 관리 (CRUD)
+   ============================================================ */
+let editingUserId = null;
+
+function renderPinList(){
+  const list = document.getElementById('pinList');
+  const stat = document.getElementById('pinStat');
+  const q = (document.getElementById('pinSearch').value||'').trim().toLowerCase();
+
+  let filtered = allUsers;
+  if(q){
+    filtered = allUsers.filter(u=>{
+      return (u.name||'').toLowerCase().includes(q)
+          || (u.factory||'').toLowerCase().includes(q)
+          || (u.dept||'').toLowerCase().includes(q)
+          || (u.position||'').toLowerCase().includes(q);
+    });
+  }
+
+  const total = allUsers.length;
+  const blocked = allUsers.filter(u=>u.blocked).length;
+  stat.innerHTML = '<span class="chip">전체 <b>'+total+'</b>명</span>'
+    + (blocked>0 ? '<span class="chip warn">차단 <b>'+blocked+'</b>명</span>' : '')
+    + (q ? '<span class="chip">필터 <b>'+filtered.length+'</b></span>' : '');
+
+  if(filtered.length === 0){
+    list.innerHTML = '<div class="empty"><div class="ic">👥</div>'+(q?'검색 결과 없음':'등록된 사용자 없음')+'</div>';
+    return;
+  }
+  list.innerHTML = '';
+  filtered.forEach(u=>{
+    const color = nameColor(u.name);
+    const ini = nameInitial(u.name);
+    const item = document.createElement('div');
+    item.className = 'pin-item' + (u.blocked?' blocked':'');
+
+    let html = '<div class="av" style="background:'+color+'">'+ini+'</div>';
+    html += '<div class="meta">';
+    html += '<div class="nm">'+(u.name||'(이름없음)');
+    if(u.blocked) html += '<span class="b-flag">🚫 차단</span>';
+    html += '</div>';
+    let sub = [];
+    if(u.factory) sub.push(u.factory);
+    if(u.dept) sub.push(u.dept);
+    if(u.position) sub.push(u.position);
+    html += '<div class="sub">'+(sub.join(' <span class="sep">·</span> ') || '<span style="color:#475569">정보없음</span>')+'</div>';
+    if(u.pin_changed_at){
+      html += '<div class="stamp">🔄 PIN변경: '+fmtTs(u.pin_changed_at)+'</div>';
+    }
+    if(u.blocked && u.blocked_reason){
+      html += '<div class="stamp" style="color:#fca5a5">사유: '+u.blocked_reason+'</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="acts">';
+    html += '<button class="b-edit" data-act="edit" data-uid="'+u.id+'">정보</button>';
+    html += '<button class="b-pin" data-act="pin" data-uid="'+u.id+'">PIN</button>';
+    if(u.blocked){
+      html += '<button class="b-unblock" data-act="unblock" data-uid="'+u.id+'">해제</button>';
+    } else {
+      html += '<button class="b-block" data-act="block" data-uid="'+u.id+'">차단</button>';
+    }
+    html += '<button class="b-del" data-act="del" data-uid="'+u.id+'">삭제</button>';
+    html += '</div>';
+
+    item.innerHTML = html;
+    item.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>handlePinAction(b.dataset.act, parseInt(b.dataset.uid)));
+    });
+    list.appendChild(item);
+  });
+}
+
+function handlePinAction(act, uid){
+  const u = allUsers.find(x=>x.id === uid);
+  if(!u && act !== 'edit') return;
+
+  if(act === 'edit'){
+    requestMaster('🔐 정보 수정', u.name+' 정보를 수정합니다', ()=>openPinEdit(uid));
+  } else if(act === 'pin'){
+    requestMaster('🔄 PIN 재설정', u.name+' PIN을 재설정합니다', ()=>resetUserPin(uid, u.name));
+  } else if(act === 'block'){
+    requestMaster('🚫 차단', u.name+' 사용자를 차단합니다', ()=>blockUser(uid, u.name, '수동 차단'));
+  } else if(act === 'unblock'){
+    requestMaster('✅ 차단 해제', u.name+' 차단을 해제합니다', ()=>unblockUser(uid, u.name));
+  } else if(act === 'del'){
+    requestMaster('🗑 삭제', u.name+' 사용자를 영구 삭제합니다', ()=>deleteUser(uid, u.name));
+  }
+}
+
+function openPinEdit(uid){
+  editingUserId = uid;
+  const isNew = (uid === null);
+  document.getElementById('editTitle').textContent = isNew ? '👤 사용자 추가' : '✏ 사용자 수정';
+  document.getElementById('rowNewPin').style.display = isNew ? 'block' : 'none';
+  if(isNew){
+    document.getElementById('edName').value = '';
+    document.getElementById('edFactory').value = '';
+    document.getElementById('edDept').value = '';
+    document.getElementById('edPosition').value = '';
+    document.getElementById('edPin').value = '';
+  } else {
+    const u = allUsers.find(x=>x.id === uid);
+    if(!u) return;
+    document.getElementById('edName').value = u.name || '';
+    document.getElementById('edFactory').value = u.factory || '';
+    document.getElementById('edDept').value = u.dept || '';
+    document.getElementById('edPosition').value = u.position || '';
+  }
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closePinEdit(){
+  document.getElementById('editModal').classList.remove('show');
+  editingUserId = null;
+}
+
+async function savePinEdit(){
+  const name = document.getElementById('edName').value.trim();
+  const factory = document.getElementById('edFactory').value;
+  const dept = document.getElementById('edDept').value.trim();
+  const position = document.getElementById('edPosition').value.trim();
+  if(!name){ alert('이름을 입력하세요'); return; }
+
+  const isNew = (editingUserId === null);
+
+  if(isNew){
+    const pin = document.getElementById('edPin').value;
+    if(!/^\d{4}$/.test(pin)){ alert('PIN은 숫자 4자리'); return; }
+    /* PIN 해시 후 INSERT */
+    try{
+      const h = await sha256hex(pin);
+      const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer '+SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          name, factory: factory||null, dept: dept||null, position: position||null,
+          pin_hash: h, blocked: false
+        })
+      });
+      if(!r.ok){
+        const t = await r.text().catch(()=>'');
+        throw new Error('HTTP '+r.status+(t?': '+t.slice(0,150):''));
+      }
+      toast('✅ '+name+' 추가됨','ok');
+      closePinEdit();
+      await loadPinUsers();
+    }catch(e){
+      alert('추가 실패: '+e.message);
+    }
+  } else {
+    /* 정보만 UPDATE (PIN 제외) */
+    try{
+      await patchUser(editingUserId, {
+        name, factory: factory||null, dept: dept||null, position: position||null
+      });
+      toast('💾 수정됨','ok');
+      closePinEdit();
+      await loadPinUsers();
+    }catch(e){
+      alert('수정 실패: '+e.message);
+    }
+  }
+}
+
+async function deleteUser(uid, name){
+  if(!confirm('정말 [' + name + '] 사용자를 영구 삭제합니까?\n로그인 위치 기록은 남습니다.')) return;
+  try{
+    const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER+'?id=eq.'+uid, {
+      method: 'DELETE',
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(!r.ok){
+      const t = await r.text().catch(()=>'');
+      throw new Error('HTTP '+r.status+(t?': '+t.slice(0,150):''));
+    }
+    toast('🗑 '+name+' 삭제됨','ok');
+    await loadPinUsers();
+  }catch(e){ toast('삭제 실패: '+e.message,'err'); }
+}
+
+/* ============================================================
+   의심 감지
+   ============================================================ */
+function detectSuspicious(){
+  suspGroups = [];
+
+  // 1) 해외 접속
+  allRows.forEach(r=>{
+    if(r.country && r.country !== cfg.homeCountry && !r.error_code){
+      suspGroups.push({
+        type: 'foreign',
+        user_id: r.user_id,
+        user_name: r.user_name,
+        factory: r.factory,
+        dept: r.dept,
+        reason: '🌍 해외 접속 감지: '+r.country+(r.city?' / '+r.city:''),
+        rows: [r],
+        ts: r.recorded_at,
+        key: 'F:'+(r.user_id||r.user_name)+':'+r.id
+      });
+    }
+  });
+
+  // 2) 단시간 다중지역
+  const byUser = new Map();
+  allRows.forEach(r=>{
+    if(r.error_code) return;
+    const k = r.user_id || ('n_'+r.user_name);
+    if(!byUser.has(k)) byUser.set(k, []);
+    byUser.get(k).push(r);
+  });
+
+  const windowMs = cfg.windowMin * 60 * 1000;
+  byUser.forEach((rows, k)=>{
+    const sorted = rows.slice().sort((a,b)=>new Date(a.recorded_at)-new Date(b.recorded_at));
+    for(let i=0; i<sorted.length; i++){
+      const start = new Date(sorted[i].recorded_at).getTime();
+      const group = [sorted[i]];
+      const cities = new Set([sorted[i].city || sorted[i].ip || '?']);
+      for(let j=i+1; j<sorted.length; j++){
+        const t = new Date(sorted[j].recorded_at).getTime();
+        if(t - start > windowMs) break;
+        group.push(sorted[j]);
+        cities.add(sorted[j].city || sorted[j].ip || '?');
+      }
+      if(cities.size >= cfg.cityCnt){
+        suspGroups.push({
+          type: 'multi',
+          user_id: sorted[i].user_id,
+          user_name: sorted[i].user_name,
+          factory: sorted[i].factory,
+          dept: sorted[i].dept,
+          reason: '⚡ '+cfg.windowMin+'분 내 '+cities.size+'개 지역 동시 접속',
+          rows: group,
+          cities: Array.from(cities),
+          ts: sorted[i].recorded_at,
+          key: 'M:'+k+':'+sorted[i].id
+        });
+        i = i + group.length - 1;  // 중복 방지
+      }
+    }
+  });
+
+  // 의심 행에 표시
+  const suspRowIds = new Set();
+  suspGroups.forEach(g=>g.rows.forEach(r=>suspRowIds.add(r.id)));
+  allRows.forEach(r=>{
+    r._suspicious = suspRowIds.has(r.id);
+  });
+
+  // 알람 배지
+  const badge = document.getElementById('alarmBadge');
+  if(suspGroups.length > 0){
+    badge.textContent = suspGroups.length;
+    badge.classList.add('show');
+    document.getElementById('cntBadge').classList.add('warn');
+  } else {
+    badge.classList.remove('show');
+    document.getElementById('cntBadge').classList.remove('warn');
+  }
+
+  // ntfy 발송 (이미 알림 보낸건 제외)
+  notifyNewSuspicious();
+}
+
+async function notifyNewSuspicious(){
+  if(!cfg.ntfyTopic || suspGroups.length === 0) return;
+  let alerted = [];
+  try{ alerted = JSON.parse(localStorage.getItem(LK_ALERTED)||'[]'); }catch(e){}
+  const alertedSet = new Set(alerted);
+
+  const fresh = suspGroups.filter(g=>!alertedSet.has(g.key));
+  if(fresh.length === 0) return;
+
+  for(const g of fresh){
+    try{
+      const body = g.reason
+        + '\nuser: ' + (g.user_name||'?')
+        + (g.factory?'/'+g.factory:'')
+        + (g.dept?'/'+g.dept:'')
+        + '\ntime: ' + fmtTs(g.ts);
+      await fetch(NTFY_SV+'/'+cfg.ntfyTopic, {
+        method: 'POST',
+        headers: {
+          'Title': 'msm Security Alert',
+          'Priority': '4',
+          'Tags': 'warning,rotating_light'
+        },
+        body: body
+      });
+      alertedSet.add(g.key);
+    }catch(e){ console.error(e); }
+  }
+
+  // 최근 200건만 유지
+  const arr = Array.from(alertedSet);
+  if(arr.length > 200) arr.splice(0, arr.length-200);
+  localStorage.setItem(LK_ALERTED, JSON.stringify(arr));
+}
+
+async function testNtfy(){
+  saveCfg();
+  if(!cfg.ntfyTopic){ toast('토픽을 입력하세요','err'); return; }
+  try{
+    await fetch(NTFY_SV+'/'+cfg.ntfyTopic, {
+      method: 'POST',
+      headers: {
+        'Title': 'msm Security Test',
+        'Priority': '3',
+        'Tags': 'test_tube'
+      },
+      body: 'security notification test ('+new Date().toLocaleTimeString()+')'
+    });
+    toast('테스트 발송 완료 — 폰 확인','ok');
+  }catch(e){
+    toast('발송 실패: '+e.message, 'err');
+  }
+}
+
+/* ============================================================
+   ntfy 토픽 관리
+   ============================================================ */
+function genTopic(){
+  /* 랜덤 토픽 생성: msm_sec_ + 영문소문자/숫자 10자 */
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';   // 헷갈리는 0,1,i,l,o 제외
+  let rand = '';
+  const a = new Uint32Array(10);
+  crypto.getRandomValues(a);
+  for(let i=0;i<10;i++) rand += chars[a[i] % chars.length];
+  const topic = 'msm_sec_' + rand;
+  document.getElementById('cfgTopic').value = topic;
+  toast('🎲 새 토픽 생성 — 저장 필요','ok');
+  refreshTopicInfo();
+}
+
+function saveTopic(){
+  const t = document.getElementById('cfgTopic').value.trim();
+  if(!t){ toast('토픽을 입력하세요','err'); return; }
+  /* ntfy 토픽 규칙: 알파벳/숫자/-/_ 만 허용, 64자 이하 */
+  if(!/^[A-Za-z0-9_\-]{1,64}$/.test(t)){
+    toast('토픽은 영문/숫자/_/- 만, 64자 이하','err');
+    return;
+  }
+  cfg.ntfyTopic = t;
+  saveCfg();
+  refreshTopicInfo();
+  toast('💾 저장됨','ok');
+}
+
+function refreshTopicInfo(){
+  const t = document.getElementById('cfgTopic').value.trim();
+  const info = document.getElementById('topicInfo');
+  const qrBox = document.getElementById('qrBox');
+  if(!t){
+    info.style.display = 'none';
+    qrBox.style.display = 'none';
+    return;
+  }
+  document.getElementById('topicUrl').textContent = NTFY_SV + '/' + t;
+  info.style.display = 'block';
+}
+
+async function copyTopicUrl(){
+  const t = document.getElementById('cfgTopic').value.trim();
+  if(!t){ toast('토픽을 먼저 입력하세요','err'); return; }
+  const url = NTFY_SV + '/' + t;
+  try{
+    await navigator.clipboard.writeText(url);
+    toast('📋 URL 복사됨','ok');
+  }catch(e){
+    /* fallback */
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); toast('📋 URL 복사됨','ok'); }
+    catch(err){ toast('복사 실패','err'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function showTopicQR(){
+  const t = document.getElementById('cfgTopic').value.trim();
+  if(!t){ toast('토픽을 먼저 입력하세요','err'); return; }
+  const url = NTFY_SV + '/' + t;
+  const qrBox = document.getElementById('qrBox');
+  const img = document.getElementById('qrImg');
+  if(qrBox.style.display === 'block'){
+    qrBox.style.display = 'none';
+    return;
+  }
+  /* QR Server API — 공개 무료, 키 불필요 */
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=' + encodeURIComponent(url);
+  qrBox.style.display = 'block';
+}
+
+/* ============================================================
+   지도 렌더
+   ============================================================ */
+function renderMap(){
+  if(!map) return;
+  cluster.clearLayers();
+  const valid = allRows.filter(r => r.lat != null && r.lng != null);
+  const bounds = [];
+  valid.forEach(r=>{
+    const ll = [parseFloat(r.lat), parseFloat(r.lng)];
+    if(isNaN(ll[0])||isNaN(ll[1])) return;
+    bounds.push(ll);
+    const html =
+      '<b>'+(r.user_name||'(이름없음)')+'</b>' +
+      (r.factory?' · '+r.factory:'') +
+      (r.dept?' / '+r.dept:'') +
+      (r._suspicious?' <span style="color:#dc2626;font-weight:700">⚠ 의심</span>':'') +
+      '<br>📍 '+(r.city||'')+' '+(r.region||'')+
+      '<br>🌐 '+(r.ip||'-')+(r.org?' ('+r.org+')':'')+
+      '<br>⏱ '+fmtTs(r.recorded_at);
+    const m = L.marker(ll, {icon: makePinIcon(r.user_name, r._suspicious)}).bindPopup(html);
+    cluster.addLayer(m);
+  });
+  if(bounds.length > 0) map.fitBounds(bounds, {padding:[40,40], maxZoom:14});
+}
+
+/* ============================================================
+   목록 렌더
+   ============================================================ */
+function renderList(){
+  const box = document.getElementById('listBox');
+  if(allRows.length === 0){
+    box.innerHTML = '<div class="empty"><div class="ic">📭</div>조회 결과가 없습니다</div>';
+    return;
+  }
+  box.innerHTML = '';
+  allRows.forEach(r=>{
+    const color = nameColor(r.user_name);
+    const ini = nameInitial(r.user_name);
+    const row = document.createElement('div');
+    row.className = 'row' + (r._suspicious?' suspicious':'');
+    let html = '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    html += '<div class="info">';
+    html += '<div class="nm">'+(r.user_name||'(이름없음)');
+    if(r.factory) html += '<span class="badge">'+r.factory+'</span>';
+    if(r.dept)    html += '<span class="badge">'+r.dept+'</span>';
+    if(r._suspicious) html += '<span class="badge susp">⚠ 의심</span>';
+    html += '</div>';
+    if(r.error_code) html += '<div class="err">⚠ '+r.error_code+'</div>';
+    else html += '<div class="loc">📍 '+(r.city||'-')+' '+(r.region||'')+' · '+(r.ip||'-')+'</div>';
+    html += '<div class="ts">⏱ '+fmtTs(r.recorded_at)+(r.country?' · '+r.country:'')+'</div>';
+    html += '</div>';
+    row.innerHTML = html;
+    box.appendChild(row);
+  });
+}
+
+/* ============================================================
+   통계 렌더
+   ============================================================ */
+function renderStats(){
+  const statsBox = document.getElementById('statsBox');
+  const usrBox = document.getElementById('userStatsBox');
+  if(allRows.length === 0){
+    statsBox.innerHTML = '';
+    usrBox.innerHTML = '<div class="empty"><div class="ic">📊</div>데이터가 없습니다</div>';
+    return;
+  }
+  const userMap = new Map();
+  const cityMap = new Map();
+  let errCnt = 0;
+  let suspCnt = 0;
+  allRows.forEach(r=>{
+    if(r.error_code) errCnt++;
+    if(r._suspicious) suspCnt++;
+    const k = r.user_id || ('n_'+r.user_name);
+    if(!userMap.has(k)){
+      userMap.set(k, {name:r.user_name||'(이름없음)', factory:r.factory||'', dept:r.dept||'', count:0, cities:new Map()});
+    }
+    const u = userMap.get(k);
+    u.count++;
+    const city = r.city || (r.error_code?'(오류)':'(미상)');
+    u.cities.set(city, (u.cities.get(city)||0)+1);
+    cityMap.set(city, (cityMap.get(city)||0)+1);
+  });
+  const totalUsers = userMap.size;
+  const totalRecs = allRows.length;
+  const topCity = Array.from(cityMap.entries()).sort((a,b)=>b[1]-a[1])[0];
+  const okRate = totalRecs ? Math.round((totalRecs-errCnt)/totalRecs*100) : 0;
+
+  statsBox.innerHTML =
+    '<div class="stat"><div class="lbl">총 기록</div><div class="val">'+totalRecs+'</div><div class="sub">건</div></div>' +
+    '<div class="stat"><div class="lbl">접속 인원</div><div class="val">'+totalUsers+'</div><div class="sub">명</div></div>' +
+    '<div class="stat"><div class="lbl">최다 지역</div><div class="val" style="font-size:14px;line-height:1.4">'+(topCity?topCity[0]:'-')+'</div><div class="sub">'+(topCity?topCity[1]+'건':'')+'</div></div>' +
+    '<div class="stat"><div class="lbl">의심 건수</div><div class="val '+(suspCnt>0?'warn':'')+'">'+suspCnt+'</div><div class="sub">건</div></div>';
+
+  const arr = Array.from(userMap.values()).sort((a,b)=>b.count-a.count);
+  let html = '';
+  arr.forEach(u=>{
+    const color = nameColor(u.name);
+    const ini = nameInitial(u.name);
+    html += '<div class="usr-block">';
+    html += '<div class="usr-head">';
+    html += '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    html += '<div class="nm">'+u.name;
+    if(u.factory) html += ' <span style="color:#94a3b8;font-size:11px;font-weight:600">· '+u.factory+'</span>';
+    if(u.dept) html += ' <span style="color:#94a3b8;font-size:11px;font-weight:600">/ '+u.dept+'</span>';
+    html += '</div>';
+    html += '<div class="cnt">'+u.count+'회</div>';
+    html += '</div>';
+    html += '<div class="usr-locs">';
+    Array.from(u.cities.entries()).sort((a,b)=>b[1]-a[1]).forEach(([c,n])=>{
+      html += '<div class="usr-loc">'+c+' <b>'+n+'</b></div>';
+    });
+    html += '</div></div>';
+  });
+  usrBox.innerHTML = html;
+}
+
+/* ============================================================
+   보안 탭 렌더
+   ============================================================ */
+function renderSecPane(){
+  renderSuspList();
+  renderUserMgmt();
+}
+
+function renderSuspList(){
+  const box = document.getElementById('suspList');
+  document.getElementById('suspCount').textContent = suspGroups.length+'건';
+  if(suspGroups.length === 0){
+    box.innerHTML = '<div class="empty" style="padding:20px"><div class="ic">✅</div>의심 사례가 없습니다</div>';
+    return;
+  }
+  box.innerHTML = '';
+  suspGroups.forEach((g, idx)=>{
+    const color = nameColor(g.user_name);
+    const ini = nameInitial(g.user_name);
+    const item = document.createElement('div');
+    item.className = 'susp-item';
+
+    let head = '<div class="susp-item-head">';
+    head += '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    head += '<div class="nm">'+(g.user_name||'(이름없음)');
+    if(g.factory||g.dept) head += '<br><small>'+(g.factory||'')+(g.dept?' / '+g.dept:'')+'</small>';
+    head += '</div></div>';
+
+    let reason = '<div class="reason">'+g.reason+'</div>';
+
+    let detail = '<div class="detail">';
+    g.rows.slice(0, 3).forEach(r=>{
+      detail += '<b>•</b> '+fmtTs(r.recorded_at)+' · '+(r.city||'?')+(r.country?'/'+r.country:'')+' · '+(r.ip||'-')+'<br>';
+    });
+    if(g.rows.length > 3) detail += '<small style="color:#64748b">... 외 '+(g.rows.length-3)+'건</small>';
+    detail += '</div>';
+
+    let btns = '<div class="btns">';
+    btns += '<button class="b-block" data-act="block" data-idx="'+idx+'">🚫 차단</button>';
+    btns += '<button class="b-reset" data-act="reset" data-idx="'+idx+'">🔄 PIN재설정</button>';
+    btns += '<button class="b-ok" data-act="dismiss" data-idx="'+idx+'">✓ 정상</button>';
+    btns += '</div>';
+
+    item.innerHTML = head + reason + detail + btns;
+    item.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>handleSuspAction(b.dataset.act, parseInt(b.dataset.idx)));
+    });
+    box.appendChild(item);
+  });
+}
+
+function renderUserMgmt(){
+  const box = document.getElementById('userMgmtList');
+  document.getElementById('userCount').textContent = allUsers.length+'명';
+  if(allUsers.length === 0){
+    box.innerHTML = '<div class="empty" style="padding:16px">사용자 정보를 불러올 수 없습니다</div>';
+    return;
+  }
+  box.innerHTML = '';
+  allUsers.forEach(u=>{
+    const color = nameColor(u.name);
+    const ini = nameInitial(u.name);
+    const item = document.createElement('div');
+    item.className = 'user-mgmt-item' + (u.blocked?' blocked':'');
+    let html = '<div class="pin" style="background:'+color+'">'+ini+'</div>';
+    html += '<div class="nm">'+u.name;
+    if(u.blocked) html += '<span class="b-flag">🚫 차단</span>';
+    let sub = [];
+    if(u.factory) sub.push(u.factory);
+    if(u.dept) sub.push(u.dept);
+    if(u.position) sub.push(u.position);
+    if(sub.length) html += '<small>'+sub.join(' · ')+'</small>';
+    if(u.blocked && u.blocked_reason) html += '<small style="color:#fca5a5">사유: '+u.blocked_reason+'</small>';
+    html += '</div>';
+    html += '<div class="acts">';
+    if(u.blocked){
+      html += '<button class="b-unblock" data-act="unblock" data-uid="'+u.id+'">해제</button>';
+    } else {
+      html += '<button class="b-block" data-act="block-user" data-uid="'+u.id+'">차단</button>';
+    }
+    html += '<button class="b-reset" data-act="reset-user" data-uid="'+u.id+'">PIN</button>';
+    html += '</div>';
+    item.innerHTML = html;
+    item.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>handleUserAction(b.dataset.act, parseInt(b.dataset.uid)));
+    });
+    box.appendChild(item);
+  });
+}
+
+/* ============================================================
+   액션 핸들러
+   ============================================================ */
+function handleSuspAction(act, idx){
+  const g = suspGroups[idx];
+  if(!g) return;
+
+  if(act === 'dismiss'){
+    // 알림 캐시에 추가하여 다시 알림 안 가도록
+    let alerted = [];
+    try{ alerted = JSON.parse(localStorage.getItem(LK_ALERTED)||'[]'); }catch(e){}
+    if(!alerted.includes(g.key)) alerted.push(g.key);
+    localStorage.setItem(LK_ALERTED, JSON.stringify(alerted));
+    suspGroups.splice(idx, 1);
+    renderSuspList();
+    detectSuspicious();
+    toast('정상 처리','ok');
+    return;
+  }
+  if(!g.user_id){
+    toast('사용자 ID가 없어 처리 불가','err');
+    return;
+  }
+  if(act === 'block'){
+    requestMaster('🚫 차단 인증', g.user_name+' 사용자를 차단합니다', ()=>{
+      blockUser(g.user_id, g.user_name, g.reason);
+    });
+  } else if(act === 'reset'){
+    requestMaster('🔄 PIN 재설정', g.user_name+' 사용자의 PIN을 변경합니다', ()=>{
+      resetUserPin(g.user_id, g.user_name);
+    });
+  }
+}
+
+function handleUserAction(act, uid){
+  const u = allUsers.find(x=>x.id === uid);
+  if(!u) return;
+  if(act === 'block-user'){
+    requestMaster('🚫 차단 인증', u.name+' 사용자를 차단합니다', ()=>{
+      blockUser(uid, u.name, '수동 차단');
+    });
+  } else if(act === 'unblock'){
+    requestMaster('✅ 차단 해제', u.name+' 사용자의 차단을 해제합니다', ()=>{
+      unblockUser(uid, u.name);
+    });
+  } else if(act === 'reset-user'){
+    requestMaster('🔄 PIN 재설정', u.name+' 사용자의 PIN을 변경합니다', ()=>{
+      resetUserPin(uid, u.name);
+    });
+  }
+}
+
+/* ============================================================
+   Supabase 작업
+   ============================================================ */
+async function patchUser(uid, payload){
+  const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER+'?id=eq.'+uid, {
+    method: 'PATCH',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer '+SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+  });
+  if(!r.ok){
+    const t = await r.text().catch(()=>'');
+    throw new Error('HTTP '+r.status+(t?' '+t.slice(0,150):''));
+  }
+}
+
+async function blockUser(uid, name, reason){
+  try{
+    await patchUser(uid, {
+      blocked: true,
+      blocked_at: new Date().toISOString(),
+      blocked_reason: reason
+    });
+    toast('🚫 '+name+' 차단됨','ok');
+    await sendActionNotify('차단', name, reason);
+    await loadUsers();
+    renderUserMgmt();
+    renderPinList();
+  }catch(e){ toast('차단 실패: '+e.message,'err'); }
+}
+
+async function unblockUser(uid, name){
+  try{
+    await patchUser(uid, {
+      blocked: false,
+      blocked_at: null,
+      blocked_reason: null
+    });
+    toast('✅ '+name+' 차단 해제','ok');
+    await sendActionNotify('차단해제', name, '');
+    await loadUsers();
+    renderUserMgmt();
+    renderPinList();
+  }catch(e){ toast('해제 실패: '+e.message,'err'); }
+}
+
+async function resetUserPin(uid, name){
+  const newPin = prompt('새 PIN 4자리 입력\n('+name+' 사용자)');
+  if(newPin === null) return;
+  if(!/^\d{4}$/.test(newPin)){
+    alert('PIN은 숫자 4자리여야 합니다');
+    return;
+  }
+  try{
+    const h = await sha256hex(newPin);
+    await patchUser(uid, {
+      pin_hash: h,
+      pin_changed_at: new Date().toISOString()
+    });
+    toast('🔄 '+name+' PIN 변경됨','ok');
+    alert('✅ '+name+' 사용자의 PIN이 변경되었습니다.\n새 PIN: '+newPin+'\n\n반드시 본인에게 전달하세요.');
+    await sendActionNotify('PIN변경', name, '관리자가 PIN 재설정');
+    await loadUsers();
+    renderUserMgmt();
+    renderPinList();
+  }catch(e){ toast('변경 실패: '+e.message,'err'); }
+}
+
+async function sendActionNotify(action, name, reason){
+  if(!cfg.ntfyTopic) return;
+  try{
+    await fetch(NTFY_SV+'/'+cfg.ntfyTopic, {
+      method: 'POST',
+      headers: {
+        'Title': 'msm Security Action',
+        'Priority': '4',
+        'Tags': 'shield'
+      },
+      body: '['+action+'] '+name+(reason?' / '+reason:'')+'\nby admin at '+new Date().toLocaleString()
+    });
+  }catch(e){}
+}
+
+/* ============================================================
+   마스터 PIN 모달
+   ============================================================ */
+function requestMaster(title, sub, cb){
+  pendingAction = cb;
+  masterPin = '';
+  document.getElementById('mTitle').textContent = title;
+  document.getElementById('mSub').textContent = sub;
+  document.getElementById('mHint').textContent = ' ';
+  document.getElementById('mHint').className = 'm-hint';
+  updateMDots();
+  document.getElementById('masterModal').classList.add('show');
+}
+function closeMaster(){
+  document.getElementById('masterModal').classList.remove('show');
+  pendingAction = null;
+  masterPin = '';
+}
+function renderMKeypad(){
+  const kp = document.getElementById('mKeypad');
+  kp.innerHTML = '';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+    const b = document.createElement('button');
+    if(k===''){ b.className='m-key fn'; b.style.visibility='hidden'; }
+    else if(k==='⌫'){ b.className='m-key fn'; b.textContent=k; b.addEventListener('click', mPinDel); }
+    else { b.className='m-key'; b.textContent=k; b.addEventListener('click', ()=>mPinPress(k)); }
+    kp.appendChild(b);
+  });
+}
+function updateMDots(){
+  document.querySelectorAll('#mDots .m-dot').forEach((d,i)=>{
+    d.classList.remove('err');
+    if(i<masterPin.length) d.classList.add('filled');
+    else d.classList.remove('filled');
+  });
+}
+function shakeMDots(){
+  document.querySelectorAll('#mDots .m-dot').forEach(d=>d.classList.add('err'));
+  setTimeout(()=>{masterPin='';updateMDots();}, 400);
+}
+function mPinPress(n){
+  if(masterPin.length >= 4) return;
+  masterPin += n;
+  updateMDots();
+  if(masterPin.length === 4) setTimeout(mPinDone, 150);
+}
+function mPinDel(){
+  if(!masterPin) return;
+  masterPin = masterPin.slice(0,-1);
+  updateMDots();
+}
+async function mPinDone(){
+  const hint = document.getElementById('mHint');
+  hint.textContent = '확인 중...';
+  try{
+    const h = await sha256hex(masterPin);
+    if(h === MASTER_PIN_HASH){
+      hint.textContent = '✓ 인증 성공';
+      hint.className = 'm-hint ok';
+      const cb = pendingAction;
+      setTimeout(()=>{
+        closeMaster();
+        if(cb) cb();
+      }, 300);
+    } else {
+      hint.textContent = '❌ PIN 불일치';
+      hint.className = 'm-hint err';
+      shakeMDots();
+    }
+  }catch(e){
+    hint.textContent = '❌ '+e.message;
+    hint.className = 'm-hint err';
+  }
+}
+
+/* ============================================================
+   초기화
+   ============================================================ */
+(function init(){
+  /* 시작 탭은 PIN — 필터바 숨김 */
+  document.getElementById('filterBar').style.display = 'none';
+  document.body.classList.add('no-filter');
+
+  initMap();
+  setDefaultRange();
+  loadCfg();
+  renderMKeypad();
+  loadPinUsers();    /* 사용자 목록 먼저 */
+  loadData();        /* 위치 데이터도 백그라운드 로드 */
+})();
+</script>
+
+</body>
+</html>
