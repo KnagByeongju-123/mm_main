@@ -399,7 +399,7 @@ function renderList(){
   document.getElementById('filteredHint').textContent=(kw||vendorFilter)?'필터: '+list.length+'건':'';
 
   if(list.length===0){
-    wrap.innerHTML='<div class="empty">'+(molds.length===0?'🧱 등록된 금형재가 없습니다.<br>+ 버튼으로 추가하세요.':'검색 결과가 없습니다.')+'</div>';
+    wrap.innerHTML='<div class="empty">'+(molds.length===0?'🧱 등록된 데이터가 없습니다.<br>+ 버튼으로 추가하세요.':'검색 결과가 없습니다.')+'</div>';
     return;
   }
 
@@ -731,4 +731,4 @@ if(checkSession()){
 </script>
 </body>
 </html>
-<!-- build: 20260515-122640 -->
+<!-- build: 20260515-125027 -->
