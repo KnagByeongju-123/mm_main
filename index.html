@@ -275,6 +275,47 @@ const SESSION_DAYS = 7;
 const MAX_FAIL = 5;
 const LOCKOUT_SEC = 60;
 
+/* ★ 보안 알림 관련 */
+const NTFY_SV = 'https://ntfy.sh';
+const CFG_CODE_GROUP = 'mm_security_cfg';
+let secCfg = null;   // 보안 설정 캐시 (한번만 로드)
+
+async function loadSecCfg(){
+  if(secCfg !== null) return secCfg;
+  try{
+    const r = await fetch(SUPABASE_URL+'/rest/v1/common_code'
+      +'?select=code_value&code_group=eq.'+CFG_CODE_GROUP+'&limit=1', {
+      headers: {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    });
+    if(r.ok){
+      const list = await r.json();
+      if(list && list.length > 0 && list[0].code_value){
+        secCfg = JSON.parse(list[0].code_value);
+        return secCfg;
+      }
+    }
+  }catch(e){}
+  secCfg = {};   // 없으면 빈 객체
+  return secCfg;
+}
+
+/* 보안 알림 발송 (Title/Tags 영문 / Body 한글 가능) */
+async function sendSecurityAlert(title, body, tags){
+  try{
+    const c = await loadSecCfg();
+    if(!c || !c.ntfyTopic) return;
+    await fetch(NTFY_SV+'/'+c.ntfyTopic, {
+      method: 'POST',
+      headers: {
+        'Title': title,
+        'Priority': '4',
+        'Tags': tags || 'warning'
+      },
+      body: body
+    });
+  }catch(e){ console.warn('알림 발송 실패:', e); }
+}
+
 let curPin = '';
 let lockTimer = null;
 
@@ -349,8 +390,21 @@ async function pinDone(){
       if(u.blocked){
         hint.classList.add('err');
         hint.textContent = '🚫 차단된 계정입니다';
-        /* 차단 시도도 위치 기록에 남김 */
-        trackLocation({id:u.id, name:u.name, factory:u.factory, dept:u.dept}, true);
+        /* 차단 시도도 위치 기록에 남김 (error_code='blocked_attempt') */
+        trackLocation({id:u.id, name:u.name, factory:u.factory, dept:u.dept}, true, 'blocked_attempt');
+        /* ★ 차단 시도 알림 발송 */
+        (async ()=>{
+          const c = await loadSecCfg();
+          if(c && c.alertBlocked !== false){
+            sendSecurityAlert(
+              'msm Security Alert',
+              '🚫 차단 계정 로그인 시도\nuser: '+u.name+(u.factory?'/'+u.factory:'')+(u.dept?'/'+u.dept:'')+
+                '\nreason: '+(u.blocked_reason||'관리자 차단')+
+                '\ntime: '+new Date().toLocaleString(),
+              'no_entry,rotating_light'
+            );
+          }
+        })();
         try{
           const blockReason = u.blocked_reason || '관리자에 의한 차단';
           setTimeout(()=>alert('🚫 로그인 거부\n\n계정이 차단되었습니다.\n사유: '+blockReason+'\n\n관리자에게 문의하세요.'), 300);
@@ -376,6 +430,25 @@ async function pinDone(){
     if(f.count >= MAX_FAIL){
       f.until = Date.now() + LOCKOUT_SEC*1000; f.count = 0;
       setFail(f); checkLockout();
+      /* ★ PIN 5회 연속 실패 알림 발송 */
+      (async ()=>{
+        const c = await loadSecCfg();
+        if(c && c.alertPinFail !== false){
+          /* IP 정보 함께 발송 */
+          let ipInfo = '';
+          try{
+            const ip = await fetch('https://ipapi.co/json/').then(x=>x.json());
+            ipInfo = '\nfrom: '+(ip.city||'?')+'/'+(ip.country_name||'?')+' · '+(ip.ip||'?');
+          }catch(e){}
+          sendSecurityAlert(
+            'msm Security Alert',
+            '🔑 PIN '+MAX_FAIL+'회 연속 실패 (계정 잠금 '+LOCKOUT_SEC+'초)'+
+              ipInfo+
+              '\ntime: '+new Date().toLocaleString(),
+            'key,rotating_light'
+          );
+        }
+      })();
     }else{
       setFail(f);
       hint.classList.add('err');
@@ -454,7 +527,7 @@ function applySession(){
    - forceRecord: true → 무조건 기록 (PIN 입력 직후)
    - forceRecord: false → IP가 캐시와 다를 때만 기록 (자동 진입)
    ============================================================ */
-function trackLocation(user, forceRecord){
+function trackLocation(user, forceRecord, customErrCode){
   if(!user || !user.id)return;
 
   const sendRow = (loc, errCode)=>{
@@ -484,8 +557,8 @@ function trackLocation(user, forceRecord){
       },
       body: JSON.stringify(payload)
     }).then(r => {
-      if(r.ok && loc){
-        // 성공 시 마지막 위치 캐시 업데이트
+      if(r.ok && loc && !errCode){
+        // 정상 기록 시에만 마지막 위치 캐시 업데이트
         localStorage.setItem(LK_LAST_LOC, JSON.stringify({
           ip: loc.ip, city: loc.city, ts: Date.now()
         }));
@@ -505,9 +578,9 @@ function trackLocation(user, forceRecord){
         country: d.country_name, org: d.org
       };
 
-      // 강제 기록이면 무조건 INSERT
+      // 강제 기록이면 무조건 INSERT (errCode 있으면 함께)
       if(forceRecord){
-        sendRow(cur, null);
+        sendRow(cur, customErrCode || null);
         return;
       }
 
@@ -516,13 +589,13 @@ function trackLocation(user, forceRecord){
       try{ last = JSON.parse(localStorage.getItem(LK_LAST_LOC)||'null') }catch(e){}
 
       if(!last || last.ip !== cur.ip || last.city !== cur.city){
-        sendRow(cur, null);
+        sendRow(cur, customErrCode || null);
       }
       // 동일 장소 → 아무것도 안 함 (DB 부담 없음)
     })
     .catch(err => {
       // 강제 기록일 때만 에러 로그도 남김
-      if(forceRecord) sendRow(null, 'fetch_failed');
+      if(forceRecord) sendRow(null, customErrCode || 'fetch_failed');
     });
 }
 
