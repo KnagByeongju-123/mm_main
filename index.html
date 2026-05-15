@@ -3,605 +3,850 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>스마트팩토리</title>
+<title>금형재 마스터</title>
+<meta name="theme-color" content="#eaf2fc">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body {
-  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  margin: 0; padding: 0;
-  background: #f0f4fa;
-  min-height: 100vh; color: #1a2a44;
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans KR',sans-serif;background:#f0f4fa;color:#1a2a44;min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:80px}
+
+.hdr{padding:22px 16px 18px;background:linear-gradient(180deg,#fff,#eaf2fc);border-bottom:1px solid #d6e2f2;text-align:center;position:relative}
+.back-btn{position:absolute;top:18px;left:12px;background:#fff;border:1px solid #c7d8f5;color:#1d4ed8;padding:6px 12px 6px 10px;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:3px;box-shadow:0 1px 2px rgba(30,58,138,.06)}
+.back-btn:active{transform:scale(.97)}
+.hdr-title{font-size:18px;font-weight:800;background:linear-gradient(135deg,#1d4ed8,#2563eb 50%,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hdr-sub{font-size:11px;color:#6e809e;margin-top:3px}
+.logout{position:absolute;top:18px;right:14px;background:#fff0f0;border:1px solid #f5c7c7;color:#b91c1c;padding:6px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-weight:700}
+
+.wrap{padding:14px;max-width:780px;margin:0 auto}
+.card{background:#fff;border:1px solid #d6e2f2;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(30,58,138,.05)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#1a2a44}
+.card-title .badge{background:#eef4ff;color:#1d4ed8;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+
+.btn{padding:10px 16px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn-pri{background:#1d4ed8;color:#fff}
+.btn-pri:active{opacity:.85}
+.btn-pri:disabled{opacity:.5;cursor:not-allowed}
+.btn-sec{background:#eef4ff;color:#1d4ed8;border:1px solid #c7d8f5}
+.btn-sec:active{background:#dde9fb}
+.btn-dan{background:#fff0f0;color:#b91c1c;border:1px solid #f5c7c7}
+.btn-sm{padding:6px 10px;font-size:11px;border-radius:8px}
+.btn-grn{background:#e3f7ec;color:#15803d;border:1px solid #b6e3c8}
+
+.inp{background:#fff;border:1.5px solid #c7d8f5;border-radius:10px;padding:11px 13px;color:#1a2a44;font-size:14px;font-weight:500;outline:none;font-family:inherit;width:100%}
+.inp:focus{border-color:#1d4ed8;box-shadow:0 0 0 3px rgba(29,78,216,.1)}
+
+.msg{padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;margin-bottom:10px;display:none}
+.msg.show{display:block}
+.msg.ok{background:#e3f7ec;color:#15803d;border:1px solid #b6e3c8}
+.msg.err{background:#fff0f0;color:#b91c1c;border:1px solid #f5c7c7}
+.msg.warn{background:#fff7e6;color:#b45309;border:1px solid #f5d99d}
+
+/* 검색 바 */
+.search-bar{display:flex;gap:8px;margin-bottom:10px}
+.search-bar .inp{flex:1;padding:10px 13px}
+
+/* 고객사 그룹 */
+.vendor-group{margin-bottom:14px}
+.vendor-head{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:linear-gradient(135deg,#eef4ff,#e3f7ec);
+  border:1px solid #c7d8f5;border-radius:10px;
+  font-size:14px;font-weight:700;color:#1d4ed8;
+  margin-bottom:8px;
+}
+.vendor-head .ic{font-size:16px}
+.vendor-head .name{flex:1}
+.vendor-head .cnt{font-size:11px;background:#fff;color:#1d4ed8;padding:2px 8px;border-radius:10px;font-weight:700}
+
+/* 금형재 카드 */
+.mold-list{display:flex;flex-direction:column;gap:8px}
+.mold-card{
+  background:#fff;border:1px solid #e6ecf5;border-radius:12px;
+  padding:11px 12px;cursor:pointer;
+  transition:all .15s;
+}
+.mold-card:active{transform:scale(.99);background:#f8fafd}
+.mold-card .top{
+  display:flex;align-items:center;gap:8px;margin-bottom:6px;
+}
+.mold-code{
+  font-family:'SF Mono','Consolas',monospace;
+  font-weight:800;font-size:15px;color:#1a2a44;flex:1;
+  letter-spacing:-0.3px;word-break:break-all;
+}
+.btn-mini{
+  width:30px;height:30px;border-radius:8px;border:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;flex-shrink:0;
+}
+.btn-mini.edit{background:#eef4ff;color:#1d4ed8}
+.btn-mini.edit:active{background:#dde9fb}
+.btn-mini.del{background:#fff0f0;color:#b91c1c}
+.btn-mini.del:active{background:#fde2e2}
+
+.mold-meta{font-size:11px;color:#6e809e;line-height:1.55;word-break:break-all}
+.mold-meta .lbl{color:#8aa2c0}
+.mold-meta .mapping{color:#15803d;font-weight:600}
+.mold-meta .num{color:#1d4ed8;font-weight:600}
+.mold-meta sep{display:inline-block;margin:0 4px;color:#c5d2e0}
+
+.empty{text-align:center;padding:40px 20px;color:#8aa2c0;font-size:13px;background:#fff;border:1px dashed #c7d8f5;border-radius:14px}
+
+/* FAB */
+.fab{
+  position:fixed;bottom:24px;right:24px;
+  width:58px;height:58px;border-radius:50%;
+  background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;
+  font-size:30px;font-weight:300;
+  box-shadow:0 6px 18px rgba(29,78,216,.4);
+  cursor:pointer;z-index:50;line-height:1;
+}
+.fab:active{transform:scale(.94)}
+
+/* 마스터 잠금 */
+.master-lock{position:fixed;inset:0;background:linear-gradient(180deg,#fff,#eaf2fc);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.ml-title{font-size:22px;font-weight:800;color:#b91c1c;margin-bottom:6px}
+.ml-sub{font-size:12px;color:#6e809e;margin-bottom:32px}
+.ml-hint{font-size:12px;color:#6e809e;margin-bottom:18px;min-height:18px}
+.ml-hint.err{color:#b91c1c}
+.ml-hint.ok{color:#15803d}
+.pin-dots{display:flex;gap:12px;margin-bottom:24px}
+.pin-dot{width:14px;height:14px;border-radius:50%;background:#d6e2f2;border:2px solid #d6e2f2;transition:all .15s}
+.pin-dot.filled{background:#b91c1c;border-color:#b91c1c;box-shadow:0 0 10px rgba(185,28,28,.3)}
+.pin-dot.err{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.keypad{display:grid;grid-template-columns:repeat(3,64px);gap:12px;justify-content:center}
+.key{width:64px;height:64px;border-radius:50%;background:#fff;border:1.5px solid #c7d8f5;color:#1a2a44;font-size:22px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(30,58,138,.06)}
+.key:active{background:#eaf2fc;transform:scale(.92)}
+.key.fn{background:transparent;border:none;font-size:18px;color:#6e809e;box-shadow:none}
+.back-link{margin-top:20px;color:#6e809e;font-size:12px;text-decoration:none;padding:8px 12px}
+.lockout{color:#b91c1c;font-size:12px;font-weight:700;margin-bottom:14px}
+body.locked{overflow:hidden}
+
+/* 모달 */
+.modal-bg{position:fixed;inset:0;background:rgba(30,58,138,.4);z-index:9998;display:none;align-items:flex-end;justify-content:center;padding:0}
+.modal-bg.show{display:flex}
+@media(min-width:600px){.modal-bg{align-items:center;padding:20px}}
+.modal{background:#fff;border:1px solid #d6e2f2;border-radius:18px 18px 0 0;padding:20px;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;box-shadow:0 -10px 30px rgba(30,58,138,.2)}
+@media(min-width:600px){.modal{border-radius:18px}}
+.modal-title{
+  font-size:16px;font-weight:800;margin-bottom:14px;color:#1a2a44;
+  display:flex;align-items:center;gap:8px;
+}
+.modal-title .ic{font-size:18px}
+.modal-title .id-tag{font-size:11px;color:#8aa2c0;font-weight:600;background:#eef4ff;padding:2px 8px;border-radius:8px}
+.modal-title .close{
+  margin-left:auto;width:30px;height:30px;border-radius:50%;
+  background:#fff0f0;color:#b91c1c;border:1px solid #f5c7c7;
+  font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;
 }
 
-/* 헤더 */
-.header {
-  padding: 26px 16px 16px; text-align: center;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf2fc 100%);
-  border-bottom: 1px solid #d6e2f2;
-}
-.header h1 {
-  margin: 0 0 14px 0;
-  font-size: 26px; font-weight: 800;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #1d4ed8, #2563eb 50%, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.modal-row{margin-bottom:10px}
+.modal-row label{font-size:11px;color:#5c7a9e;display:block;margin-bottom:4px;font-weight:700;letter-spacing:.3px}
+.modal-row select.inp{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e809e' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
 
-/* 헤더 버튼 그룹 */
-.top-btns {
-  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-}
-.top-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 6px 12px; border-radius: 9px;
-  border: 1px solid; background: white;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  font-family: inherit;
-  box-shadow: 0 1px 2px rgba(30,58,138,0.04);
-}
-.top-btn:active { transform: scale(0.97); }
-.top-btn .ic { font-size: 13px; }
-.top-btn.edit   { color: #1d4ed8; border-color: #c7d8f5; background: #eef4ff; }
-.top-btn.daily  { color: #b45309; border-color: #f5d99d; background: #fff7e6; }
-.top-btn.status { color: #6d28d9; border-color: #d8c7f5; background: #f3edff; }
-.top-btn.user   { color: #1d4ed8; border-color: transparent; background: transparent; box-shadow: none; }
-.top-btn.logout { color: #b91c1c; border-color: #f5c7c7; background: #fff0f0; }
-.top-btn.lock   { color: #b91c1c; border-color: #f5c7c7; background: #fff0f0; }
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 
-/* 컨테이너 */
-.container {
-  padding: 14px 12px 40px;
-  max-width: 720px; margin: 0 auto;
+/* 자동 조합 코드 미리보기 */
+.code-preview{
+  display:flex;align-items:center;gap:8px;
+  background:#e3f7ec;border:1px solid #b6e3c8;
+  padding:11px 13px;border-radius:10px;margin-bottom:12px;
+  font-family:'SF Mono','Consolas',monospace;
+  font-weight:800;color:#15803d;font-size:15px;
+  word-break:break-all;
 }
+.code-preview .pin-ic{font-size:14px;flex-shrink:0}
+.code-preview.empty{background:#f8fafd;border-color:#c7d8f5;color:#aab8cf;font-weight:500;font-family:inherit;font-size:12px}
 
-/* 아코디언 카드 */
-.acc {
-  background: white;
-  border: 1px solid #d6e2f2;
-  border-radius: 14px;
-  margin-bottom: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(30,58,138,0.05);
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.acc[open] {
-  border-color: #93b8e8;
-  box-shadow: 0 2px 8px rgba(30,58,138,0.08);
-}
-.acc summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 14px 16px;
-  display: flex; align-items: center; gap: 14px;
-  user-select: none;
-}
-.acc summary::-webkit-details-marker { display: none; }
-.acc summary::marker { display: none; }
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.modal-actions .btn{flex:1}
 
-.acc .icon {
-  width: 46px; height: 46px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; flex-shrink: 0;
-}
-.acc .title {
-  flex: 1; font-size: 19px; font-weight: 700; color: #1a2a44;
-  letter-spacing: -0.3px;
-}
-.acc .count {
-  font-size: 14px; color: #5c7a9e; font-weight: 700;
-  min-width: 26px; text-align: center;
-  background: #eef4ff; border-radius: 10px;
-  padding: 2px 8px;
-}
-.acc .arrow {
-  font-size: 18px; color: #8aa2c0;
-  transition: transform 0.25s;
-  margin-left: 2px;
-}
-.acc[open] .arrow { transform: rotate(90deg); }
+/* 엑셀 영역 */
+.file-area{border:2px dashed #b8cee8;border-radius:12px;padding:18px;text-align:center;cursor:pointer;transition:.2s;background:#f8fafd}
+.file-area:hover,.file-area.drag{border-color:#1d4ed8;background:#eef4ff}
+.file-area input{display:none}
+.file-area-text{font-size:12px;color:#6e809e}
+.file-area-text b{color:#1d4ed8}
 
-/* 아코디언 색상 */
-.acc.c-hq .icon     { background: #e6f0fc; color: #1d4ed8; }
-.acc.c-f1 .icon     { background: #e3f7ec; color: #15803d; }
-.acc.c-f2 .icon     { background: #fdecd9; color: #c2410c; }
-.acc.c-f3 .icon     { background: #f1e7fb; color: #6d28d9; }
-.acc.c-master .icon { background: #fde4e4; color: #b91c1c; }
-
-/* 서브 메뉴 영역 */
-.acc-body {
-  padding: 4px 8px 10px 8px;
-  border-top: 1px solid #e6ecf5;
-  background: #f8fafd;
-}
-.sub-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 10px;
-  border-radius: 10px;
-  text-decoration: none; color: inherit;
-  cursor: pointer;
-}
-.sub-item:active { background: #e8f0fb; }
-.sub-item + .sub-item {
-  border-top: 1px solid #e6ecf5;
-}
-.sub-item .s-icon {
-  width: 34px; height: 34px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px; flex-shrink: 0;
-  background: #eaf2fc; color: #1d4ed8;
-}
-.sub-item .s-text {
-  flex: 1; min-width: 0;
-}
-.sub-item .s-label {
-  font-size: 14px; font-weight: 600; color: #1a2a44;
-  margin-bottom: 2px;
-}
-.sub-item .s-desc {
-  font-size: 11px; color: #6e809e; line-height: 1.3;
-}
-.sub-item .s-arrow {
-  font-size: 15px; color: #aab8cf;
-}
-
-.sub-item.coming-soon { opacity: 0.55; cursor: default; pointer-events: none; }
-.sub-item.coming-soon .s-arrow { display: none; }
-.sub-item.coming-soon::after {
-  content: "준비중"; font-size: 10px;
-  padding: 2px 7px; border-radius: 8px;
-  background: #e2e8f2; color: #6e809e; font-weight: 600;
-}
-
-.footer {
-  text-align: center; margin-top: 24px;
-  font-size: 11px; color: #8aa2c0;
-}
-
-/* ============= PIN 잠금 화면 ============= */
-body.locked { overflow: hidden; }
-
-.pin-lock {
-  position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf2fc 60%, #d9e6f7 100%);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 20px;
-}
-.pin-lock .logo {
-  font-size: 28px; font-weight: 800; margin-bottom: 4px;
-  background: linear-gradient(135deg, #1d4ed8, #2563eb 50%, #38bdf8);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.pin-lock .sub {
-  font-size: 12px; color: #6e809e; margin-bottom: 32px;
-}
-.pin-lock .hint {
-  font-size: 13px; color: #5c7a9e; margin-bottom: 16px;
-  min-height: 19px; font-weight: 600;
-}
-.pin-lock .hint.err { color: #b91c1c; }
-.pin-lock .hint.ok { color: #15803d; }
-
-.pl-dots {
-  display: flex; gap: 14px; margin-bottom: 26px;
-}
-.pl-dot {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #d6e2f2; border: 2px solid #d6e2f2;
-  transition: all .15s;
-}
-.pl-dot.filled {
-  background: #1d4ed8; border-color: #1d4ed8;
-  box-shadow: 0 0 10px rgba(29,78,216,.35);
-}
-.pl-dot.err { animation: pl-shake .4s; }
-@keyframes pl-shake {
-  0%,100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
-}
-
-.pl-keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 68px);
-  gap: 14px; justify-content: center;
-}
-.pl-key {
-  width: 68px; height: 68px; border-radius: 50%;
-  background: white; border: 1.5px solid #c7d8f5;
-  color: #1a2a44; font-size: 23px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
-  box-shadow: 0 1px 3px rgba(30,58,138,.08);
-}
-.pl-key:active { background: #eaf2fc; transform: scale(.92); }
-.pl-key.fn {
-  background: transparent; border: none;
-  font-size: 18px; color: #6e809e; box-shadow: none;
-}
-
-.pl-lockout {
-  color: #b91c1c; font-size: 12px; font-weight: 700;
-  margin-bottom: 12px;
-}
+/* 아코디언 */
+.acc-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0}
+.acc-arrow{color:#8aa2c0;font-size:18px;transition:transform .25s;flex-shrink:0}
+.acc.open .acc-arrow{transform:rotate(90deg);color:#1d4ed8}
+.acc-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+.acc.open .acc-body{max-height:1500px}
 </style>
 </head>
 <body class="locked">
 
-<!-- PIN 잠금 화면 -->
-<div class="pin-lock" id="pinLock">
-  <div class="logo">🏭 스마트팩토리</div>
-  <div class="sub">PIN을 입력하세요</div>
-  <div class="hint" id="plHint">4자리 PIN</div>
-  <div class="pl-dots" id="plDots">
-    <div class="pl-dot"></div><div class="pl-dot"></div><div class="pl-dot"></div><div class="pl-dot"></div>
+<!-- 마스터 잠금 -->
+<div class="master-lock" id="masterLock">
+  <div class="ml-title">🔐 관리자 인증</div>
+  <div class="ml-sub">마스터 PIN을 입력하세요</div>
+  <div class="ml-hint" id="mlHint">4자리 PIN</div>
+  <div class="pin-dots" id="mlDots">
+    <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
   </div>
-  <div class="pl-lockout" id="plLockout" style="display:none"></div>
-  <div class="pl-keypad" id="plKeypad"></div>
+  <div class="lockout" id="mlLockout" style="display:none"></div>
+  <div class="keypad" id="mlKeypad"></div>
+  <a href="index.html" class="back-link">← 메인으로</a>
 </div>
 
-<div class="header">
-  <h1>스마트팩토리</h1>
-  <div class="top-btns">
-    <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
-      <span class="ic">👤</span><span id="userName">사용자</span>
-    </button>
-    <button class="top-btn logout" id="logoutBtn" type="button" style="display:none">
-      <span class="ic">🔒</span><span>로그아웃</span>
-    </button>
-  </div>
+<div class="hdr">
+  <a href="index.html" class="back-btn">‹ 메인</a>
+  <div class="hdr-title">🧱 금형재 마스터</div>
+  <div class="hdr-sub">소재·금형·기종 마스터 데이터 관리</div>
+  <button class="logout" id="logoutBtn">🔒 잠금</button>
 </div>
 
-<div class="container">
+<div class="wrap">
 
-  <!-- 본사 -->
-  <details class="acc c-hq">
-    <summary>
-      <div class="icon">🏢</div>
-      <div class="title">본사</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
-    <div class="acc-body">
-      <a class="sub-item" href="head_moldpart.html">
-        <div class="s-icon">📦</div>
-        <div class="s-text">
-          <div class="s-label">금형부품 재고관리</div>
-          <div class="s-desc">소모품 입출고 / 재고 조회</div>
-        </div>
-        <div class="s-arrow">›</div>
-      </a>
+  <!-- 검색 / 합계 -->
+  <div class="card">
+    <div class="search-bar">
+      <input type="text" class="inp" id="searchInput" placeholder="🔍 재질 / 코드 / 금형재번 / 기종 / 매핑기종 / 고객사 검색">
+      <select class="inp" id="filterVendor" style="flex:0 0 130px"><option value="">전체 고객사</option></select>
     </div>
-  </details>
-
-  <!-- 1공장 -->
-  <details class="acc c-f1">
-    <summary>
-      <div class="icon">①</div>
-      <div class="title">1공장</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
-    <div class="acc-body">
-      <a class="sub-item" href="first_factory.html">
-        <div class="s-icon">🏭</div>
-        <div class="s-text">
-          <div class="s-label">1공장 메인</div>
-          <div class="s-desc">생산 · 품질 · 설비</div>
-        </div>
-        <div class="s-arrow">›</div>
-      </a>
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#6e809e">
+      <span>총 <b id="totalCount" style="color:#1d4ed8">0</b>건 · 고객사 <b id="vendorCount" style="color:#1d4ed8">0</b>곳</span>
+      <span id="filteredHint" style="color:#b45309"></span>
     </div>
-  </details>
+  </div>
 
-  <!-- 2공장 -->
-  <details class="acc c-f2">
-    <summary>
-      <div class="icon">②</div>
-      <div class="title">2공장</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
-    <div class="acc-body">
-      <a class="sub-item" href="second_factory.html">
-        <div class="s-icon">🏭</div>
-        <div class="s-text">
-          <div class="s-label">2공장 메인</div>
-          <div class="s-desc">생산 · 품질 · 설비</div>
-        </div>
-        <div class="s-arrow">›</div>
-      </a>
+  <!-- 엑셀 (아코디언) -->
+  <div class="card acc" id="accExcel">
+    <div class="acc-hdr" onclick="toggleAcc('accExcel')">
+      <span class="card-title" style="margin-bottom:0">📥 엑셀 일괄 처리</span>
+      <span class="acc-arrow">›</span>
     </div>
-  </details>
-
-  <!-- 3공장 -->
-  <details class="acc c-f3">
-    <summary>
-      <div class="icon">③</div>
-      <div class="title">3공장</div>
-      <div class="count">1</div>
-      <div class="arrow">›</div>
-    </summary>
     <div class="acc-body">
-      <a class="sub-item" href="third_factory.html">
-        <div class="s-icon">🏭</div>
-        <div class="s-text">
-          <div class="s-label">3공장 메인</div>
-          <div class="s-desc">생산 · 품질 · 설비</div>
-        </div>
-        <div class="s-arrow">›</div>
-      </a>
+      <div class="msg" id="uploadMsg"></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-sec" id="dlTemplateBtn">📄 빈 템플릿</button>
+        <button class="btn btn-sec" id="dlCurrentBtn">📊 현재 목록</button>
+      </div>
+      <div class="file-area" id="fileArea">
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        <div class="file-area-text">📁 엑셀 파일 <b>클릭</b> 또는 <b>드래그</b><br><span style="font-size:10px">재질|두께|폭|피치|매핑기종|금형재번|기종코드|비중|소요량|월발주량|원자재발주량|고객사|메모</span></div>
+      </div>
     </div>
-  </details>
+  </div>
 
-  <!-- 마스터 -->
-  <details class="acc c-master">
-    <summary>
-      <div class="icon">⚙️</div>
-      <div class="title">마스터</div>
-      <div class="count">2</div>
-      <div class="arrow">›</div>
-    </summary>
-    <div class="acc-body">
-      <a class="sub-item" href="master_pin.html">
-        <div class="s-icon">🔢</div>
-        <div class="s-text">
-          <div class="s-label">PIN 관리</div>
-          <div class="s-desc">관리자 PIN 등록 / 변경</div>
-        </div>
-        <div class="s-arrow">›</div>
-      </a>
-      <a class="sub-item" href="master_mold.html">
-        <div class="s-icon">🧩</div>
-        <div class="s-text">
-          <div class="s-label">금형 마스터</div>
-          <div class="s-desc">금형 / 부품 코드 관리</div>
-        </div>
-        <div class="s-arrow">›</div>
-      </a>
+  <!-- 목록 -->
+  <div id="listWrap"><div class="empty">로딩중...</div></div>
+</div>
+
+<button class="fab" id="btnAdd" title="추가">+</button>
+
+<!-- 추가/수정 모달 -->
+<div class="modal-bg" id="modalEdit">
+  <div class="modal">
+    <div class="modal-title">
+      <span class="ic">🧱</span>
+      <span id="modalTitle">소재 추가</span>
+      <span class="id-tag" id="modalIdTag" style="display:none"></span>
+      <button class="close" id="btnClose" type="button">✕</button>
     </div>
-  </details>
 
-  <div class="footer">
-    v1.0 · msm Smart Factory
+    <div class="msg" id="editMsg"></div>
+
+    <!-- 자동 조합 코드 -->
+    <div class="code-preview empty" id="codePreview">
+      <span class="pin-ic">📌</span>
+      <span id="codeText">재질·두께·폭·피치 입력 시 자동 조합</span>
+    </div>
+
+    <div class="row-2">
+      <div class="modal-row">
+        <label>재질 *</label>
+        <input type="text" class="inp" id="fMaterial" placeholder="예: SPCC" maxlength="20">
+      </div>
+      <div class="modal-row">
+        <label>두께 (mm) *</label>
+        <input type="text" class="inp" id="fThick" placeholder="예: 1.6" inputmode="decimal">
+      </div>
+    </div>
+    <div class="row-2">
+      <div class="modal-row">
+        <label>폭 (mm) *</label>
+        <input type="text" class="inp" id="fWidth" placeholder="예: 160" inputmode="decimal">
+      </div>
+      <div class="modal-row">
+        <label>피치 *</label>
+        <input type="text" class="inp" id="fPitch" placeholder="예: 261" inputmode="decimal">
+      </div>
+    </div>
+
+    <div class="modal-row">
+      <label>매핑 기종 (쉼표로 구분)</label>
+      <input type="text" class="inp" id="fMapping" placeholder="예: 45624-2F010-L, 45524-26210">
+    </div>
+
+    <div class="row-2">
+      <div class="modal-row">
+        <label>금형재번</label>
+        <input type="text" class="inp" id="fMoldNo" placeholder="예: 23BKA004A" maxlength="30">
+      </div>
+      <div class="modal-row">
+        <label>기종 코드</label>
+        <input type="text" class="inp" id="fModelCode" placeholder="예: SPRING U/D BRAKE">
+      </div>
+    </div>
+
+    <div class="row-3">
+      <div class="modal-row">
+        <label>비중</label>
+        <input type="text" class="inp" id="fDensity" placeholder="7.85" inputmode="decimal">
+      </div>
+      <div class="modal-row">
+        <label>소요량 (g)</label>
+        <input type="text" class="inp" id="fUsage" placeholder="28.6" inputmode="decimal">
+      </div>
+      <div class="modal-row">
+        <label>월발주량</label>
+        <input type="text" class="inp" id="fMonthly" placeholder="70000" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div class="modal-row">
+        <label>원자재 발주량 (kg)</label>
+        <input type="text" class="inp" id="fRawOrder" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="modal-row">
+        <label>고객사</label>
+        <input type="text" class="inp" id="fVendor" placeholder="예: 부강스프링" maxlength="30" list="vendorDataList">
+        <datalist id="vendorDataList"></datalist>
+      </div>
+    </div>
+
+    <div class="modal-row">
+      <label>메모</label>
+      <input type="text" class="inp" id="fMemo" placeholder="(선택)" maxlength="100">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-dan" id="btnDelete" style="display:none">🗑 삭제</button>
+      <button class="btn btn-grn" id="btnSave">✓ 저장</button>
+    </div>
   </div>
 </div>
 
 <script>
+function toggleAcc(id){document.getElementById(id).classList.toggle('open')}
+
 /* ============================================================
-   PIN 인증 (mm_main 진입 게이트)
+   mm_main 전용 Supabase
    ============================================================ */
 const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
-const TBL_USER = 'mm_user_pin';
+const TBL = 'mm_mold_master';
 
 /* 마스터 PIN 2580 → SHA-256 */
 const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
 
-const LK_AUTH   = 'mm_user_session';   // 인증 세션
-const LK_FAIL   = 'mm_pin_fail';       // 실패 카운트
-const SESSION_DAYS = 7;                // 자동 세션 유지 (일) - 매주 PIN 재입력
+const LK_ADMIN = 'mm_admin_auth';
+const LK_FAIL  = 'mm_admin_fail';
+const ADMIN_TTL_MIN = 30;
 const MAX_FAIL = 5;
 const LOCKOUT_SEC = 60;
 
-let curPin = '';
-let lockTimer = null;
+let curPin='',lockTimer=null,molds=[],editingId=null;
 
 async function sha256hex(s){
-  const b = new TextEncoder().encode(s);
-  const h = await crypto.subtle.digest('SHA-256', b);
+  const b=new TextEncoder().encode(s);
+  const h=await crypto.subtle.digest('SHA-256',b);
   return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
-function getSession(){
-  try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+/* Supabase REST */
+async function sbReq(method,path,body){
+  const opt={method,headers:{
+    'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,
+    'Content-Type':'application/json',
+    'Prefer':method==='POST'?'return=representation,resolution=merge-duplicates':'return=representation'
+  }};
+  if(body)opt.body=JSON.stringify(body);
+  const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,opt);
+  if(!r.ok){const txt=await r.text();throw new Error(r.status+': '+txt)}
+  const ct=r.headers.get('content-type')||'';
+  if(ct.includes('json'))return await r.json();
+  return null;
 }
-function setSession(s){
-  s.exp = Date.now() + SESSION_DAYS*24*60*60*1000;
-  localStorage.setItem(LK_AUTH, JSON.stringify(s));
-}
-function clearSession(){localStorage.removeItem(LK_AUTH)}
-function getFail(){try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count":0,"until":0}')}catch(e){return{count:0,until:0}}}
-function setFail(f){localStorage.setItem(LK_FAIL, JSON.stringify(f))}
-function clearFail(){localStorage.removeItem(LK_FAIL)}
 
-/* 키패드 렌더링 */
+/* 마스터 잠금 */
+function getAdminAuth(){try{return JSON.parse(localStorage.getItem(LK_ADMIN)||'null')}catch(e){return null}}
+function setAdminAuth(){localStorage.setItem(LK_ADMIN,JSON.stringify({exp:Date.now()+ADMIN_TTL_MIN*60*1000}))}
+function clearAdminAuth(){localStorage.removeItem(LK_ADMIN)}
+function getFail(){try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count":0,"until":0}')}catch(e){return{count:0,until:0}}}
+function setFailF(f){localStorage.setItem(LK_FAIL,JSON.stringify(f))}
+function clearFailF(){localStorage.removeItem(LK_FAIL)}
+
+function initLock(){
+  const a=getAdminAuth();
+  if(a&&a.exp>Date.now()){unlockAdmin();return}
+  renderKeypad();checkAdminLockout();
+}
 function renderKeypad(){
-  const kp = document.getElementById('plKeypad');
-  kp.innerHTML = '';
+  const kp=document.getElementById('mlKeypad');kp.innerHTML='';
   ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
-    const b = document.createElement('button');
-    if(k===''){b.className='pl-key fn';b.style.visibility='hidden'}
-    else if(k==='⌫'){b.className='pl-key fn';b.textContent=k;b.onclick=()=>pinDel()}
-    else{b.className='pl-key';b.textContent=k;b.onclick=()=>pinPress(k)}
+    const b=document.createElement('button');
+    if(k===''){b.className='key fn';b.style.visibility='hidden'}
+    else if(k==='⌫'){b.className='key fn';b.textContent=k;b.onclick=()=>mPinDel()}
+    else{b.className='key';b.textContent=k;b.onclick=()=>mPinPress(k)}
     kp.appendChild(b);
   });
 }
-
-function updateDots(){
-  document.querySelectorAll('#plDots .pl-dot').forEach((d,i)=>{
+function mUpdateDots(){
+  document.querySelectorAll('#mlDots .pin-dot').forEach((d,i)=>{
     d.classList.remove('err');
-    if(i<curPin.length)d.classList.add('filled');
-    else d.classList.remove('filled');
+    if(i<curPin.length)d.classList.add('filled');else d.classList.remove('filled');
+  });
+}
+function mShakeDots(){
+  document.querySelectorAll('#mlDots .pin-dot').forEach(d=>d.classList.add('err'));
+  setTimeout(()=>{curPin='';mUpdateDots()},400);
+}
+function mPinPress(n){
+  if(curPin.length>=4)return;
+  const f=getFail();if(f.until>Date.now())return;
+  curPin+=n;mUpdateDots();
+  if(curPin.length===4)setTimeout(mPinDone,150);
+}
+function mPinDel(){if(!curPin)return;curPin=curPin.slice(0,-1);mUpdateDots()}
+
+async function mPinDone(){
+  const h=await sha256hex(curPin);
+  if(h===MASTER_PIN_HASH){
+    clearFailF();setAdminAuth();
+    const hint=document.getElementById('mlHint');
+    hint.textContent='인증 완료';hint.className='ml-hint ok';
+    setTimeout(unlockAdmin,300);
+  }else{
+    const f=getFail();f.count=(f.count||0)+1;
+    if(f.count>=MAX_FAIL){f.until=Date.now()+LOCKOUT_SEC*1000;f.count=0;setFailF(f);checkAdminLockout()}
+    else{setFailF(f);const h2=document.getElementById('mlHint');h2.textContent='PIN 불일치 ('+f.count+'/'+MAX_FAIL+')';h2.className='ml-hint err'}
+    mShakeDots();
+  }
+}
+function checkAdminLockout(){
+  const f=getFail(),msg=document.getElementById('mlLockout'),remain=f.until-Date.now();
+  if(remain>0){
+    msg.style.display='block';
+    const upd=()=>{
+      const r=Math.ceil((f.until-Date.now())/1000);
+      if(r<=0){msg.style.display='none';clearFailF();clearInterval(lockTimer);const h=document.getElementById('mlHint');h.textContent='4자리 PIN';h.className='ml-hint';return}
+      msg.textContent='🔒 '+r+'초 후 재시도';
+    };
+    upd();clearInterval(lockTimer);lockTimer=setInterval(upd,1000);
+  }else msg.style.display='none';
+}
+async function unlockAdmin(){
+  document.body.classList.remove('locked');
+  document.getElementById('masterLock').style.display='none';
+  await loadList();
+}
+
+/* ============================================================
+   자동 조합 코드: 재질-두께T-폭W-P피치
+   ============================================================ */
+function makeCode(material,thick,width,pitch){
+  if(!material||!thick||!width||!pitch)return '';
+  // 숫자에서 불필요한 .0 제거
+  const fmt=v=>{const n=parseFloat(v);if(isNaN(n))return String(v);return n===Math.floor(n)?String(n):String(n)};
+  return material.trim().toUpperCase()+'-'+fmt(thick)+'T-'+fmt(width)+'W-P'+fmt(pitch);
+}
+
+/* ============================================================
+   목록 로드 / 렌더링
+   ============================================================ */
+async function loadList(){
+  const wrap=document.getElementById('listWrap');
+  wrap.innerHTML='<div class="empty">로딩중...</div>';
+  try{
+    molds=await sbReq('GET',TBL+'?select=*&order=vendor.asc,material.asc,thick.asc,width.asc,pitch.asc')||[];
+    renderList();
+    renderVendorFilter();
+  }catch(err){
+    wrap.innerHTML='<div class="empty" style="color:#b91c1c">❌ '+err.message+'<br><br><small>SQL이 적용되었는지 확인하세요. mm_mold_master 테이블이 필요합니다.</small></div>';
+  }
+}
+
+function renderVendorFilter(){
+  const sel=document.getElementById('filterVendor');
+  const cur=sel.value;
+  const vendors=Array.from(new Set(molds.map(m=>m.vendor).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ko'));
+  sel.innerHTML='<option value="">전체 고객사</option>'+vendors.map(v=>'<option>'+escHtml(v)+'</option>').join('');
+  sel.value=cur;
+  document.getElementById('vendorCount').textContent=vendors.length;
+
+  // datalist (모달 입력 자동완성)
+  document.getElementById('vendorDataList').innerHTML=vendors.map(v=>'<option value="'+escAttr(v)+'">').join('');
+}
+
+function renderList(){
+  const wrap=document.getElementById('listWrap');
+  const kw=(document.getElementById('searchInput').value||'').trim().toLowerCase();
+  const vendorFilter=document.getElementById('filterVendor').value;
+
+  let list=molds.slice();
+  if(vendorFilter)list=list.filter(m=>(m.vendor||'')===vendorFilter);
+  if(kw){
+    list=list.filter(m=>{
+      const code=makeCode(m.material,m.thick,m.width,m.pitch);
+      const txt=(code+' '+(m.material||'')+' '+(m.mold_no||'')+' '+(m.model_code||'')+' '+(m.mapping||'')+' '+(m.vendor||'')+' '+(m.memo||'')).toLowerCase();
+      return txt.includes(kw);
+    });
+  }
+  document.getElementById('totalCount').textContent=molds.length;
+  document.getElementById('filteredHint').textContent=(kw||vendorFilter)?'필터: '+list.length+'건':'';
+
+  if(list.length===0){
+    wrap.innerHTML='<div class="empty">'+(molds.length===0?'🧱 등록된 금형재가 없습니다.<br>+ 버튼으로 추가하세요.':'검색 결과가 없습니다.')+'</div>';
+    return;
+  }
+
+  // 고객사별 그룹핑
+  const groups={};
+  list.forEach(m=>{
+    const v=m.vendor||'(미지정)';
+    if(!groups[v])groups[v]=[];
+    groups[v].push(m);
+  });
+  const vendorOrder=Object.keys(groups).sort((a,b)=>{
+    if(a==='(미지정)')return 1;
+    if(b==='(미지정)')return -1;
+    return a.localeCompare(b,'ko');
+  });
+
+  let html='';
+  vendorOrder.forEach(v=>{
+    const items=groups[v];
+    html+='<div class="vendor-group">'+
+      '<div class="vendor-head"><span class="ic">🏢</span><span class="name">'+escHtml(v)+'</span><span class="cnt">'+items.length+'건</span></div>'+
+      '<div class="mold-list">';
+    items.forEach(m=>{
+      const code=makeCode(m.material,m.thick,m.width,m.pitch)||'(코드 없음)';
+      const mappings=(m.mapping||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const mappingHtml=mappings.length?mappings.map(x=>'<span class="mapping">'+escHtml(x)+'</span>').join(', '):'<span style="color:#aab8cf">-</span>';
+      const meta=[];
+      if(m.mapping)meta.push(escHtml(m.material||'')+'/'+escHtml(String(m.thick||''))+'T/'+escHtml(String(m.width||''))+'W/P'+escHtml(String(m.pitch||''))+' → '+mappingHtml);
+      if(m.mold_no)meta.push('<span class="lbl">금형:</span>'+escHtml(m.mold_no));
+      if(m.model_code)meta.push('<span class="lbl">기종:</span>'+escHtml(m.model_code));
+      const nums=[];
+      if(m.density)nums.push('비중 <span class="num">'+escHtml(String(m.density))+'</span>');
+      if(m.usage_g)nums.push('소요량 <span class="num">'+escHtml(String(m.usage_g))+'g</span>');
+      if(m.monthly_qty)nums.push('월 <span class="num">'+Number(m.monthly_qty).toLocaleString()+'</span>');
+      if(nums.length)meta.push(nums.join('<sep>·</sep>'));
+      if(m.memo)meta.push('<span style="color:#8aa2c0">'+escHtml(m.memo)+'</span>');
+
+      html+='<div class="mold-card" data-id="'+m.id+'">'+
+        '<div class="top">'+
+          '<div class="mold-code">'+escHtml(code)+'</div>'+
+          '<button class="btn-mini edit" data-act="edit" data-id="'+m.id+'" title="수정">✏️</button>'+
+          '<button class="btn-mini del" data-act="del" data-id="'+m.id+'" title="삭제">×</button>'+
+        '</div>'+
+        '<div class="mold-meta">'+meta.join('<br>')+'</div>'+
+        '</div>';
+    });
+    html+='</div></div>';
+  });
+  wrap.innerHTML=html;
+
+  // 클릭 → 수정 모달
+  wrap.querySelectorAll('.btn-mini').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const id=btn.dataset.id;
+      const m=molds.find(x=>String(x.id)===String(id));
+      if(!m)return;
+      if(btn.dataset.act==='edit')openModal(m);
+      else if(btn.dataset.act==='del')delMold(m);
+    });
+  });
+  wrap.querySelectorAll('.mold-card').forEach(c=>{
+    c.addEventListener('click',()=>{
+      const m=molds.find(x=>String(x.id)===String(c.dataset.id));
+      if(m)openModal(m);
+    });
   });
 }
 
-function shakeDots(){
-  document.querySelectorAll('#plDots .pl-dot').forEach(d=>d.classList.add('err'));
-  setTimeout(()=>{curPin='';updateDots()},400);
+/* ============================================================
+   모달
+   ============================================================ */
+function openModal(m){
+  editingId=m?m.id:null;
+  document.getElementById('modalTitle').textContent=m?'소재 수정':'소재 추가';
+  const idTag=document.getElementById('modalIdTag');
+  if(m){idTag.textContent='#'+m.id;idTag.style.display=''}else{idTag.style.display='none'}
+  document.getElementById('btnDelete').style.display=m?'':'none';
+
+  document.getElementById('fMaterial').value=m?m.material||'':'';
+  document.getElementById('fThick').value=m?(m.thick??''):'';
+  document.getElementById('fWidth').value=m?(m.width??''):'';
+  document.getElementById('fPitch').value=m?(m.pitch??''):'';
+  document.getElementById('fMapping').value=m?m.mapping||'':'';
+  document.getElementById('fMoldNo').value=m?m.mold_no||'':'';
+  document.getElementById('fModelCode').value=m?m.model_code||'':'';
+  document.getElementById('fDensity').value=m?(m.density??''):'';
+  document.getElementById('fUsage').value=m?(m.usage_g??''):'';
+  document.getElementById('fMonthly').value=m?(m.monthly_qty??''):'';
+  document.getElementById('fRawOrder').value=m?(m.raw_order_kg??''):'';
+  document.getElementById('fVendor').value=m?m.vendor||'':'';
+  document.getElementById('fMemo').value=m?m.memo||'':'';
+
+  hideMsg('editMsg');
+  updateCodePreview();
+  document.getElementById('modalEdit').classList.add('show');
+}
+function closeModal(){editingId=null;document.getElementById('modalEdit').classList.remove('show')}
+
+function updateCodePreview(){
+  const mat=document.getElementById('fMaterial').value.trim();
+  const t=document.getElementById('fThick').value.trim();
+  const w=document.getElementById('fWidth').value.trim();
+  const p=document.getElementById('fPitch').value.trim();
+  const code=makeCode(mat,t,w,p);
+  const el=document.getElementById('codePreview');
+  const tx=document.getElementById('codeText');
+  if(code){
+    el.classList.remove('empty');
+    tx.textContent=code;
+  }else{
+    el.classList.add('empty');
+    tx.textContent='재질·두께·폭·피치 입력 시 자동 조합';
+  }
 }
 
-function pinPress(n){
-  if(curPin.length>=4)return;
-  const f=getFail();if(f.until>Date.now())return;
-  curPin += n;
-  updateDots();
-  if(curPin.length===4)setTimeout(pinDone,150);
-}
-function pinDel(){if(!curPin)return;curPin=curPin.slice(0,-1);updateDots()}
+async function saveMold(){
+  const material=document.getElementById('fMaterial').value.trim().toUpperCase();
+  const thick=document.getElementById('fThick').value.trim();
+  const width=document.getElementById('fWidth').value.trim();
+  const pitch=document.getElementById('fPitch').value.trim();
+  if(!material||!thick||!width||!pitch){showMsg('editMsg','재질 / 두께 / 폭 / 피치는 필수입니다','err');return}
+  if(isNaN(parseFloat(thick))||isNaN(parseFloat(width))||isNaN(parseFloat(pitch))){showMsg('editMsg','두께·폭·피치는 숫자만','err');return}
 
-async function pinDone(){
-  const hint = document.getElementById('plHint');
-  hint.className = 'hint';
-  hint.textContent = '확인 중...';
+  const payload={
+    material,
+    thick:parseFloat(thick),
+    width:parseFloat(width),
+    pitch:parseFloat(pitch),
+    mapping:document.getElementById('fMapping').value.trim()||null,
+    mold_no:document.getElementById('fMoldNo').value.trim()||null,
+    model_code:document.getElementById('fModelCode').value.trim()||null,
+    density:document.getElementById('fDensity').value?parseFloat(document.getElementById('fDensity').value):null,
+    usage_g:document.getElementById('fUsage').value?parseFloat(document.getElementById('fUsage').value):null,
+    monthly_qty:document.getElementById('fMonthly').value?parseInt(document.getElementById('fMonthly').value):null,
+    raw_order_kg:document.getElementById('fRawOrder').value?parseFloat(document.getElementById('fRawOrder').value):null,
+    vendor:document.getElementById('fVendor').value.trim()||null,
+    memo:document.getElementById('fMemo').value.trim()||null
+  };
+  payload.code=makeCode(material,thick,width,pitch);
 
+  const btn=document.getElementById('btnSave');
+  btn.disabled=true;btn.textContent='저장중...';
   try{
-    const h = await sha256hex(curPin);
-
-    // 1) 마스터 PIN 체크
-    if(h === MASTER_PIN_HASH){
-      clearFail();
-      setSession({role:'admin', name:'관리자', factory:'', dept:''});
-      hint.classList.add('ok');
-      hint.textContent = '✓ 관리자 인증';
-      setTimeout(unlock, 300);
-      return;
-    }
-
-    // 2) Supabase 조회 (mm_user_pin)
-    const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER
-      +'?select=id,name,factory,dept,position&pin_hash=eq.'+h, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer '+SUPABASE_KEY
-      }
-    });
-    if(!r.ok)throw new Error('서버 응답 오류');
-    const list = await r.json();
-
-    if(list && list.length > 0){
-      const u = list[0];
-      clearFail();
-      setSession({
-        role: 'user',
-        id: u.id,
-        name: u.name,
-        factory: u.factory||'',
-        dept: u.dept||'',
-        position: u.position||''
-      });
-      hint.classList.add('ok');
-      hint.textContent = '✓ '+u.name+'님 환영합니다';
-      setTimeout(unlock, 400);
-      return;
-    }
-
-    // 3) 실패
-    const f = getFail();
-    f.count = (f.count||0) + 1;
-    if(f.count >= MAX_FAIL){
-      f.until = Date.now() + LOCKOUT_SEC*1000;
-      f.count = 0;
-      setFail(f);
-      checkLockout();
+    if(editingId){
+      await sbReq('PATCH',TBL+'?id=eq.'+editingId,payload);
     }else{
-      setFail(f);
-      hint.classList.add('err');
-      hint.textContent = 'PIN 불일치 ('+f.count+'/'+MAX_FAIL+')';
+      await sbReq('POST',TBL,payload);
     }
-    shakeDots();
+    showMsg('editMsg','✓ 저장 완료','ok');
+    setTimeout(()=>{closeModal();loadList()},400);
   }catch(err){
-    hint.classList.add('err');
-    hint.textContent = '❌ '+err.message;
-    shakeDots();
+    showMsg('editMsg','❌ '+err.message,'err');
+  }finally{
+    btn.disabled=false;btn.textContent='✓ 저장';
   }
 }
 
-function checkLockout(){
-  const f = getFail();
-  const msg = document.getElementById('plLockout');
-  const remain = f.until - Date.now();
-  if(remain > 0){
-    msg.style.display = 'block';
-    const upd = ()=>{
-      const r = Math.ceil((f.until - Date.now())/1000);
-      if(r <= 0){
-        msg.style.display = 'none';
-        clearFail();
-        clearInterval(lockTimer);
-        const hint = document.getElementById('plHint');
-        hint.textContent = '4자리 PIN';
-        hint.className = 'hint';
-        return;
+async function delMold(m){
+  const code=makeCode(m.material,m.thick,m.width,m.pitch);
+  if(!confirm('['+code+'] 삭제하시겠습니까?'))return;
+  try{
+    await sbReq('DELETE',TBL+'?id=eq.'+m.id);
+    if(editingId===m.id)closeModal();
+    loadList();
+  }catch(err){alert('오류: '+err.message)}
+}
+
+async function delFromModal(){
+  if(!editingId)return;
+  const m=molds.find(x=>x.id===editingId);if(!m)return;
+  await delMold(m);
+}
+
+/* ============================================================
+   엑셀
+   ============================================================ */
+function downloadTemplate(){
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['재질','두께','폭','피치','매핑기종','금형재번','기종코드','비중','소요량','월발주량','원자재발주량','고객사','메모'],
+    ['SPCC',1.6,160,261,'45624-2F010-L','23BKA004A','SPRING U/D BRAKE',7.85,28.6,70000,0,'부강스프링',''],
+    ['SUS430',0.6,80,78,'1862-0041-21','20DHA203A','FORD V713 (FL)',7.7,12.5,30000,0,'우창산업','']
+  ]);
+  ws['!cols']=[{wch:8},{wch:6},{wch:6},{wch:7},{wch:24},{wch:14},{wch:18},{wch:6},{wch:8},{wch:10},{wch:12},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,'금형재마스터');
+  XLSX.writeFile(wb,'금형재_템플릿.xlsx');
+}
+
+function downloadCurrent(){
+  if(molds.length===0){showMsg('uploadMsg','등록된 데이터가 없습니다','warn');return}
+  const wb=XLSX.utils.book_new();
+  const rows=[['조합코드','재질','두께','폭','피치','매핑기종','금형재번','기종코드','비중','소요량','월발주량','원자재발주량','고객사','메모']];
+  molds.forEach(m=>{
+    rows.push([
+      makeCode(m.material,m.thick,m.width,m.pitch),
+      m.material||'',m.thick??'',m.width??'',m.pitch??'',
+      m.mapping||'',m.mold_no||'',m.model_code||'',
+      m.density??'',m.usage_g??'',m.monthly_qty??'',m.raw_order_kg??'',
+      m.vendor||'',m.memo||''
+    ]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:22},{wch:8},{wch:6},{wch:6},{wch:7},{wch:24},{wch:14},{wch:18},{wch:6},{wch:8},{wch:10},{wch:12},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,'금형재마스터');
+  XLSX.writeFile(wb,'금형재_현재목록.xlsx');
+  showMsg('uploadMsg','✓ 다운로드 완료','ok');
+}
+
+function handleFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      // 헤더 매핑
+      const colMap={material:-1,thick:-1,width:-1,pitch:-1,mapping:-1,mold_no:-1,model_code:-1,density:-1,usage_g:-1,monthly_qty:-1,raw_order_kg:-1,vendor:-1,memo:-1};
+      let startRow=0;
+      for(let i=0;i<Math.min(3,raw.length);i++){
+        const row=raw[i].map(c=>String(c).trim());
+        for(let j=0;j<row.length;j++){
+          const v=row[j];
+          if(v==='재질'||v==='material')colMap.material=j;
+          else if(v==='두께'||v==='thick')colMap.thick=j;
+          else if(v==='폭'||v==='width')colMap.width=j;
+          else if(v==='피치'||v==='pitch')colMap.pitch=j;
+          else if(v==='매핑기종'||v==='mapping')colMap.mapping=j;
+          else if(v==='금형재번'||v==='금형'||v==='mold_no')colMap.mold_no=j;
+          else if(v==='기종코드'||v==='기종'||v==='model_code')colMap.model_code=j;
+          else if(v==='비중'||v==='density')colMap.density=j;
+          else if(v==='소요량'||v==='소요량(g)'||v==='usage')colMap.usage_g=j;
+          else if(v==='월발주량'||v==='monthly')colMap.monthly_qty=j;
+          else if(v==='원자재발주량'||v==='원자재발주량(kg)'||v==='raw_order')colMap.raw_order_kg=j;
+          else if(v==='고객사'||v==='거래처'||v==='vendor')colMap.vendor=j;
+          else if(v==='메모'||v==='비고'||v==='memo')colMap.memo=j;
+        }
+        if(colMap.material>=0&&colMap.thick>=0){startRow=i+1;break}
       }
-      msg.textContent = '🔒 '+r+'초 후 재시도';
-    };
-    upd();
-    clearInterval(lockTimer);
-    lockTimer = setInterval(upd, 1000);
-  }else{
-    msg.style.display = 'none';
-  }
-}
+      if(startRow===0){showMsg('uploadMsg','헤더를 찾을 수 없습니다 (재질·두께 필수)','err');return}
 
-function unlock(){
-  document.body.classList.remove('locked');
-  document.getElementById('pinLock').style.display = 'none';
-  applySession();
-}
+      const rows=[];const errs=[];
+      for(let i=startRow;i<raw.length;i++){
+        const r=raw[i];
+        const get=k=>colMap[k]>=0?String(r[colMap[k]]||'').trim():'';
+        const material=get('material').toUpperCase();
+        const thick=get('thick'),width=get('width'),pitch=get('pitch');
+        if(!material)continue;
+        if(!thick||!width||!pitch){errs.push((i+1)+'행: 두께/폭/피치 필수');continue}
+        if(isNaN(parseFloat(thick))||isNaN(parseFloat(width))||isNaN(parseFloat(pitch))){errs.push((i+1)+'행: 두께/폭/피치 숫자 아님');continue}
+        rows.push({
+          material,
+          thick:parseFloat(thick),width:parseFloat(width),pitch:parseFloat(pitch),
+          mapping:get('mapping')||null,
+          mold_no:get('mold_no')||null,
+          model_code:get('model_code')||null,
+          density:get('density')?parseFloat(get('density')):null,
+          usage_g:get('usage_g')?parseFloat(get('usage_g')):null,
+          monthly_qty:get('monthly_qty')?parseInt(get('monthly_qty')):null,
+          raw_order_kg:get('raw_order_kg')?parseFloat(get('raw_order_kg')):null,
+          vendor:get('vendor')||null,
+          memo:get('memo')||null,
+          code:makeCode(material,thick,width,pitch)
+        });
+      }
+      if(rows.length===0){showMsg('uploadMsg','업로드할 행이 없습니다'+(errs.length?' (오류 '+errs.length+'건)':''),'err');return}
 
-function applySession(){
-  const s = getSession();
-  if(!s)return;
-  // 상단 사용자 버튼 표시
-  const btn = document.getElementById('userBtn');
-  const nm = document.getElementById('userName');
-  const lo = document.getElementById('logoutBtn');
-  btn.style.display = '';
-  lo.style.display = '';
-  if(s.role === 'admin'){
-    nm.textContent = '관리자';
-    btn.style.color = '#b91c1c';
-  }else{
-    let label = s.name;
-    if(s.factory)label = s.factory + ' · ' + label;
-    if(s.position)label += ' ' + s.position;
-    nm.textContent = label;
-    btn.style.color = '#1d4ed8';
-  }
-  // 사용자 버튼: 세션 정보 alert (정보 확인용)
-  btn.onclick = ()=>{
-    const expDate = new Date(s.exp);
-    const remainDays = Math.max(0, Math.ceil((s.exp - Date.now()) / (24*60*60*1000)));
-    const info =
-      '👤 ' + (s.role === 'admin' ? '관리자' : s.name) + '\n' +
-      (s.factory ? '🏭 공장: ' + s.factory + '\n' : '') +
-      (s.dept ? '📂 부서: ' + s.dept + '\n' : '') +
-      (s.position ? '🎖 직위: ' + s.position + '\n' : '') +
-      '\n⏱ 자동 잠금까지: ' + remainDays + '일\n' +
-      '(' + expDate.toLocaleDateString('ko-KR') + ' ' + expDate.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ')';
-    alert(info);
+      showMsg('uploadMsg','업로드 중... '+rows.length+'건','ok');
+      let ok=0,fail=0;
+      // code 기준으로 기존 데이터 찾아서 update / 없으면 insert
+      for(const row of rows){
+        try{
+          const existing=await sbReq('GET',TBL+'?select=id&code=eq.'+encodeURIComponent(row.code));
+          if(existing&&existing.length){
+            await sbReq('PATCH',TBL+'?id=eq.'+existing[0].id,row);
+          }else{
+            await sbReq('POST',TBL,row);
+          }
+          ok++;
+        }catch(err){fail++}
+      }
+      let msg='✓ '+ok+'건 업로드';
+      if(fail)msg+=' / '+fail+'건 실패';
+      if(errs.length)msg+=' / 형식오류 '+errs.length+'건';
+      showMsg('uploadMsg',msg,fail||errs.length?'warn':'ok');
+      document.getElementById('fileInput').value='';
+      loadList();
+    }catch(err){
+      showMsg('uploadMsg','❌ 파일 오류: '+err.message,'err');
+    }
   };
-  // 로그아웃 버튼: 세션 삭제 → PIN 입력 화면
-  lo.onclick = ()=>{
-    if(!confirm('로그아웃 하시겠습니까?\n다시 접속하려면 PIN을 입력해야 합니다.'))return;
-    clearSession();
-    curPin = '';
-    location.reload();
-  };
+  reader.readAsArrayBuffer(file);
 }
 
-/* 키보드 입력 지원 */
-document.addEventListener('keydown', function(e){
-  if(!document.body.classList.contains('locked'))return;
-  if(e.key >= '0' && e.key <= '9') pinPress(e.key);
-  else if(e.key === 'Backspace') pinDel();
+/* ============================================================
+   유틸 & 이벤트
+   ============================================================ */
+function showMsg(id,text,cls){
+  const e=document.getElementById(id);if(!e)return;
+  e.textContent=text;e.className='msg show '+(cls||'ok');
+  clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),5000);
+}
+function hideMsg(id){const e=document.getElementById(id);if(e)e.classList.remove('show')}
+function escHtml(s){if(s==null)return '';return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escAttr(s){return escHtml(s)}
+
+document.getElementById('logoutBtn').onclick=()=>{if(!confirm('관리자 잠금?'))return;clearAdminAuth();location.reload()};
+document.getElementById('btnAdd').onclick=()=>openModal(null);
+document.getElementById('btnClose').onclick=closeModal;
+document.getElementById('btnSave').onclick=saveMold;
+document.getElementById('btnDelete').onclick=delFromModal;
+document.getElementById('searchInput').addEventListener('input',renderList);
+document.getElementById('filterVendor').addEventListener('change',renderList);
+
+// 자동 조합 미리보기 - 실시간 갱신
+['fMaterial','fThick','fWidth','fPitch'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',updateCodePreview);
 });
 
-/* 초기화 */
-(function init(){
-  const s = getSession();
-  if(s && s.exp > Date.now()){
-    // 세션 유효 → 만료 시점 유지(매주 1회 재입력 정책), 그대로 사용
-    unlock();
-    return;
-  }
-  if(s) clearSession();
-  renderKeypad();
-  checkLockout();
-})();
-</script>
+// 모달 배경 클릭 닫기
+document.getElementById('modalEdit').addEventListener('click',e=>{if(e.target.id==='modalEdit')closeModal()});
 
+// 엑셀
+document.getElementById('dlTemplateBtn').onclick=downloadTemplate;
+document.getElementById('dlCurrentBtn').onclick=downloadCurrent;
+const fa=document.getElementById('fileArea'),fi=document.getElementById('fileInput');
+fa.onclick=()=>fi.click();
+fi.onchange=(e)=>{if(e.target.files[0])handleFile(e.target.files[0])};
+fa.ondragover=(e)=>{e.preventDefault();fa.classList.add('drag')};
+fa.ondragleave=()=>{fa.classList.remove('drag')};
+fa.ondrop=(e)=>{e.preventDefault();fa.classList.remove('drag');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0])};
+
+// 잠금 키보드 입력
+document.addEventListener('keydown',function(e){
+  if(!document.body.classList.contains('locked'))return;
+  if(e.key>='0'&&e.key<='9')mPinPress(e.key);
+  else if(e.key==='Backspace')mPinDel();
+});
+
+initLock();
+</script>
 </body>
 </html>
