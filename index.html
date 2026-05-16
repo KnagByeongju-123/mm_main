@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v1.6</title>
+<title>스마트팩토리 v1.7</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -80,7 +80,6 @@ html, body {
 .acc.c-hq:hover, .acc.c-hq:focus-within { background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.4); }
 .acc.c-f1:hover, .acc.c-f1:focus-within { background: rgba(94,234,212,0.08); border-color: rgba(94,234,212,0.4); }
 .acc.c-f2:hover, .acc.c-f2:focus-within { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.4); }
-.acc.c-f3:hover, .acc.c-f3:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
 .acc.c-master:hover, .acc.c-master:focus-within { background: rgba(253,186,116,0.08); border-color: rgba(253,186,116,0.4); }
 
 /* 열렸을 때 카드별 색상 글로우 */
@@ -91,7 +90,6 @@ html, body {
 .acc.c-hq[open] { box-shadow: 0 4px 20px rgba(125,211,252,0.22); border-color: rgba(125,211,252,0.55); }
 .acc.c-f1[open] { box-shadow: 0 4px 20px rgba(94,234,212,0.22); border-color: rgba(94,234,212,0.55); }
 .acc.c-f2[open] { box-shadow: 0 4px 20px rgba(147,197,253,0.22); border-color: rgba(147,197,253,0.55); }
-.acc.c-f3[open] { box-shadow: 0 4px 20px rgba(196,181,253,0.22); border-color: rgba(196,181,253,0.55); }
 .acc.c-master[open] { box-shadow: 0 4px 20px rgba(253,186,116,0.22); border-color: rgba(253,186,116,0.55); }
 
 .acc summary {
@@ -116,7 +114,6 @@ html, body {
 .acc.c-hq[open] .icon     { box-shadow: 0 0 16px rgba(125,211,252,0.4); }
 .acc.c-f1[open] .icon     { box-shadow: 0 0 16px rgba(94,234,212,0.4); }
 .acc.c-f2[open] .icon     { box-shadow: 0 0 16px rgba(147,197,253,0.4); }
-.acc.c-f3[open] .icon     { box-shadow: 0 0 16px rgba(196,181,253,0.4); }
 .acc.c-master[open] .icon { box-shadow: 0 0 16px rgba(253,186,116,0.4); }
 
 .acc .title {
@@ -126,7 +123,6 @@ html, body {
 .acc.c-hq[open] .title     { color: #bae6fd; }
 .acc.c-f1[open] .title     { color: #99f6e4; }
 .acc.c-f2[open] .title     { color: #bfdbfe; }
-.acc.c-f3[open] .title     { color: #ddd6fe; }
 .acc.c-master[open] .title { color: #fed7aa; }
 
 .acc .count {
@@ -148,7 +144,6 @@ html, body {
 .acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
 .acc.c-f1 .icon     { background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.3)); color: #5eead4; }
 .acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
-.acc.c-f3 .icon     { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
 
 .acc-body {
@@ -265,7 +260,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1>스마트팩토리 <span class="ver">v1.6</span></h1>
+  <h1>스마트팩토리 <span class="ver">v1.7</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -298,21 +293,11 @@ body.locked { overflow: hidden; }
     </div>
   </details>
   <details class="acc c-f2">
-    <summary><div class="icon">💎</div><div class="title">2공장</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <summary><div class="icon">🧪</div><div class="title">Tryout</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
-      <a class="sub-item" href="second_factory.html">
-        <div class="s-icon">📦</div>
-        <div class="s-text"><div class="s-label">재고관리</div><div class="s-desc">샌딩 자재 / 부자재 조회</div></div>
-        <div class="s-arrow">›</div>
-      </a>
-    </div>
-  </details>
-  <details class="acc c-f3">
-    <summary><div class="icon">🌀</div><div class="title">3공장</div><div class="count">1</div><div class="arrow">›</div></summary>
-    <div class="acc-body">
-      <a class="sub-item" href="third_factory.html">
-        <div class="s-icon">📦</div>
-        <div class="s-text"><div class="s-label">재고관리</div><div class="s-desc">바렐 / 탈지 자재 조회</div></div>
+      <a class="sub-item" href="tryout_report.html">
+        <div class="s-icon">📋</div>
+        <div class="s-text"><div class="s-label">Tryout 보고서</div><div class="s-desc">개발 단계 시작품 테스트 결과 작성</div></div>
         <div class="s-arrow">›</div>
       </a>
     </div>
@@ -333,7 +318,7 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v1.6 · msm Smart Factory</div>
+  <div class="footer">v1.7 · msm Smart Factory · Tryout 모듈</div>
 </div>
 
 <script>
