@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tryout 보고서 출력 v1.4</title>
+<title>Tryout 보고서 출력 v1.5</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -220,21 +220,51 @@ body {
 }
 .toast.show { opacity: 1; }
 
-/* 인쇄 — 보고서만 출력 */
+/* 인쇄 — A4 최적화 */
 @media print {
   body { background: white !important; }
-  .app-header, .config-panel, .btn-row, .preview-hint { display: none !important; }
+  .app-header, .config-panel, .btn-row, .preview-hint, .toast { display: none !important; }
   .preview-wrap { background: white !important; padding: 0 !important; }
   .report-page {
     max-width: 100% !important; min-height: auto !important;
-    margin: 0 !important; padding: 12mm !important;
-    box-shadow: none !important; page-break-after: auto;
+    margin: 0 !important; padding: 0 !important;
+    box-shadow: none !important;
   }
-  .r-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .log-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .approval th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .info-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  @page { size: A4; margin: 0; }
+  /* 색상 보존 */
+  .r-section, .log-table th, .approval th, .info-box,
+  .log-table .status-tag, .iatf-list {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  /* 페이지 나눔 제어 */
+  .r-head, .approval, .info-box {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .log-table { page-break-inside: auto; }
+  .log-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .log-table thead {
+    display: table-header-group;  /* 페이지마다 헤더 반복 */
+  }
+  .r-section {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .photos-grid .p {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .iatf-list .it {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* A4 페이지 설정 */
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 14mm 14mm;  /* 상 우 하 좌 */
+  }
 }
 </style>
 </head>
@@ -255,7 +285,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.4</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.5</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -321,7 +351,13 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.4 (현재)\n' +
+    'v1.5 (현재)\n' +
+    '• A4 인쇄 품질 강화\n' +
+    '• 테이블 행이 페이지 경계에서 잘리지 않게 처리\n' +
+    '• 결재란/사진/IATF 영역도 페이지 나눔 제어\n' +
+    '• 페이지마다 테이블 헤더 자동 반복\n' +
+    '• 표준 A4 마진(상12 좌우14 하14mm) 적용\n\n' +
+    'v1.4\n' +
     '• 보고서 번호: 출력일자 + 시각 기반 (TR-YYYYMMDD-HHMM)\n' +
     '• 회사명 placeholder를 (회사명)으로 단순화\n\n' +
     'v1.3\n' +
