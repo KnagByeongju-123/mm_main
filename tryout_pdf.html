@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tryout 보고서 출력 v1.1</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:     #334155;
+  --border-hi:  #475569;
+  --text:       #e2e8f0;
+  --text-mid:   #cbd5e1;
+  --text-sub:   #94a3b8;
+  --text-dim:   #64748b;
+  --ice:        #7dd3fc;
+  --orange:     #fdba74;
+  --green:      #4ade80;
+  --rose:       #fca5a5;
+  --purple:     #c4b5fd;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh;
+}
+
+/* 화면(편집) 영역 */
+.app-header {
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.back-btn {
+  background: rgba(125,211,252,0.1); color: var(--ice);
+  border: 1px solid rgba(125,211,252,0.3);
+  padding: 6px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 600; text-decoration: none;
+}
+.app-header h1 { font-size: 18px; font-weight: 700; color: var(--ice); flex: 1; }
+.ver { font-size: 11px; color: var(--text-sub); margin-left: 6px; }
+
+.config-panel {
+  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+}
+.config-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+.config-row label { font-size: 12px; color: var(--text-sub); font-weight: 600; min-width: 70px; }
+.config-row input, .config-row textarea {
+  flex: 1; min-width: 150px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 6px;
+  padding: 7px 10px; font-size: 13px; font-family: inherit;
+}
+.config-row .check {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--text); font-size: 13px; cursor: pointer;
+}
+.config-row .check input { width: 16px; height: 16px; flex: none; min-width: 0; accent-color: var(--ice); }
+
+.btn-row { display: flex; gap: 8px; padding: 10px 16px; }
+.btn-row button {
+  flex: 1; padding: 12px; border-radius: 8px; border: none;
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.btn-print { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
+.btn-back { background: var(--bg-card-hi); color: var(--text-mid); border: 1px solid var(--border-hi); }
+
+.preview-wrap {
+  background: var(--bg-dark); padding: 14px;
+}
+.preview-hint {
+  text-align: center; font-size: 12px; color: var(--text-sub); margin-bottom: 10px;
+}
+
+/* 보고서 본체 — 인쇄 시 그대로 출력됨 */
+.report-page {
+  background: white; color: #222;
+  max-width: 210mm; min-height: 297mm;
+  margin: 0 auto;
+  padding: 18mm 16mm;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 11pt; line-height: 1.5;
+}
+
+/* 보고서 헤더 */
+.r-head {
+  border-bottom: 3px solid #1a3a5c; padding-bottom: 10px; margin-bottom: 14px;
+}
+.r-head .company {
+  font-size: 11pt; color: #555; margin-bottom: 4px; letter-spacing: 1px;
+}
+.r-head .title {
+  font-size: 22pt; font-weight: 800; color: #1a3a5c; margin-bottom: 6px;
+}
+.r-head .meta {
+  display: flex; gap: 14px; font-size: 9pt; color: #666;
+}
+.r-head .meta span { color: #222; font-weight: 600; }
+
+/* 결재란 */
+.approval {
+  width: 100%; border-collapse: collapse; margin-bottom: 14px;
+  border: 1.5px solid #1a3a5c;
+}
+.approval th, .approval td {
+  border: 1px solid #1a3a5c;
+  text-align: center; vertical-align: middle;
+}
+.approval th {
+  background: #f0f4f8; font-size: 9pt;
+  padding: 4px 0; color: #1a3a5c; font-weight: 700;
+}
+.approval td {
+  height: 50px; min-width: 60px;
+  font-size: 9pt; color: #888;
+}
+
+/* 정보 박스 */
+.info-box {
+  background: #f8f9fa; border-left: 4px solid #1a3a5c;
+  padding: 8px 12px; margin-bottom: 14px;
+  font-size: 10pt;
+}
+.info-box .lbl { color: #555; font-weight: 600; margin-right: 6px; }
+.info-box .sec { margin: 3px 0; }
+
+/* 요약 */
+.summary-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-bottom: 14px;
+}
+.summary-box {
+  border: 1px solid #ccc; border-radius: 4px;
+  padding: 8px; text-align: center;
+}
+.summary-box .num { font-size: 18pt; font-weight: 800; color: #1a3a5c; }
+.summary-box .lbl { font-size: 8pt; color: #666; }
+
+/* 섹션 제목 */
+.r-section {
+  background: #1a3a5c; color: white;
+  padding: 5px 10px; font-size: 11pt; font-weight: 700;
+  margin: 14px 0 8px 0; border-radius: 2px;
+}
+
+/* 상세 테이블 */
+.log-table {
+  width: 100%; border-collapse: collapse; font-size: 9pt;
+  margin-bottom: 10px;
+}
+.log-table th, .log-table td {
+  border: 1px solid #ccc; padding: 5px 6px; vertical-align: top;
+  text-align: left;
+}
+.log-table th {
+  background: #1a3a5c; color: white;
+  text-align: center; font-weight: 600;
+}
+.log-table .c-date  { width: 16%; }
+.log-table .c-mold  { width: 14%; }
+.log-table .c-stage { width: 8%; text-align: center; }
+.log-table .c-status{ width: 10%; text-align: center; }
+.log-table .c-body  { width: 36%; }
+.log-table .c-iatf  { width: 8%; text-align: center; }
+.log-table .c-author{ width: 8%; text-align: center; }
+.log-table td .lbl { color: #666; font-weight: 600; }
+.log-table td .sec { margin-bottom: 2px; }
+.log-table .status-tag { font-size: 8pt; padding: 1px 6px; border-radius: 8px; font-weight: 700; display: inline-block; }
+.log-table .status-tag.진행중  { background: #cfe2ff; color: #084298; }
+.log-table .status-tag.완료    { background: #d1e7dd; color: #0a3622; }
+.log-table .status-tag.보류    { background: #fff3cd; color: #664d03; }
+.log-table .status-tag.문제발생 { background: #f8d7da; color: #58151c; }
+
+/* IATF 후보 */
+.iatf-list {
+  border: 1px solid #c4b5fd; border-radius: 4px;
+  padding: 8px 12px; background: #faf7ff; margin-bottom: 10px;
+}
+.iatf-list .it { font-size: 9pt; margin: 3px 0; }
+.iatf-list .it .tag { font-weight: 700; color: #6f42c1; margin-right: 5px; }
+
+/* 사진 그리드 */
+.photos-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;
+}
+.photos-grid .p {
+  border: 1px solid #ccc; aspect-ratio: 1; overflow: hidden;
+  position: relative;
+}
+.photos-grid .p img { width: 100%; height: 100%; object-fit: cover; }
+.photos-grid .p .cap {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.55); color: white;
+  font-size: 7pt; padding: 1px 3px; text-align: center;
+}
+
+/* 푸터 3칸 */
+.r-footer {
+  border-top: 1px solid #888; margin-top: 16px; padding-top: 6px;
+  font-size: 8pt; color: #666;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+}
+.r-footer .f-left   { text-align: left; }
+.r-footer .f-center { text-align: center; }
+.r-footer .f-right  { text-align: right; }
+
+/* 토스트 */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(15,23,42,0.95); border: 1px solid var(--ice);
+  color: var(--ice); padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; z-index: 9999;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* 인쇄 — 보고서만 출력 */
+@media print {
+  body { background: white !important; }
+  .app-header, .config-panel, .btn-row, .preview-hint { display: none !important; }
+  .preview-wrap { background: white !important; padding: 0 !important; }
+  .report-page {
+    max-width: 100% !important; min-height: auto !important;
+    margin: 0 !important; padding: 12mm !important;
+    box-shadow: none !important; page-break-after: auto;
+  }
+  .r-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .log-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .approval th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .info-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: A4; margin: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- 인증 가드 -->
+<script>
+(function(){
+  'use strict';
+  var s; try{ s = JSON.parse(localStorage.getItem('mm_user_session')||'null'); }catch(e){ s=null; }
+  if(!s || !s.exp || s.exp <= Date.now()){
+    location.replace('index.html'); document.documentElement.style.display='none';
+    throw new Error('Unauthorized');
+  }
+  window.__msmSession = s;
+})();
+</script>
+
+<div class="app-header">
+  <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.1</span></h1>
+</div>
+
+<div class="config-panel no-print">
+  <div class="config-row">
+    <label>보고서 제목</label>
+    <input type="text" id="cfgTitle" value="Tryout 작업 보고서">
+  </div>
+  <div class="config-row">
+    <label>보고서 번호</label>
+    <input type="text" id="cfgDocNo" placeholder="자동 생성됨">
+  </div>
+  <div class="config-row">
+    <label>회사명</label>
+    <input type="text" id="cfgCompany" value="㈜태진다이텍">
+  </div>
+  <div class="config-row">
+    <label>비고</label>
+    <input type="text" id="cfgMemo" placeholder="(선택)">
+  </div>
+
+  <details style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
+    <summary style="cursor:pointer;font-size:12px;color:var(--purple);font-weight:700;padding:4px 0">📌 PDF 하단 푸터 (3칸)</summary>
+    <div style="padding-top:8px">
+      <div class="config-row">
+        <label>왼쪽</label>
+        <input type="text" id="cfgFooterLeft" placeholder="예: 문서번호 / 부서">
+      </div>
+      <div class="config-row">
+        <label>가운데</label>
+        <input type="text" id="cfgFooterCenter" placeholder="예: 회사명 / 비밀등급">
+      </div>
+      <div class="config-row">
+        <label>오른쪽</label>
+        <input type="text" id="cfgFooterRight" placeholder="예: 페이지 또는 시각">
+      </div>
+      <button type="button" onclick="clearFooter()" style="background:transparent;color:var(--rose);border:1px solid var(--rose);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;width:100%;margin-top:4px">🗑 푸터 정보 지우기</button>
+    </div>
+  </details>
+
+  <div class="config-row" style="margin-top:8px">
+    <label class="check"><input type="checkbox" id="cfgPhotos" checked> 사진 포함</label>
+    <label class="check"><input type="checkbox" id="cfgIatf" checked> IATF 후보 섹션</label>
+    <label class="check"><input type="checkbox" id="cfgIssuesOnly"> 문제발생만</label>
+  </div>
+</div>
+
+<div class="btn-row no-print">
+  <button class="btn-back" type="button" onclick="location.href='tryout_report.html'">‹ 돌아가기</button>
+  <button class="btn-print" type="button" onclick="renderAndPrint()">🖨 PDF 출력 / 인쇄</button>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview-hint no-print">↓ 미리보기 (인쇄 시 결재란 포함된 양식 그대로 출력)</div>
+  <div class="report-page" id="reportBody">
+    <div style="text-align:center;padding:40px;color:#999">데이터 로딩 중...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showVer(){
+  alert(
+    '📄 Tryout 보고서 출력 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.1 (현재)\n' +
+    '• PDF 하단 푸터 3칸 (좌/중/우) 추가\n' +
+    '• 푸터 값 localStorage 자동 저장/복원\n' +
+    '• 푸터 정보 지우기 버튼\n\n' +
+    'v1.0\n' +
+    '• 작업일지 필터 결과를 보고서 양식으로 출력\n' +
+    '• 결재 4단계 (작성/검토/확인/승인)\n' +
+    '• 요약 통계 / 상세 테이블 / IATF 후보 / 사진\n' +
+    '• PDF 저장 (브라우저 인쇄 → PDF로 저장)'
+  );
+}
+
+(function(){
+'use strict';
+
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL = 'tryout_logs';
+const LS_FOOTER = 'tryout_pdf_footer_';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function $(id){ return document.getElementById(id); }
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+let allLogs = [];
+let filtered = [];
+let filterState = {};
+
+/* ============ 필터 상태 + 데이터 로드 ============ */
+async function init(){
+  try {
+    filterState = JSON.parse(sessionStorage.getItem('tryout_pdf_filter') || '{}');
+  } catch(e) { filterState = {}; }
+
+  // 보고서 번호 자동 생성
+  const now = new Date();
+  const docNo = 'TR-' + now.getFullYear() + pad2(now.getMonth()+1) + '-' +
+                pad2(Math.floor(Math.random()*9000)+1000);
+  $('cfgDocNo').value = docNo;
+
+  // 푸터 복원 (이전에 저장된 값)
+  $('cfgFooterLeft').value   = localStorage.getItem(LS_FOOTER + 'left')   || '';
+  $('cfgFooterCenter').value = localStorage.getItem(LS_FOOTER + 'center') || '';
+  $('cfgFooterRight').value  = localStorage.getItem(LS_FOOTER + 'right')  || '';
+
+  await loadLogs();
+  applyFilter();
+  render();
+}
+
+window.clearFooter = function(){
+  if(!confirm('푸터 3칸 값을 모두 지울까요?')) return;
+  $('cfgFooterLeft').value = '';
+  $('cfgFooterCenter').value = '';
+  $('cfgFooterRight').value = '';
+  localStorage.removeItem(LS_FOOTER + 'left');
+  localStorage.removeItem(LS_FOOTER + 'center');
+  localStorage.removeItem(LS_FOOTER + 'right');
+  render();
+  toast('푸터 정보가 삭제되었습니다');
+};
+
+async function loadLogs(){
+  try {
+    const { data, error } = await sb.from(TBL).select('*')
+      .order('log_date', { ascending: true })
+      .order('created_at', { ascending: true });
+    if(error) throw error;
+    allLogs = data || [];
+  } catch(err){
+    toast('데이터 로딩 실패');
+    allLogs = [];
+  }
+}
+
+function applyFilter(){
+  const f = filterState;
+  filtered = allLogs.filter(l => {
+    if(f.status && l.status !== f.status) return false;
+    if(f.stage && l.stage !== f.stage) return false;
+    if(f.mold && l.mold_no !== f.mold) return false;
+    if(f.from && (l.log_date||'') < f.from) return false;
+    if(f.to && (l.log_date||'') > f.to) return false;
+    if(f.iatf === 'fmea' && !l.fmea_flag) return false;
+    if(f.iatf === 'cp' && !l.cp_flag) return false;
+    if(f.iatf === 'any' && !(l.fmea_flag || l.cp_flag)) return false;
+    if(f.kw){
+      const blob = ((l.mold_no||'')+' '+(l.work_done||'')+' '+(l.author||'')+' '+(l.issues||'')).toLowerCase();
+      if(!blob.includes(f.kw.toLowerCase())) return false;
+    }
+    if($('cfgIssuesOnly').checked && l.status !== '문제발생') return false;
+    return true;
+  });
+}
+
+/* ============ 보고서 렌더링 ============ */
+function render(){
+  applyFilter();
+  const includePhotos = $('cfgPhotos').checked;
+  const includeIatf = $('cfgIatf').checked;
+  const title = $('cfgTitle').value || 'Tryout 작업 보고서';
+  const docNo = $('cfgDocNo').value || '-';
+  const company = $('cfgCompany').value || '';
+  const memo = $('cfgMemo').value || '';
+
+  const today = new Date();
+  const dateStr = today.getFullYear() + '. ' + pad2(today.getMonth()+1) + '. ' + pad2(today.getDate()) + '.';
+
+  // 대상 기간/금형 표시
+  const periodStr = (filterState.from || filterState.to)
+    ? (filterState.from || '~') + ' ~ ' + (filterState.to || '~')
+    : (filtered.length ? filtered[0].log_date + ' ~ ' + filtered[filtered.length-1].log_date : '-');
+  const moldStr = filterState.mold || '전체';
+  const stageStr = filterState.stage || '전체';
+
+  // 요약 통계
+  const cnt = { 완료:0, 진행중:0, 문제발생:0, 보류:0 };
+  const moldSet = new Set();
+  const fmeaCnt = filtered.filter(l => l.fmea_flag).length;
+  const cpCnt = filtered.filter(l => l.cp_flag).length;
+  filtered.forEach(l => {
+    if(cnt[l.status] !== undefined) cnt[l.status]++;
+    if(l.mold_no) moldSet.add(l.mold_no);
+  });
+
+  let html = '';
+
+  // 헤더
+  html += '<div class="r-head">';
+  if(company) html += '<div class="company">' + escapeHtml(company) + '</div>';
+  html += '<div class="title">' + escapeHtml(title) + '</div>';
+  html += '<div class="meta">';
+  html += '<div>문서번호 <span>' + escapeHtml(docNo) + '</span></div>';
+  html += '<div>작성일 <span>' + dateStr + '</span></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // 결재란
+  html += '<table class="approval">';
+  html += '<tr><th>작성</th><th>검토</th><th>확인</th><th>승인</th></tr>';
+  html += '<tr><td></td><td></td><td></td><td></td></tr>';
+  html += '</table>';
+
+  // 정보 박스
+  html += '<div class="info-box">';
+  html += '<div class="sec"><span class="lbl">대상 기간:</span>' + escapeHtml(periodStr) + '</div>';
+  html += '<div class="sec"><span class="lbl">대상 금형:</span>' + escapeHtml(moldStr) + '</div>';
+  html += '<div class="sec"><span class="lbl">대상 차수:</span>' + escapeHtml(stageStr) + '</div>';
+  html += '<div class="sec"><span class="lbl">총 일지 수:</span>' + filtered.length + '건 / 금형 종류 ' + moldSet.size + '종</div>';
+  if(memo) html += '<div class="sec"><span class="lbl">비고:</span>' + escapeHtml(memo) + '</div>';
+  html += '</div>';
+
+  // 요약 4개 박스
+  html += '<div class="summary-grid">';
+  html += '<div class="summary-box"><div class="num" style="color:#0a3622">' + cnt.완료 + '</div><div class="lbl">완료</div></div>';
+  html += '<div class="summary-box"><div class="num" style="color:#084298">' + cnt.진행중 + '</div><div class="lbl">진행중</div></div>';
+  html += '<div class="summary-box"><div class="num" style="color:#664d03">' + cnt.보류 + '</div><div class="lbl">보류</div></div>';
+  html += '<div class="summary-box"><div class="num" style="color:#58151c">' + cnt.문제발생 + '</div><div class="lbl">문제발생</div></div>';
+  html += '</div>';
+
+  // 상세 테이블
+  html += '<div class="r-section">1. 일자별 작업 상세</div>';
+  if(!filtered.length){
+    html += '<p style="text-align:center;color:#888;padding:20px">해당 조건의 일지가 없습니다.</p>';
+  } else {
+    html += '<table class="log-table">';
+    html += '<thead><tr>'+
+      '<th class="c-date">날짜</th>'+
+      '<th class="c-mold">금형재번</th>'+
+      '<th class="c-stage">차수</th>'+
+      '<th class="c-status">상태</th>'+
+      '<th class="c-body">작업/이슈/계획</th>'+
+      '<th class="c-iatf">IATF</th>'+
+      '<th class="c-author">작성자</th>'+
+      '</tr></thead><tbody>';
+
+    filtered.forEach(l => {
+      let body = '';
+      if(l.work_done) body += '<div class="sec"><span class="lbl">[작업]</span> ' + escapeHtml(l.work_done) + '</div>';
+      if(l.issues)    body += '<div class="sec"><span class="lbl">[이슈]</span> ' + escapeHtml(l.issues) + '</div>';
+      if(l.next_plan) body += '<div class="sec"><span class="lbl">[계획]</span> ' + escapeHtml(l.next_plan) + '</div>';
+      if(l.failure_category) body += '<div class="sec"><span class="lbl">[분류]</span> ' + escapeHtml(l.failure_category) + '</div>';
+      if(l.measurement_target) body += '<div class="sec"><span class="lbl">[측정]</span> ' + escapeHtml(l.measurement_target) + '</div>';
+      const iatfMark = [];
+      if(l.fmea_flag) iatfMark.push('🔍');
+      if(l.cp_flag)   iatfMark.push('📊');
+
+      html += '<tr>' +
+        '<td class="c-date">' + escapeHtml(l.log_date||'') + '</td>' +
+        '<td class="c-mold"><b>' + escapeHtml(l.mold_no||'') + '</b></td>' +
+        '<td class="c-stage">' + escapeHtml(l.stage||'') + '</td>' +
+        '<td class="c-status"><span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span></td>' +
+        '<td class="c-body">' + (body || '<span style="color:#999">-</span>') + '</td>' +
+        '<td class="c-iatf">' + iatfMark.join(' ') + '</td>' +
+        '<td class="c-author">' + escapeHtml(l.author||'') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  // IATF 후보 섹션
+  if(includeIatf){
+    const iatfLogs = filtered.filter(l => l.fmea_flag || l.cp_flag);
+    if(iatfLogs.length){
+      html += '<div class="r-section">2. IATF 16949 연계 후보</div>';
+      html += '<div class="iatf-list">';
+      html += '<div style="font-size:9pt;color:#666;margin-bottom:6px">FMEA 검토 후보: ' + fmeaCnt + '건 · 관리계획서 반영 후보: ' + cpCnt + '건</div>';
+      iatfLogs.forEach(l => {
+        const tags = [];
+        if(l.fmea_flag) tags.push('🔍 FMEA');
+        if(l.cp_flag) tags.push('📊 CP');
+        html += '<div class="it">';
+        html += '<span class="tag">' + tags.join(' / ') + '</span>';
+        html += escapeHtml(l.log_date||'') + ' · ' + escapeHtml(l.mold_no||'') + ' · ';
+        html += escapeHtml(l.failure_category || l.issues || l.work_done || '');
+        if(l.measurement_target) html += ' (측정: ' + escapeHtml(l.measurement_target) + ')';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+  }
+
+  // 사진 섹션
+  if(includePhotos){
+    const photosFlat = [];
+    filtered.forEach(l => {
+      (l.photos || []).forEach(p => {
+        photosFlat.push({ date: l.log_date, mold: l.mold_no, src: p });
+      });
+    });
+    if(photosFlat.length){
+      const idx = includeIatf && filtered.some(l => l.fmea_flag || l.cp_flag) ? 3 : 2;
+      html += '<div class="r-section">' + idx + '. 첨부 사진 (' + photosFlat.length + '장)</div>';
+      html += '<div class="photos-grid">';
+      photosFlat.slice(0, 32).forEach(p => {
+        html += '<div class="p"><img src="' + p.src + '"><div class="cap">' + escapeHtml(p.date||'') + ' · ' + escapeHtml(p.mold||'') + '</div></div>';
+      });
+      html += '</div>';
+      if(photosFlat.length > 32){
+        html += '<p style="font-size:8pt;color:#888">사진이 많아 첫 32장만 인쇄됩니다 (전체 ' + photosFlat.length + '장)</p>';
+      }
+    }
+  }
+
+  // 푸터 3칸
+  const fL = $('cfgFooterLeft').value.trim() || (company || 'msm Smart Factory');
+  const fC = $('cfgFooterCenter').value.trim() || 'Tryout Report';
+  const fR = $('cfgFooterRight').value.trim() || today.toLocaleString('ko-KR');
+
+  html += '<div class="r-footer">';
+  html += '<div class="f-left">'   + escapeHtml(fL) + '</div>';
+  html += '<div class="f-center">' + escapeHtml(fC) + '</div>';
+  html += '<div class="f-right">'  + escapeHtml(fR) + '</div>';
+  html += '</div>';
+
+  $('reportBody').innerHTML = html;
+}
+
+window.renderAndPrint = function(){
+  render();
+  setTimeout(() => window.print(), 300);
+};
+
+/* 설정 변경 시 즉시 재렌더 */
+document.addEventListener('DOMContentLoaded', () => {
+  ['cfgTitle','cfgDocNo','cfgCompany','cfgMemo'].forEach(id => {
+    $(id).addEventListener('input', render);
+  });
+  ['cfgPhotos','cfgIatf','cfgIssuesOnly'].forEach(id => {
+    $(id).addEventListener('change', render);
+  });
+  // 푸터 — 입력 시 즉시 저장 + 재렌더
+  ['cfgFooterLeft','cfgFooterCenter','cfgFooterRight'].forEach(id => {
+    $(id).addEventListener('input', () => {
+      const key = id.replace('cfgFooter','').toLowerCase();
+      localStorage.setItem(LS_FOOTER + key, $(id).value);
+      render();
+    });
+  });
+  init();
+});
+
+})();
+</script>
+
+</body>
+</html>
