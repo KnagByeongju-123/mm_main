@@ -335,7 +335,7 @@ header h1 .ver {
 <!-- ======================================================== -->
 
 <header>
-  <h1>📄 소모품 보고서 <span class="ver" onclick="showVerReport()">v2.3</span></h1>
+  <h1>📄 소모품 보고서 <span class="ver" onclick="showVerReport()">v2.4</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -380,11 +380,11 @@ header h1 .ver {
       <div class="form-row">
         <div class="form-group">
           <label>작성자</label>
-          <input type="text" id="docAuthor" placeholder="(메인에서 등록)" readonly style="background:#f8f9fa;cursor:not-allowed;color:#555">
+          <input type="text" id="docAuthor" placeholder="(메인에서 등록)" readonly style="background:var(--bg-dark);cursor:not-allowed;color:var(--text-mid);border-color:var(--border)">
         </div>
         <div class="form-group">
           <label>부서</label>
-          <input type="text" id="docDept" placeholder="(메인에서 등록)" readonly style="background:#f8f9fa;cursor:not-allowed;color:#555">
+          <input type="text" id="docDept" placeholder="(메인에서 등록)" readonly style="background:var(--bg-dark);cursor:not-allowed;color:var(--text-mid);border-color:var(--border)">
         </div>
       </div>
       <p style="font-size:11px;color:#888;margin:-4px 0 8px 0">💡 작성자/부서는 로그인 정보에서 자동으로 채워집니다.</p>
@@ -488,7 +488,7 @@ header h1 .ver {
 <div class="modal-bg" id="modalSettings">
   <div class="modal">
     <h2>⚙️ 설정</h2>
-    <p style="font-size:13px;color:#666;line-height:1.6">
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.6">
       ☁️ 클라우드 자동 연결됨<br>
       소모품 재고관리와 데이터를 공유합니다.
     </p>
@@ -497,7 +497,7 @@ header h1 .ver {
       💡 작성자/부서는 로그인 정보에서 자동으로 채워집니다.
     </div>
 
-    <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin-top:12px">
+    <div style="background:rgba(148,163,184,0.1);color:var(--text);padding:12px;border-radius:8px;margin-top:12px">
       <h3 style="margin:0 0 4px 0;font-size:14px">📌 PDF 하단 푸터</h3>
       <p style="font-size:11px;color:#888;margin:0 0 10px 0">PDF 출력 시 페이지 하단 좌/중/우에 표시됩니다.</p>
 
@@ -525,7 +525,7 @@ header h1 .ver {
 </div>
 
 <div class="app-footer">
-  소모품 보고서 v2.3 · msm · 다크테마
+  소모품 보고서 v2.4 · msm · 다크테마
 </div>
 
 <script>
@@ -533,7 +533,10 @@ function showVerReport(){
   alert(
     '📄 소모품 보고서 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v2.3 (현재)\n' +
+    'v2.4 (현재)\n' +
+    '• 요약/세부 박스 다크 가독성 개선\n' +
+    '• 인라인 스타일 색상 변수화\n\n' +
+    'v2.3\n' +
     '• 인증 가드 추가: 미인증 시 메인 강제 이동\n' +
     '• 페이지 진입 위치 추적 자동 기록\n\n' +
     'v2.2\n' +
@@ -753,26 +756,26 @@ function showVerReport(){
     summary.forEach(s => { totalIn += s.in; totalOut += s.out; });
 
     el.innerHTML =
-      '<div style="background:#f3eafd;padding:10px;border-radius:6px;margin-bottom:10px">' +
-        '<div style="font-size:12px;font-weight:600;color:#6f42c1;margin-bottom:4px">📊 요약</div>' +
-        '<div style="font-size:13px;line-height:1.7">' +
+      '<div style="background:rgba(196,181,253,0.15);border:1px solid rgba(196,181,253,0.3);padding:10px;border-radius:6px;margin-bottom:10px;color:var(--text)">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px">📊 요약</div>' +
+        '<div style="font-size:13px;line-height:1.7;color:var(--text)">' +
           '<b>대상 월:</b> ' + escapeHtml(ym) + '<br>' +
           '<b>품목 수:</b> ' + summary.length + '개<br>' +
           '<b>총 입고:</b> ' + totalIn + ' (' + summary.reduce((s,x)=>s+x.inCount,0) + '회)<br>' +
           '<b>총 출고:</b> ' + totalOut + ' (' + summary.reduce((s,x)=>s+x.outCount,0) + '회)' +
         '</div>' +
       '</div>' +
-      '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">📋 세부 내용</div>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:4px">📋 세부 내용</div>' +
       '<table class="summary-table">' +
       '<thead><tr><th>품명</th><th style="text-align:right">입고</th><th style="text-align:right">출고</th></tr></thead>' +
       '<tbody>' +
       summary.slice(0, 30).map(s =>
         '<tr><td>' + escapeHtml(s.name) + '</td>' +
-        '<td class="num" style="color:#28a745">' + (s.in || '-') + '</td>' +
-        '<td class="num" style="color:#fd7e14">' + (s.out || '-') + '</td></tr>'
+        '<td class="num" style="color:var(--green)">' + (s.in || '-') + '</td>' +
+        '<td class="num" style="color:var(--orange)">' + (s.out || '-') + '</td></tr>'
       ).join('') +
       '</tbody></table>' +
-      (summary.length > 30 ? '<p style="font-size:11px;color:#888">상위 30개만 미리보기 (출력 시 전체)</p>' : '');
+      (summary.length > 30 ? '<p style="font-size:11px;color:var(--text-sub)">상위 30개만 미리보기 (출력 시 전체)</p>' : '');
   }
 
   function renderItemPickList(targetId, query) {
@@ -806,13 +809,13 @@ function showVerReport(){
       return '<div class="item-pick-row ' + (picked ? 'selected' : '') + (isLow ? ' low' : '') + '" data-id="' + it.id + '">' +
         '<div class="name">' + escapeHtml(it.name) +
           (isLow ? ' <span style="color:#dc3545;font-size:11px;font-weight:600">⚠️ 재고부족</span>' : '') +
-          (picked ? ' <span style="color:#28a745;font-size:11px;font-weight:600">✓ 선택됨</span>' : '') +
+          (picked ? ' <span style="color:var(--green);font-size:11px;font-weight:600">✓ 선택됨</span>' : '') +
         '</div>' +
         '<div class="stock">' +
           '<span style="' + (isLow ? 'color:#dc3545;font-weight:600' : '') + '">' +
             '재고 ' + it.stock +
           '</span>' +
-          (it.min_stock > 0 ? ' <span style="color:#888;font-size:11px">/ 안전 ' + it.min_stock + '</span>' : '') +
+          (it.min_stock > 0 ? ' <span style="color:var(--text-sub);font-size:11px">/ 안전 ' + it.min_stock + '</span>' : '') +
           ' ' + escapeHtml(it.unit || 'EA') +
         '</div>' +
       '</div>';
@@ -858,8 +861,8 @@ function showVerReport(){
       const amtLabel = isPurchase ? '예상 총액' : '손실 추정액';
 
       el.innerHTML =
-        '<div style="background:#f3eafd;padding:8px 10px;border-radius:6px;margin-bottom:8px;font-size:12px">' +
-          '<b>📊 요약:</b> ' + curPicked.length + '종 · 총 ' + fmt(totalQty) +
+        '<div style="background:rgba(196,181,253,0.15);border:1px solid rgba(196,181,253,0.3);padding:8px 10px;border-radius:6px;margin-bottom:8px;font-size:12px;color:var(--text)">' +
+          '<b style="color:var(--purple)">📊 요약:</b> ' + curPicked.length + '종 · 총 ' + fmt(totalQty) +
           (totalAmt > 0 ? ' · ' + amtLabel + ' <b>' + fmt(totalAmt) + '원</b>' : '') +
         '</div>' +
         curPicked.map((p, i) =>
@@ -1409,7 +1412,7 @@ ${(doc.footer_left || doc.footer_center || doc.footer_right) ? `
     $('savedTitle').textContent = doc.title;
     const fmt = n => Number(n || 0).toLocaleString('ko-KR');
 
-    let html = '<div style="font-size:13px;line-height:1.7;background:#f8f9fa;padding:10px;border-radius:6px;margin-bottom:10px">' +
+    let html = '<div style="font-size:13px;line-height:1.7;background:rgba(148,163,184,0.1);color:var(--text);padding:10px;border-radius:6px;margin-bottom:10px">' +
       '<b>양식:</b> ' + typeLabel(doc.doc_type) + '<br>' +
       (doc.author ? '<b>작성자:</b> ' + escapeHtml(doc.author) + '<br>' : '') +
       (doc.dept ? '<b>부서:</b> ' + escapeHtml(doc.dept) + '<br>' : '') +
@@ -1421,8 +1424,8 @@ ${(doc.footer_left || doc.footer_center || doc.footer_right) ? `
       let totalIn = 0, totalOut = 0;
       items.forEach(s => { totalIn += s.in; totalOut += s.out; });
       // 요약
-      html += '<div style="background:#f3eafd;padding:10px;border-radius:6px;margin-bottom:10px">' +
-        '<div style="font-size:12px;font-weight:600;color:#6f42c1;margin-bottom:4px">📊 요약</div>' +
+      html += '<div style="background:rgba(196,181,253,0.15);border:1px solid rgba(196,181,253,0.25);color:var(--text);padding:10px;border-radius:6px;margin-bottom:10px">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:4px">📊 요약</div>' +
         '<div style="font-size:13px;line-height:1.7">' +
           '<b>대상 월:</b> ' + escapeHtml(doc.content.month || '') + '<br>' +
           '<b>품목 수:</b> ' + items.length + '개<br>' +
@@ -1430,15 +1433,15 @@ ${(doc.footer_left || doc.footer_center || doc.footer_right) ? `
         '</div>' +
       '</div>';
       // 세부
-      html += '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">📋 세부 내용</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:4px">📋 세부 내용</div>';
       html += '<table class="summary-table">' +
         '<thead><tr><th>품명</th><th style="text-align:right">입고</th><th style="text-align:right">출고</th></tr></thead><tbody>' +
         items.slice(0, 30).map(s =>
           '<tr><td>' + escapeHtml(s.name) + '</td>' +
-          '<td class="num" style="color:#28a745">' + (s.in || '-') + '</td>' +
-          '<td class="num" style="color:#fd7e14">' + (s.out || '-') + '</td></tr>'
+          '<td class="num" style="color:var(--green)">' + (s.in || '-') + '</td>' +
+          '<td class="num" style="color:var(--orange)">' + (s.out || '-') + '</td></tr>'
         ).join('') +
-        (items.length > 30 ? '<tr><td colspan="3" style="text-align:center;color:#888;font-size:11px">외 ' + (items.length - 30) + '건 (PDF/Excel에 전체 포함)</td></tr>' : '') +
+        (items.length > 30 ? '<tr><td colspan="3" style="text-align:center;color:var(--text-sub);font-size:11px">외 ' + (items.length - 30) + '건 (PDF/Excel에 전체 포함)</td></tr>' : '') +
         '</tbody></table>';
 
     } else if ((doc.doc_type === 'purchase' || doc.doc_type === 'disposal') && doc.content && doc.content.items) {
@@ -1450,8 +1453,8 @@ ${(doc.footer_left || doc.footer_center || doc.footer_right) ? `
         totalAmt += (it.amount || 0);
       });
       // 요약
-      html += '<div style="background:#f3eafd;padding:10px;border-radius:6px;margin-bottom:10px">' +
-        '<div style="font-size:12px;font-weight:600;color:#6f42c1;margin-bottom:4px">📊 요약</div>' +
+      html += '<div style="background:rgba(196,181,253,0.15);border:1px solid rgba(196,181,253,0.25);color:var(--text);padding:10px;border-radius:6px;margin-bottom:10px">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:4px">📊 요약</div>' +
         '<div style="font-size:13px;line-height:1.7">' +
           '<b>품목 수:</b> ' + its.length + '종<br>' +
           '<b>총 수량:</b> ' + fmt(totalQty) + '<br>' +
@@ -1459,32 +1462,32 @@ ${(doc.footer_left || doc.footer_center || doc.footer_right) ? `
         '</div>' +
       '</div>';
       // 세부
-      html += '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">📋 세부 내용</div>';
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:4px">📋 세부 내용</div>';
       html += '<table class="summary-table">' +
         '<thead><tr><th>품명</th><th style="text-align:right">수량</th>' +
         (totalAmt > 0 ? '<th style="text-align:right">금액</th>' : '') +
         '</tr></thead><tbody>' +
         its.slice(0, 20).map(it =>
-          '<tr><td>' + escapeHtml(it.name) + (it.spec ? ' <span style="color:#888;font-size:11px">' + escapeHtml(it.spec) + '</span>' : '') + '</td>' +
+          '<tr><td>' + escapeHtml(it.name) + (it.spec ? ' <span style="color:var(--text-sub);font-size:11px">' + escapeHtml(it.spec) + '</span>' : '') + '</td>' +
           '<td class="num">' + fmt(it.qty) + ' ' + escapeHtml(it.unit || '') + '</td>' +
           (totalAmt > 0 ? '<td class="num">' + fmt(it.amount || 0) + '</td>' : '') +
           '</tr>'
         ).join('') +
-        (its.length > 20 ? '<tr><td colspan="' + (totalAmt > 0 ? 3 : 2) + '" style="text-align:center;color:#888;font-size:11px">외 ' + (its.length - 20) + '건</td></tr>' : '') +
+        (its.length > 20 ? '<tr><td colspan="' + (totalAmt > 0 ? 3 : 2) + '" style="text-align:center;color:var(--text-sub);font-size:11px">외 ' + (its.length - 20) + '건</td></tr>' : '') +
         '</tbody></table>';
 
       if (doc.content.reason) {
         html += '<div style="margin-top:10px"><b style="font-size:13px">' +
           (isPurchase ? '거래처 / 발주 사유' : '폐기 사유') +
           '</b>' +
-        '<div style="background:#f8f9fa;padding:8px;border-radius:6px;font-size:13px;margin-top:4px;white-space:pre-wrap">' +
+        '<div style="background:rgba(148,163,184,0.1);color:var(--text);padding:8px;border-radius:6px;font-size:13px;margin-top:4px;white-space:pre-wrap">' +
           escapeHtml(doc.content.reason) + '</div></div>';
       }
     }
 
     if (doc.comment) {
       html += '<div style="margin-top:10px"><b style="font-size:13px">비고 / 추가 의견</b>' +
-        '<div style="background:#f8f9fa;padding:8px;border-radius:6px;font-size:13px;margin-top:4px;white-space:pre-wrap">' +
+        '<div style="background:rgba(148,163,184,0.1);color:var(--text);padding:8px;border-radius:6px;font-size:13px;margin-top:4px;white-space:pre-wrap">' +
           escapeHtml(doc.comment) + '</div></div>';
     }
 
