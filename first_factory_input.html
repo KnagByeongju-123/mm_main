@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리</title>
+<title>1공장 재고관리 v1.1</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -374,6 +374,27 @@ input[type="file"] { display: none; }
   line-height: 1; flex-shrink: 0;
 }
 .cat-del:hover { color: #dc3545; }
+
+/* 언어 선택 탭 */
+.lang-tabs {
+  display: flex; gap: 3px; margin-right: 4px;
+}
+.lang-tab {
+  font-size: 16px; padding: 4px 8px; border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer; transition: all 0.15s;
+  filter: grayscale(40%) opacity(0.6);
+  font-family: inherit;
+}
+.lang-tab:active { transform: scale(0.92); }
+.lang-tab.active {
+  background: rgba(125,211,252,0.2);
+  border-color: rgba(125,211,252,0.6);
+  filter: none;
+  box-shadow: 0 0 6px rgba(125,211,252,0.3);
+}
+
 @media print {
   body { background: white !important; color: black !important; }
   .header, .tabs, .no-print { display: none !important; }
@@ -471,37 +492,42 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1>📦 1공장 재고관리 <span class="ver" onclick="showVerInput()">v1.0</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.1</span></h1>
+  <div class="lang-tabs">
+    <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
+    <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
+    <button class="lang-tab" data-lang="kk" title="Қазақша">🇰🇿</button>
+  </div>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
 <div class="tabs">
-  <button class="tab active" data-tab="list" type="button">재고</button>
-  <button class="tab" data-tab="history" type="button">이력</button>
-  <button class="tab" data-tab="export" type="button">일괄처리</button>
+  <button class="tab active" data-tab="list" type="button" data-i18n="tab_inv">재고</button>
+  <button class="tab" data-tab="history" type="button" data-i18n="tab_hist">이력</button>
+  <button class="tab" data-tab="export" type="button" data-i18n="tab_export">일괄처리</button>
 </div>
 
 <div class="container">
 
   <div id="page-list">
     <div class="summary">
-      <div class="summary-card"><div class="num" id="sumTotal">0</div><div class="label">전체 품목</div></div>
-      <div class="summary-card"><div class="num warn" id="sumLow">0</div><div class="label">재고부족</div></div>
-      <div class="summary-card"><div class="num" id="sumValue">0</div><div class="label">재고금액(만)</div></div>
+      <div class="summary-card"><div class="num" id="sumTotal">0</div><div class="label" data-i18n="sum_total">전체 품목</div></div>
+      <div class="summary-card"><div class="num warn" id="sumLow">0</div><div class="label" data-i18n="sum_low">재고부족</div></div>
+      <div class="summary-card"><div class="num" id="sumValue">0</div><div class="label" data-i18n="sum_value">재고금액(만)</div></div>
     </div>
 
     <div class="alert-bar" id="alertBar"></div>
 
     <div id="locFilterBar" style="display:none;background:#fff3cd;border:1px solid #ffe69c;border-radius:8px;padding:10px 12px;margin-bottom:10px;align-items:center;gap:10px;font-size:13px">
       <span style="font-size:18px">📍</span>
-      <span style="flex:1">위치 <b id="locFilterName" style="color:#1a3a5c;font-size:15px"></b> 품목만 보기 <span id="locFilterCount" style="color:#666;font-size:12px"></span></span>
-      <button id="btnLocClear" type="button" style="background:white;border:1px solid #ccc;color:#333;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">전체보기</button>
+      <span style="flex:1"><span data-i18n="loc_filter_pre">위치</span> <b id="locFilterName" style="color:#1a3a5c;font-size:15px"></b> <span data-i18n="loc_filter_post">품목만 보기</span> <span id="locFilterCount" style="color:#666;font-size:12px"></span></span>
+      <button id="btnLocClear" type="button" style="background:white;border:1px solid #ccc;color:#333;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" data-i18n="show_all">전체보기</button>
     </div>
 
     <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="품명/규격/위치 검색">
+      <input type="text" id="searchInput" data-i18n-ph="search_ph" placeholder="품명/규격/위치 검색">
       <select id="filterCat">
-        <option value="">전체</option>
+        <option value="" data-i18n="all">전체</option>
       </select>
     </div>
 
@@ -511,19 +537,19 @@ input[type="file"] { display: none; }
   <div id="page-history" style="display:none">
     <div class="hist-search-wrap">
       <div class="hist-search-row">
-        <input type="text" id="historySearch" placeholder="품명 검색 후 선택 또는 검색" autocomplete="off">
-        <button class="btn-hist-search" id="btnHistSearch" type="button">검색</button>
+        <input type="text" id="historySearch" data-i18n-ph="hist_search_ph" placeholder="품명 검색 후 선택 또는 검색" autocomplete="off">
+        <button class="btn-hist-search" id="btnHistSearch" type="button" data-i18n="search">검색</button>
       </div>
       <div class="hist-autocomplete" id="histAC"></div>
     </div>
 
     <!-- 일자 빠른선택 -->
     <div id="dateQuickBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-      <button class="date-quick active" data-range="all" type="button">전체</button>
-      <button class="date-quick" data-range="today" type="button">오늘</button>
-      <button class="date-quick" data-range="week" type="button">이번주</button>
-      <button class="date-quick" data-range="month" type="button">이번달</button>
-      <button class="date-quick" data-range="custom" type="button">📅 기간</button>
+      <button class="date-quick active" data-range="all" type="button" data-i18n="date_all">전체</button>
+      <button class="date-quick" data-range="today" type="button" data-i18n="date_today">오늘</button>
+      <button class="date-quick" data-range="week" type="button" data-i18n="date_week">이번주</button>
+      <button class="date-quick" data-range="month" type="button" data-i18n="date_month">이번달</button>
+      <button class="date-quick" data-range="custom" type="button"><span data-i18n-keep>📅 </span><span data-i18n="date_custom">기간</span></button>
     </div>
 
     <!-- 일자 직접 입력 -->
@@ -537,7 +563,7 @@ input[type="file"] { display: none; }
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <label style="font-size:12px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer">
-        <input type="checkbox" id="showDeletedHist" style="width:16px;height:16px"> 삭제된 이력 보기
+        <input type="checkbox" id="showDeletedHist" style="width:16px;height:16px"> <span data-i18n="show_deleted">삭제된 이력 보기</span>
       </label>
       <div id="historyCount" style="font-size:12px;color:#666;text-align:right"></div>
     </div>
@@ -547,29 +573,29 @@ input[type="file"] { display: none; }
 
   <div id="page-export" style="display:none">
     <div style="background:white;padding:16px;border-radius:8px;margin-bottom:12px;">
-      <h3 style="margin-top:0">📤 데이터 내보내기</h3>
-      <p style="font-size:13px;color:#666">현재 재고 또는 이력을 Excel 파일로 내려받습니다.</p>
+      <h3 style="margin-top:0"><span data-i18n-keep>📤 </span><span data-i18n="export_title">데이터 내보내기</span></h3>
+      <p style="font-size:13px;color:#666" data-i18n="export_desc">현재 재고 또는 이력을 Excel 파일로 내려받습니다.</p>
       <div style="display:flex;gap:8px">
-        <button class="btn-primary" style="flex:1" id="btnExportItems">📦 재고목록</button>
-        <button class="btn-primary" style="flex:1" id="btnExportHistory">📋 입출고이력</button>
+        <button class="btn-primary" style="flex:1" id="btnExportItems"><span data-i18n-keep>📦 </span><span data-i18n="export_items">재고목록</span></button>
+        <button class="btn-primary" style="flex:1" id="btnExportHistory"><span data-i18n-keep>📋 </span><span data-i18n="export_hist">입출고이력</span></button>
       </div>
     </div>
 
     <div style="background:white;padding:16px;border-radius:8px;">
-      <h3 style="margin-top:0">📥 재고 일괄 업로드</h3>
-      <p style="font-size:13px;color:#666;line-height:1.5">
+      <h3 style="margin-top:0"><span data-i18n-keep>📥 </span><span data-i18n="upload_title">재고 일괄 업로드</span></h3>
+      <p style="font-size:13px;color:#666;line-height:1.5" data-i18n-html="upload_desc">
         CSV 파일로 여러 품목을 한 번에 등록할 수 있습니다.<br>
         <b>품명</b>이 같은 품목이 이미 있으면 <b>수정</b>되고, 없으면 <b>추가</b>됩니다.
       </p>
       <details style="margin:8px 0;font-size:12px;color:#666">
-        <summary style="cursor:pointer">📘 CSV 형식 보기</summary>
+        <summary style="cursor:pointer"><span data-i18n-keep>📘 </span><span data-i18n="csv_format">CSV 형식 보기</span></summary>
         <pre style="background:#f5f5f5;padding:8px;border-radius:4px;font-size:11px;overflow-x:auto;white-space:pre-wrap;margin-top:6px">품명,분류,규격,단위,현재고,안전재고,단가,위치,거래처,비고
 펀치다이,금형부품,M10x50,EA,5,3,15000,A-01,동광공구,
 유압필터,유압부품,100T,EA,2,5,8000,B-03,코리아유압,1호기용</pre>
         <p style="margin:6px 0 0 0">· 첫 줄은 헤더(컬럼명)이며 그대로 두세요<br>· 분류는 금형부품/소모공구/유압부품/전기부품/안전용품/기타 중 하나<br>· 빈 셀은 그대로 두면 됩니다<br>· 먼저 "재고 목록 Excel"로 받아서 양식으로 쓰셔도 됩니다</p>
       </details>
-      <button class="btn-secondary" id="btnDownloadTemplate" style="width:100%;margin-bottom:8px">📋 양식 CSV 받기</button>
-      <button class="btn-primary" id="btnUploadCSV" style="width:100%">📥 CSV 업로드</button>
+      <button class="btn-secondary" id="btnDownloadTemplate" style="width:100%;margin-bottom:8px"><span data-i18n-keep>📋 </span><span data-i18n="dl_template">양식 CSV 받기</span></button>
+      <button class="btn-primary" id="btnUploadCSV" style="width:100%"><span data-i18n-keep>📥 </span><span data-i18n="upload_csv">CSV 업로드</span></button>
       <input type="file" id="csvInput" accept=".csv,text/csv">
       <div id="uploadResult" style="display:none;margin-top:10px;padding:10px;border-radius:6px;font-size:13px"></div>
     </div>
@@ -580,7 +606,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.0 · msm · 프레스양산
+  1공장 재고관리 v1.1 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -588,7 +614,7 @@ input[type="file"] { display: none; }
 <!-- 상세 모달 -->
 <div class="modal-bg" id="modalDetail">
   <div class="modal">
-    <h2>품목 상세</h2>
+    <h2 data-i18n="item_detail">품목 상세</h2>
     <img id="dPhoto" class="detail-photo" style="display:none" alt="">
     <div class="detail-info">
       <div class="name" id="dName"></div>
@@ -597,17 +623,17 @@ input[type="file"] { display: none; }
     </div>
     <div class="action-grid">
       <button class="action-btn in" id="btnDoIn" type="button">
-        <span class="ico">📥</span><span>입고</span>
+        <span class="ico">📥</span><span data-i18n="in">입고</span>
       </button>
       <button class="action-btn out" id="btnDoOut" type="button">
-        <span class="ico">📤</span><span>출고</span>
+        <span class="ico">📤</span><span data-i18n="out">출고</span>
       </button>
     </div>
     <button class="action-btn edit" id="btnDoEdit" type="button">
-      <span class="ico">✏️</span><span>품목 정보 수정</span>
+      <span class="ico">✏️</span><span data-i18n="edit_item">품목 정보 수정</span>
     </button>
     <div class="modal-buttons">
-      <button class="btn-secondary" id="btnDetailClose" type="button">닫기</button>
+      <button class="btn-secondary" id="btnDetailClose" type="button" data-i18n="close">닫기</button>
     </div>
   </div>
 </div>
@@ -615,43 +641,43 @@ input[type="file"] { display: none; }
 <!-- 품목 모달 -->
 <div class="modal-bg" id="modalItem">
   <div class="modal">
-    <h2 id="itemTitle">품목 추가</h2>
+    <h2 id="itemTitle" data-i18n="add_item">품목 추가</h2>
     <input type="hidden" id="editId">
 
     <div class="form-group">
-      <label>참조 사진 (1:1 정사각, 약 10KB로 압축)</label>
+      <label data-i18n="photo_label">참조 사진 (1:1 정사각, 약 10KB로 압축)</label>
       <div class="photo-area" id="photoArea">
         <div id="photoPlaceholder">
           <div style="font-size:32px;color:#bbb">📷</div>
-          <div style="font-size:13px;color:#888;margin-top:4px">아래 버튼으로 사진 촬영 또는 선택</div>
+          <div style="font-size:13px;color:#888;margin-top:4px" data-i18n="photo_hint">아래 버튼으로 사진 촬영 또는 선택</div>
         </div>
         <img id="photoPreview" class="photo-preview" style="display:none" alt="">
         <div class="photo-info" id="photoInfo" style="display:none"></div>
       </div>
       <div class="photo-buttons" style="margin-top:8px">
-        <button type="button" id="btnTakePhoto">📷 촬영</button>
-        <button type="button" id="btnChoosePhoto">🖼 갤러리</button>
-        <button type="button" class="remove" id="btnRemovePhoto" style="display:none">🗑 제거</button>
+        <button type="button" id="btnTakePhoto"><span data-i18n-keep>📷 </span><span data-i18n="take_photo">촬영</span></button>
+        <button type="button" id="btnChoosePhoto"><span data-i18n-keep>🖼 </span><span data-i18n="gallery">갤러리</span></button>
+        <button type="button" class="remove" id="btnRemovePhoto" style="display:none"><span data-i18n-keep>🗑 </span><span data-i18n="remove">제거</span></button>
       </div>
       <input type="file" id="photoInputCamera" accept="image/*" capture="environment">
       <input type="file" id="photoInputGallery" accept="image/*">
     </div>
 
     <div class="form-group">
-      <label>분류 *</label>
+      <label><span data-i18n="category">분류</span> *</label>
       <select id="fCategory"></select>
     </div>
     <div class="form-group">
-      <label>품명 *</label>
-      <input type="text" id="fName" placeholder="예: 펀치 다이">
+      <label><span data-i18n="name">품명</span> *</label>
+      <input type="text" id="fName" data-i18n-ph="name_ph" placeholder="예: 펀치 다이">
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>규격/모델</label>
-        <input type="text" id="fSpec" placeholder="예: M10x50, 100T">
+        <label data-i18n="spec">규격/모델</label>
+        <input type="text" id="fSpec" data-i18n-ph="spec_ph" placeholder="예: M10x50, 100T">
       </div>
       <div class="form-group">
-        <label>단위</label>
+        <label data-i18n="unit">단위</label>
         <select id="fUnit">
           <option value="EA">EA (개)</option>
           <option value="SET">SET (세트)</option>
@@ -664,42 +690,42 @@ input[type="file"] { display: none; }
           <option value="ROLL">ROLL (롤)</option>
           <option value="DRUM">DRUM (드럼)</option>
           <option value="PACK">PACK (팩)</option>
-          <option value="기타">기타</option>
+          <option value="기타" data-i18n="etc">기타</option>
         </select>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>현재고</label>
+        <label data-i18n="stock">현재고</label>
         <input type="number" id="fStock" placeholder="0">
       </div>
       <div class="form-group">
-        <label>안전재고</label>
+        <label data-i18n="min_stock">안전재고</label>
         <input type="number" id="fMinStock" placeholder="0">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>단가(원)</label>
+        <label data-i18n="price">단가(원)</label>
         <input type="number" id="fPrice" placeholder="0">
       </div>
       <div class="form-group">
-        <label>위치(랙)</label>
+        <label data-i18n="location">위치(랙)</label>
         <input type="text" id="fLocation" placeholder="A-01">
       </div>
     </div>
     <div class="form-group">
-      <label>거래처</label>
+      <label data-i18n="vendor">거래처</label>
       <input type="text" id="fVendor">
     </div>
     <div class="form-group">
-      <label>비고</label>
+      <label data-i18n="memo">비고</label>
       <textarea id="fMemo"></textarea>
     </div>
     <div class="modal-buttons">
-      <button class="btn-secondary" id="btnItemCancel" type="button">취소</button>
-      <button class="btn-danger" id="btnDelete" style="display:none" type="button">삭제</button>
-      <button class="btn-primary" id="btnItemSave" type="button">저장</button>
+      <button class="btn-secondary" id="btnItemCancel" type="button" data-i18n="cancel">취소</button>
+      <button class="btn-danger" id="btnDelete" style="display:none" type="button" data-i18n="delete">삭제</button>
+      <button class="btn-primary" id="btnItemSave" type="button" data-i18n="save">저장</button>
     </div>
   </div>
 </div>
@@ -707,10 +733,10 @@ input[type="file"] { display: none; }
 <!-- 수량 모달 -->
 <div class="modal-bg" id="modalStock">
   <div class="modal">
-    <h2 id="stockTitle">입고</h2>
+    <h2 id="stockTitle" data-i18n="in">입고</h2>
     <div id="stockInfo" style="background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:12px;font-size:14px"></div>
     <div class="form-group">
-      <label>수량</label>
+      <label data-i18n="qty">수량</label>
       <div class="qty-wrap">
         <button class="qty-btn" id="qtyMinus" type="button">−</button>
         <input type="number" id="stockQty" class="qty-input" value="1" min="1">
@@ -718,12 +744,12 @@ input[type="file"] { display: none; }
       </div>
     </div>
     <div class="form-group">
-      <label>담당자/메모</label>
-      <input type="text" id="stockMemo" placeholder="예: 홍길동, 1호기 교체용">
+      <label data-i18n="worker_memo">담당자/메모</label>
+      <input type="text" id="stockMemo" data-i18n-ph="worker_memo_ph" placeholder="예: 홍길동, 1호기 교체용">
     </div>
     <div class="modal-buttons">
-      <button class="btn-secondary" id="btnStockCancel" type="button">취소</button>
-      <button class="btn-primary" id="btnStockOk" type="button">확인</button>
+      <button class="btn-secondary" id="btnStockCancel" type="button" data-i18n="cancel">취소</button>
+      <button class="btn-primary" id="btnStockOk" type="button" data-i18n="confirm">확인</button>
     </div>
   </div>
 </div>
@@ -731,16 +757,16 @@ input[type="file"] { display: none; }
 <!-- 분류 필터 선택 모달 (Excel 내보내기용) -->
 <div class="modal-bg" id="modalExportFilter">
   <div class="modal">
-    <h2 id="exportFilterTitle">📤 분류 선택</h2>
-    <p style="font-size:13px;color:#666;margin:0 0 10px 0">내보낼 분류를 선택하세요. (체크된 분류만 포함)</p>
+    <h2 id="exportFilterTitle"><span data-i18n-keep>📤 </span><span data-i18n="select_cat">분류 선택</span></h2>
+    <p style="font-size:13px;color:#666;margin:0 0 10px 0" data-i18n="select_cat_desc">내보낼 분류를 선택하세요. (체크된 분류만 포함)</p>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="btn-secondary" id="btnExportFilterAll" type="button" style="flex:1;padding:8px">전체선택</button>
-      <button class="btn-secondary" id="btnExportFilterNone" type="button" style="flex:1;padding:8px">전체해제</button>
+      <button class="btn-secondary" id="btnExportFilterAll" type="button" style="flex:1;padding:8px" data-i18n="select_all">전체선택</button>
+      <button class="btn-secondary" id="btnExportFilterNone" type="button" style="flex:1;padding:8px" data-i18n="select_none">전체해제</button>
     </div>
     <div id="exportFilterList" style="max-height:300px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:8px;background:#fafafa"></div>
     <div class="modal-buttons">
-      <button class="btn-secondary" id="btnExportFilterCancel" type="button">취소</button>
-      <button class="btn-primary" id="btnExportFilterOk" type="button">내보내기</button>
+      <button class="btn-secondary" id="btnExportFilterCancel" type="button" data-i18n="cancel">취소</button>
+      <button class="btn-primary" id="btnExportFilterOk" type="button" data-i18n="export_btn">내보내기</button>
     </div>
   </div>
 </div>
@@ -748,32 +774,180 @@ input[type="file"] { display: none; }
 <!-- 설정 모달 -->
 <div class="modal-bg" id="modalSettings">
   <div class="modal">
-    <h2>⚙️ 설정</h2>
+    <h2><span data-i18n-keep>⚙️ </span><span data-i18n="settings">설정</span></h2>
 
     <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin-bottom:16px">
-      <h3 style="margin:0 0 8px 0;font-size:15px">🏷 분류 관리</h3>
-      <p style="font-size:12px;color:#666;margin:0 0 8px 0">추가/삭제 및 ≡ 드래그로 순서 변경 가능합니다.</p>
+      <h3 style="margin:0 0 8px 0;font-size:15px"><span data-i18n-keep>🏷 </span><span data-i18n="cat_manage">분류 관리</span></h3>
+      <p style="font-size:12px;color:#666;margin:0 0 8px 0" data-i18n="cat_manage_desc">추가/삭제 및 ≡ 드래그로 순서 변경 가능합니다.</p>
       <div id="categoryList" style="margin-bottom:8px"></div>
       <div style="display:flex;gap:6px">
-        <input type="text" id="newCategoryInput" placeholder="새 분류 입력" style="flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px">
-        <button class="btn-primary" id="btnAddCategory" style="flex:0 0 auto;padding:8px 16px">+ 추가</button>
+        <input type="text" id="newCategoryInput" data-i18n-ph="new_cat_ph" placeholder="새 분류 입력" style="flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px">
+        <button class="btn-primary" id="btnAddCategory" style="flex:0 0 auto;padding:8px 16px" data-i18n="add">+ 추가</button>
       </div>
     </div>
 
-    <p style="font-size:11px;color:#aab2bd;text-align:center;margin:8px 0 0 0">☁️ 클라우드 자동 연결됨</p>
+    <p style="font-size:11px;color:#aab2bd;text-align:center;margin:8px 0 0 0" data-i18n="cloud_connected">☁️ 클라우드 자동 연결됨</p>
 
     <div class="modal-buttons">
-      <button class="btn-secondary" id="btnSettingsClose" type="button">닫기</button>
+      <button class="btn-secondary" id="btnSettingsClose" type="button" data-i18n="close">닫기</button>
     </div>
   </div>
 </div>
 
 <script>
+/* ============ 다국어 시스템 ============ */
+const I18N = {
+  ko: {
+    page_title: '1공장 재고관리',
+    tab_inv: '재고', tab_hist: '이력', tab_export: '일괄처리',
+    sum_total: '전체 품목', sum_low: '재고부족', sum_value: '재고금액(만)',
+    loc_filter_pre: '위치', loc_filter_post: '품목만 보기', show_all: '전체보기',
+    search_ph: '품명/규격/위치 검색', all: '전체',
+    hist_search_ph: '품명 검색 후 선택 또는 검색', search: '검색',
+    date_all: '전체', date_today: '오늘', date_week: '이번주', date_month: '이번달', date_custom: '기간',
+    show_deleted: '삭제된 이력 보기',
+    export_title: '데이터 내보내기', export_desc: '현재 재고 또는 이력을 Excel 파일로 내려받습니다.',
+    export_items: '재고목록', export_hist: '입출고이력',
+    upload_title: '재고 일괄 업로드',
+    upload_desc: 'CSV 파일로 여러 품목을 한 번에 등록할 수 있습니다.<br><b>품명</b>이 같은 품목이 이미 있으면 <b>수정</b>되고, 없으면 <b>추가</b>됩니다.',
+    csv_format: 'CSV 형식 보기', dl_template: '양식 CSV 받기', upload_csv: 'CSV 업로드',
+    item_detail: '품목 상세', in: '입고', out: '출고', edit_item: '품목 정보 수정', close: '닫기',
+    add_item: '품목 추가',
+    photo_label: '참조 사진 (1:1 정사각, 약 10KB로 압축)',
+    photo_hint: '아래 버튼으로 사진 촬영 또는 선택',
+    take_photo: '촬영', gallery: '갤러리', remove: '제거',
+    category: '분류', name: '품명', name_ph: '예: 펀치 다이',
+    spec: '규격/모델', spec_ph: '예: M10x50, 100T',
+    unit: '단위', etc: '기타',
+    stock: '현재고', min_stock: '안전재고', price: '단가(원)',
+    location: '위치(랙)', vendor: '거래처', memo: '비고',
+    cancel: '취소', delete: '삭제', save: '저장',
+    qty: '수량', worker_memo: '담당자/메모', worker_memo_ph: '예: 홍길동, 1호기 교체용',
+    confirm: '확인',
+    select_cat: '분류 선택', select_cat_desc: '내보낼 분류를 선택하세요. (체크된 분류만 포함)',
+    select_all: '전체선택', select_none: '전체해제', export_btn: '내보내기',
+    settings: '설정', cat_manage: '분류 관리',
+    cat_manage_desc: '추가/삭제 및 ≡ 드래그로 순서 변경 가능합니다.',
+    new_cat_ph: '새 분류 입력', add: '+ 추가',
+    cloud_connected: '☁️ 클라우드 자동 연결됨'
+  },
+  de: {
+    page_title: 'Werk 1 Lagerverwaltung',
+    tab_inv: 'Lager', tab_hist: 'Verlauf', tab_export: 'Import/Export',
+    sum_total: 'Alle Artikel', sum_low: 'Knapp', sum_value: 'Wert (10k KRW)',
+    loc_filter_pre: 'Standort', loc_filter_post: 'nur anzeigen', show_all: 'Alle anzeigen',
+    search_ph: 'Name/Spez./Standort suchen', all: 'Alle',
+    hist_search_ph: 'Artikel auswählen oder suchen', search: 'Suchen',
+    date_all: 'Alle', date_today: 'Heute', date_week: 'Woche', date_month: 'Monat', date_custom: 'Zeitraum',
+    show_deleted: 'Gelöschte anzeigen',
+    export_title: 'Daten exportieren', export_desc: 'Lager oder Verlauf als Excel herunterladen.',
+    export_items: 'Lagerliste', export_hist: 'Wareneingang/-ausgang',
+    upload_title: 'Lager-Massenupload',
+    upload_desc: 'Mehrere Artikel per CSV registrieren.<br>Bei gleichem <b>Namen</b> wird <b>aktualisiert</b>, sonst <b>hinzugefügt</b>.',
+    csv_format: 'CSV-Format zeigen', dl_template: 'Vorlage CSV', upload_csv: 'CSV hochladen',
+    item_detail: 'Artikeldetails', in: 'Eingang', out: 'Ausgang', edit_item: 'Artikel bearbeiten', close: 'Schließen',
+    add_item: 'Artikel hinzufügen',
+    photo_label: 'Referenzfoto (1:1, ca. 10KB komprimiert)',
+    photo_hint: 'Foto aufnehmen oder auswählen',
+    take_photo: 'Aufnahme', gallery: 'Galerie', remove: 'Entfernen',
+    category: 'Kategorie', name: 'Artikelname', name_ph: 'z.B. Stanzform',
+    spec: 'Spez./Modell', spec_ph: 'z.B. M10x50, 100T',
+    unit: 'Einheit', etc: 'Sonstige',
+    stock: 'Bestand', min_stock: 'Mindestbestand', price: 'Preis (KRW)',
+    location: 'Standort (Regal)', vendor: 'Lieferant', memo: 'Bemerkung',
+    cancel: 'Abbrechen', delete: 'Löschen', save: 'Speichern',
+    qty: 'Menge', worker_memo: 'Person/Notiz', worker_memo_ph: 'z.B. Müller, M-1',
+    confirm: 'OK',
+    select_cat: 'Kategorie wählen', select_cat_desc: 'Nur ausgewählte Kategorien werden exportiert.',
+    select_all: 'Alle wählen', select_none: 'Keine', export_btn: 'Exportieren',
+    settings: 'Einstellungen', cat_manage: 'Kategorien verwalten',
+    cat_manage_desc: 'Hinzufügen/Löschen und ≡ zum Sortieren ziehen.',
+    new_cat_ph: 'Neue Kategorie', add: '+ Hinzufügen',
+    cloud_connected: '☁️ Cloud automatisch verbunden'
+  },
+  kk: {
+    page_title: '1-зауыт қойма басқару',
+    tab_inv: 'Қойма', tab_hist: 'Тарих', tab_export: 'Топтық өңдеу',
+    sum_total: 'Барлық тауар', sum_low: 'Аз қалдық', sum_value: 'Құны (10мың вон)',
+    loc_filter_pre: 'Орын', loc_filter_post: 'тауарларын ғана', show_all: 'Барлығын көрсету',
+    search_ph: 'Атау/спец./орын іздеу', all: 'Барлығы',
+    hist_search_ph: 'Тауар таңдау немесе іздеу', search: 'Іздеу',
+    date_all: 'Барлығы', date_today: 'Бүгін', date_week: 'Апта', date_month: 'Ай', date_custom: 'Кезең',
+    show_deleted: 'Жойылғандарды көрсету',
+    export_title: 'Деректерді шығару', export_desc: 'Қойманы немесе тарихты Excel-ге жүктеу.',
+    export_items: 'Қойма тізімі', export_hist: 'Кіріс/шығыс тарихы',
+    upload_title: 'Қойманы топтап жүктеу',
+    upload_desc: 'Бір CSV арқылы көп тауар тіркеу.<br><b>Атауы</b> бірдей болса <b>жаңартылады</b>, болмаса <b>қосылады</b>.',
+    csv_format: 'CSV форматын көру', dl_template: 'Үлгі CSV', upload_csv: 'CSV жүктеу',
+    item_detail: 'Тауар туралы', in: 'Кіріс', out: 'Шығыс', edit_item: 'Тауарды өңдеу', close: 'Жабу',
+    add_item: 'Тауар қосу',
+    photo_label: 'Анықтамалық сурет (1:1, шамамен 10КБ)',
+    photo_hint: 'Камера немесе галереядан суретті таңдау',
+    take_photo: 'Түсіру', gallery: 'Галерея', remove: 'Жою',
+    category: 'Санат', name: 'Атауы', name_ph: 'мыс: Тескіш',
+    spec: 'Спец./Моделі', spec_ph: 'мыс: M10x50',
+    unit: 'Бірлік', etc: 'Басқа',
+    stock: 'Қазіргі қалдық', min_stock: 'Қауіпсіз қор', price: 'Бағасы (вон)',
+    location: 'Орын (сөре)', vendor: 'Жеткізуші', memo: 'Ескертпе',
+    cancel: 'Бас тарту', delete: 'Жою', save: 'Сақтау',
+    qty: 'Саны', worker_memo: 'Қызметкер/жазба', worker_memo_ph: 'мыс: Асан, 1-станок',
+    confirm: 'OK',
+    select_cat: 'Санатты таңдау', select_cat_desc: 'Тек таңдалған санаттар шығарылады.',
+    select_all: 'Барлығын', select_none: 'Ешқайсысын', export_btn: 'Шығару',
+    settings: 'Параметрлер', cat_manage: 'Санаттарды басқару',
+    cat_manage_desc: 'Қосу/жою және ≡ сүйреп ретін өзгерту.',
+    new_cat_ph: 'Жаңа санат', add: '+ Қосу',
+    cloud_connected: '☁️ Бұлт автоматты түрде қосылған'
+  }
+};
+
+const LK_LANG = 'msm_lang';
+
+function getLang(){ return localStorage.getItem(LK_LANG) || 'ko'; }
+function setLang(lang){
+  if(!I18N[lang]) lang = 'ko';
+  localStorage.setItem(LK_LANG, lang);
+  applyLang(lang);
+}
+function applyLang(lang){
+  const dict = I18N[lang] || I18N.ko;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if(dict[key] !== undefined) el.textContent = dict[key];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const key = el.getAttribute('data-i18n-ph');
+    if(dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    if(dict[key] !== undefined) el.innerHTML = dict[key];
+  });
+  document.documentElement.lang = lang;
+  document.querySelectorAll('.lang-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.lang === lang);
+  });
+  if(typeof window.onLangChange === 'function'){
+    try{ window.onLangChange(lang); }catch(e){}
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.lang-tab').forEach(t => {
+    t.addEventListener('click', () => setLang(t.dataset.lang));
+  });
+  applyLang(getLang());
+});
+
 function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.0 (현재)\n' +
+    'v1.1 (현재)\n' +
+    '• 다국어 지원: 한국어 / 독일어 / 카자흐스탄어\n' +
+    '• 선택한 언어 localStorage 저장 (다른 페이지로 가도 유지)\n' +
+    '• 메뉴/탭/버튼/모달 라벨 번역\n\n' +
+    'v1.0\n' +
     '• 1공장 재고관리 페이지 오픈\n' +
     '• 본사와 별도 DB 테이블 사용\n' +
     '  (f1_inventory_items / f1_inventory_history)\n' +

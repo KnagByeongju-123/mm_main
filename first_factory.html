@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>재고관리(금형부품)</title>
+<title>재고관리(금형부품) v1.2</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 :root {
@@ -205,6 +205,24 @@ body {
   text-align: center; margin-top: 32px;
   font-size: 11px; color: var(--text-dim);
 }
+/* 언어 선택 탭 */
+.lang-tabs {
+  display: flex; gap: 4px; justify-content: center; margin-top: 8px;
+}
+.lang-tab {
+  font-size: 18px; padding: 4px 10px; border-radius: 14px;
+  background: rgba(125,211,252,0.06);
+  border: 1px solid rgba(125,211,252,0.2);
+  cursor: pointer; transition: all 0.15s;
+  filter: grayscale(40%) opacity(0.6);
+}
+.lang-tab:active { transform: scale(0.92); }
+.lang-tab.active {
+  background: rgba(125,211,252,0.18);
+  border-color: var(--ice);
+  filter: none;
+  box-shadow: 0 0 8px rgba(125,211,252,0.3);
+}
 </style>
 </head>
 <body>
@@ -298,53 +316,148 @@ body {
 <!-- ======================================================== -->
 
 <div class="header">
-  <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>⚙️ 재고관리(금형부품) <span class="ver" onclick="showVer()">v1.1</span></h1>
+  <a href="index.html" class="back-btn" data-i18n="back">‹ 메인</a>
+  <h1><span data-i18n-keep>⚙️ </span><span data-i18n="title">재고관리(금형부품)</span> <span class="ver" onclick="showVer()">v1.2</span></h1>
+  <div class="lang-tabs">
+    <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
+    <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
+    <button class="lang-tab" data-lang="kk" title="Қазақша">🇰🇿</button>
+  </div>
   <div class="user-badge empty" id="userBadge">
     <span class="ic">👤</span>
-    <span id="userBadgeText">내 정보 등록</span>
+    <span id="userBadgeText" data-i18n="login_required">내 정보 등록</span>
   </div>
 </div>
 
 <div class="container">
 
-  <div class="section-title">📦 재고 / 자재</div>
+  <div class="section-title"><span data-i18n-keep>📦 </span><span data-i18n="sec_inventory">재고 / 자재</span></div>
   <div class="grid">
     <a class="card c1" href="first_factory_input.html">
       <div class="icon">📦</div>
-      <div class="label">재고관리</div>
-      <div class="desc">소모품 입출고 / 재고 조회</div>
+      <div class="label" data-i18n="card_inventory">재고관리</div>
+      <div class="desc" data-i18n="card_inventory_desc">소모품 입출고 / 재고 조회</div>
     </a>
 
     <a class="card c2" href="first_factory_QR.html">
       <div class="icon">🔳</div>
-      <div class="label">위치 QR 생성</div>
-      <div class="desc">랙별 QR 라벨 만들기</div>
+      <div class="label" data-i18n="card_qr">위치 QR 생성</div>
+      <div class="desc" data-i18n="card_qr_desc">랙별 QR 라벨 만들기</div>
     </a>
   </div>
 
-  <div class="section-title">📋 보고 / 결재</div>
+  <div class="section-title"><span data-i18n-keep>📋 </span><span data-i18n="sec_report">보고 / 결재</span></div>
   <div class="grid">
     <a class="card c4" href="first_factory_report.html">
       <div class="icon">📄</div>
-      <div class="label">보고서</div>
-      <div class="desc">월보고/발주/폐기 PDF·Excel</div>
+      <div class="label" data-i18n="card_report">보고서</div>
+      <div class="desc" data-i18n="card_report_desc">월보고/발주/폐기 PDF·Excel</div>
     </a>
   </div>
 
   <div class="footer">
-    v1.1 · msm Smart Factory · 1공장
+    v1.2 · msm Smart Factory · 1공장
   </div>
 </div>
 
 <script>
 'use strict';
 
+/* ============ 다국어 시스템 ============ */
+const I18N = {
+  ko: {
+    back: '‹ 메인',
+    title: '재고관리(금형부품)',
+    login_required: '내 정보 등록',
+    login_needed: '로그인 필요',
+    admin: '관리자',
+    sec_inventory: '재고 / 자재',
+    sec_report: '보고 / 결재',
+    card_inventory: '재고관리',
+    card_inventory_desc: '소모품 입출고 / 재고 조회',
+    card_qr: '위치 QR 생성',
+    card_qr_desc: '랙별 QR 라벨 만들기',
+    card_report: '보고서',
+    card_report_desc: '월보고/발주/폐기 PDF·Excel'
+  },
+  de: {
+    back: '‹ Start',
+    title: 'Lagerverwaltung (Formteile)',
+    login_required: 'Anmelden',
+    login_needed: 'Anmeldung erforderlich',
+    admin: 'Administrator',
+    sec_inventory: 'Lager / Material',
+    sec_report: 'Berichte / Freigabe',
+    card_inventory: 'Lagerverwaltung',
+    card_inventory_desc: 'Wareneingang/-ausgang / Bestand',
+    card_qr: 'Standort-QR',
+    card_qr_desc: 'QR-Etiketten pro Regal erstellen',
+    card_report: 'Bericht',
+    card_report_desc: 'Monats-/Bestell-/Verwerfung PDF·Excel'
+  },
+  kk: {
+    back: '‹ Басты',
+    title: 'Қойма басқару (қалып бөлшектері)',
+    login_required: 'Кіру қажет',
+    login_needed: 'Кіру керек',
+    admin: 'Әкімші',
+    sec_inventory: 'Қойма / Материалдар',
+    sec_report: 'Есеп / Бекіту',
+    card_inventory: 'Қойма басқару',
+    card_inventory_desc: 'Кіріс/шығыс / қалдықты қарау',
+    card_qr: 'Орын QR жасау',
+    card_qr_desc: 'Сөре бойынша QR белгілерін жасау',
+    card_report: 'Есеп',
+    card_report_desc: 'Айлық / тапсырыс / жою PDF·Excel'
+  }
+};
+
+const LK_LANG = 'msm_lang';
+
+function getLang(){
+  return localStorage.getItem(LK_LANG) || 'ko';
+}
+
+function setLang(lang){
+  if(!I18N[lang]) lang = 'ko';
+  localStorage.setItem(LK_LANG, lang);
+  applyLang(lang);
+}
+
+function applyLang(lang){
+  const dict = I18N[lang] || I18N.ko;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if(dict[key]) el.textContent = dict[key];
+  });
+  // <html lang> 속성도 업데이트
+  document.documentElement.lang = lang;
+  // 탭 활성화
+  document.querySelectorAll('.lang-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.lang === lang);
+  });
+  // 페이지별 hook
+  if(typeof window.onLangChange === 'function'){
+    try{ window.onLangChange(lang); }catch(e){}
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 언어 탭 클릭
+  document.querySelectorAll('.lang-tab').forEach(t => {
+    t.addEventListener('click', () => setLang(t.dataset.lang));
+  });
+  applyLang(getLang());
+});
+
 function showVer(){
   alert(
     '⚙️ 재고관리(금형부품) 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.1 (현재)\n' +
+    'v1.2 (현재)\n' +
+    '• 다국어 지원: 한국어 / 독일어 / 카자흐스탄어\n' +
+    '• 선택한 언어 localStorage 저장 (페이지 이동해도 유지)\n\n' +
+    'v1.1\n' +
     '• 제목 변경: 1공장 · 프레스양산 → 재고관리(금형부품)\n\n' +
     'v1.0\n' +
     '• 1공장 메인 페이지 오픈\n' +
@@ -382,14 +495,15 @@ function showVer(){
   function refreshBadge(s){
     const badge = $('userBadge');
     const text = $('userBadgeText');
+    const dict = I18N[getLang()] || I18N.ko;
     if(!s){
       badge.classList.add('empty');
-      text.textContent = '로그인 필요';
+      text.textContent = dict.login_needed;
       return;
     }
     badge.classList.remove('empty');
     if(s.role === 'admin'){
-      text.textContent = '관리자';
+      text.textContent = dict.admin;
       badge.style.color = '#fdba74';
       badge.style.background = 'rgba(253,186,116,0.1)';
       badge.style.borderColor = 'rgba(253,186,116,0.3)';
@@ -418,7 +532,10 @@ function showVer(){
     // 3) 상단 배지 표시
     refreshBadge(s);
 
-    // 4) 배지 클릭 시 세션 정보 안내
+    // 4) 언어 변경 시 배지 다시 그리기
+    window.onLangChange = function(){ refreshBadge(s); };
+
+    // 5) 배지 클릭 시 세션 정보 안내
     $('userBadge').addEventListener('click', () => {
       const expDate = new Date(s.exp);
       const remainDays = Math.max(0, Math.ceil((s.exp - Date.now())/(24*60*60*1000)));
