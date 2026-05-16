@@ -342,7 +342,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.2</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.3</span></h1>
 </div>
 
 <div class="user-bar">
@@ -368,8 +368,8 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
           <input type="date" id="logDate">
         </div>
         <div class="form-group">
-          <label>금형번호 <span class="req">*</span></label>
-          <input type="text" id="moldNo" placeholder="금형마스터에서 선택" autocomplete="off" list="moldList">
+          <label>금형재번 <span class="req">*</span></label>
+          <input type="text" id="moldNo" placeholder="금형마스터에서 선택 (재번 기준)" autocomplete="off" list="moldList">
           <datalist id="moldList"></datalist>
           <div id="moldInfo" style="font-size:11px;color:var(--text-sub);margin-top:4px;min-height:14px"></div>
         </div>
@@ -480,7 +480,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
   <!-- ============ 목록 탭 ============ -->
   <div id="page-list" style="display:none">
     <div class="search-bar">
-      <input type="text" id="searchKw" placeholder="금형번호/작업내용/작성자 검색" autocomplete="off">
+      <input type="text" id="searchKw" placeholder="금형재번/작업내용/작성자 검색" autocomplete="off">
       <select id="searchStatus">
         <option value="">상태 전체</option>
         <option>진행중</option>
@@ -522,7 +522,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v1.2 · msm</div>
+  <div class="footer">Tryout 작업일지 v1.3 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -536,7 +536,10 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.2 (현재)\n' +
+    'v1.3 (현재)\n' +
+    '• 라벨 통일: 금형번호 → 금형재번\n' +
+    '  (금형마스터 컬럼명과 일치)\n\n' +
+    'v1.2\n' +
     '• IATF 16949 연계 필드 추가:\n' +
     '  - FMEA 검토 필요 체크\n' +
     '  - 관리계획서 반영 체크\n' +
@@ -545,7 +548,7 @@ function showVer(){
     '• 목록에 IATF 태그 표시 + 필터링\n' +
     '• 통계에 FMEA/CP 후보 카운트 + 이슈 분류 통계\n\n' +
     'v1.1\n' +
-    '• 금형번호를 금형마스터(mm_mold_master)에서 자동완성\n' +
+    '• 금형재번을 금형마스터(mm_mold_master)에서 자동완성\n' +
     '• 선택 시 고객사/기종/재질/규격 자동 표시\n\n' +
     'v1.0\n' +
     '• 금형조립자 일별 작업일지\n' +
@@ -782,7 +785,7 @@ async function saveLog(){
   const nextPlan = $('nextPlan').value.trim();
 
   if(!date){ toast('날짜를 입력하세요'); return; }
-  if(!moldNo){ toast('금형번호를 입력하세요'); return; }
+  if(!moldNo){ toast('금형재번을 입력하세요'); return; }
   if(!currentStage){ toast('차수를 선택하세요'); return; }
   if(!currentStatus){ toast('상태를 선택하세요'); return; }
 
