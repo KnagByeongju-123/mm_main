@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tryout 보고서 출력 v1.1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tryout 작업일지</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
   --bg-dark:    #0f172a;
   --bg-card:    #1e293b;
@@ -25,10 +25,10 @@
 }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
-  background: var(--bg-dark); color: var(--text); min-height: 100vh;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh; padding-bottom: 40px;
 }
 
-/* 화면(편집) 영역 */
+/* 헤더 */
 .app-header {
   background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
   padding: 14px 16px;
@@ -41,174 +41,315 @@ body {
   padding: 6px 12px; border-radius: 14px;
   font-size: 12px; font-weight: 600; text-decoration: none;
 }
-.app-header h1 { font-size: 18px; font-weight: 700; color: var(--ice); flex: 1; }
-.ver { font-size: 11px; color: var(--text-sub); margin-left: 6px; }
-
-.config-panel {
-  background: var(--bg-card); border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
+.app-header h1 {
+  font-size: 18px; font-weight: 700; color: var(--ice); flex: 1;
 }
-.config-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
-.config-row label { font-size: 12px; color: var(--text-sub); font-weight: 600; min-width: 70px; }
-.config-row input, .config-row textarea {
-  flex: 1; min-width: 150px;
+.ver { font-size: 11px; color: var(--text-sub); margin-left: 6px; cursor: pointer; font-weight: 500; }
+
+.user-bar {
+  text-align: center; padding: 10px;
+  background: var(--bg-dark); border-bottom: 1px solid var(--border);
+}
+.user-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.3);
+  color: var(--ice); padding: 5px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 500;
+}
+.user-badge.admin {
+  background: rgba(253,186,116,0.1); border-color: rgba(253,186,116,0.3); color: var(--orange);
+}
+
+/* 탭 */
+.tabs {
+  display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.tab {
+  flex: 1; padding: 14px 8px; text-align: center;
+  font-size: 14px; font-weight: 600; color: var(--text-sub);
+  cursor: pointer; border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+.tab.active { color: var(--ice); border-bottom-color: var(--ice); background: var(--bg-card-hi); }
+
+.container { max-width: 720px; margin: 0 auto; padding: 14px; }
+
+/* 카드 */
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.card h2 {
+  font-size: 14px; color: var(--ice); margin-bottom: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+/* 폼 요소 */
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--text-mid); margin-bottom: 6px;
+}
+.form-group label .req { color: var(--rose); margin-left: 2px; }
+.form-group label .opt { color: var(--text-dim); font-size: 11px; font-weight: 400; margin-left: 4px; }
+
+input[type="text"], input[type="date"], textarea, select {
+  width: 100%; padding: 11px 12px;
   background: var(--bg-dark); color: var(--text);
   border: 1px solid var(--border-hi); border-radius: 6px;
-  padding: 7px 10px; font-size: 13px; font-family: inherit;
+  font-size: 15px; font-family: inherit;
 }
-.config-row .check {
-  display: inline-flex; align-items: center; gap: 4px;
-  color: var(--text); font-size: 13px; cursor: pointer;
-}
-.config-row .check input { width: 16px; height: 16px; flex: none; min-width: 0; accent-color: var(--ice); }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--ice); }
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
-.btn-row { display: flex; gap: 8px; padding: 10px 16px; }
-.btn-row button {
-  flex: 1; padding: 12px; border-radius: 8px; border: none;
-  font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
-}
-.btn-print { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
-.btn-back { background: var(--bg-card-hi); color: var(--text-mid); border: 1px solid var(--border-hi); }
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
 
-.preview-wrap {
-  background: var(--bg-dark); padding: 14px;
+/* 차수/상태 칩 버튼 */
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 8px 14px; border: 1px solid var(--border-hi);
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border-radius: 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
 }
-.preview-hint {
-  text-align: center; font-size: 12px; color: var(--text-sub); margin-bottom: 10px;
-}
+.chip:active { transform: scale(0.95); }
+.chip.active { background: rgba(125,211,252,0.18); border-color: var(--ice); color: var(--ice); }
+.chip.s-prog.active   { background: rgba(125,211,252,0.18); border-color: var(--ice); color: var(--ice); }
+.chip.s-done.active   { background: rgba(74,222,128,0.18); border-color: var(--green); color: var(--green); }
+.chip.s-hold.active   { background: rgba(253,186,116,0.18); border-color: var(--orange); color: var(--orange); }
+.chip.s-issue.active  { background: rgba(252,165,165,0.18); border-color: var(--rose); color: var(--rose); }
 
-/* 보고서 본체 — 인쇄 시 그대로 출력됨 */
-.report-page {
-  background: white; color: #222;
-  max-width: 210mm; min-height: 297mm;
-  margin: 0 auto;
-  padding: 18mm 16mm;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
-  font-size: 11pt; line-height: 1.5;
+/* 사진 영역 */
+.photo-area {
+  border: 2px dashed var(--border-hi); border-radius: 8px;
+  padding: 16px; text-align: center; cursor: pointer;
+  background: rgba(125,211,252,0.04);
+  transition: all 0.2s;
 }
+.photo-area:active { background: rgba(125,211,252,0.08); border-color: var(--ice); }
+.photo-area .ic { font-size: 26px; }
+.photo-area .label { color: var(--text-mid); font-size: 14px; margin-top: 4px; font-weight: 600; }
+.photo-area .hint { color: var(--text-sub); font-size: 11px; margin-top: 2px; }
 
-/* 보고서 헤더 */
-.r-head {
-  border-bottom: 3px solid #1a3a5c; padding-bottom: 10px; margin-bottom: 14px;
-}
-.r-head .company {
-  font-size: 11pt; color: #555; margin-bottom: 4px; letter-spacing: 1px;
-}
-.r-head .title {
-  font-size: 22pt; font-weight: 800; color: #1a3a5c; margin-bottom: 6px;
-}
-.r-head .meta {
-  display: flex; gap: 14px; font-size: 9pt; color: #666;
-}
-.r-head .meta span { color: #222; font-weight: 600; }
-
-/* 결재란 */
-.approval {
-  width: 100%; border-collapse: collapse; margin-bottom: 14px;
-  border: 1.5px solid #1a3a5c;
-}
-.approval th, .approval td {
-  border: 1px solid #1a3a5c;
-  text-align: center; vertical-align: middle;
-}
-.approval th {
-  background: #f0f4f8; font-size: 9pt;
-  padding: 4px 0; color: #1a3a5c; font-weight: 700;
-}
-.approval td {
-  height: 50px; min-width: 60px;
-  font-size: 9pt; color: #888;
-}
-
-/* 정보 박스 */
-.info-box {
-  background: #f8f9fa; border-left: 4px solid #1a3a5c;
-  padding: 8px 12px; margin-bottom: 14px;
-  font-size: 10pt;
-}
-.info-box .lbl { color: #555; font-weight: 600; margin-right: 6px; }
-.info-box .sec { margin: 3px 0; }
-
-/* 요약 */
-.summary-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-  margin-bottom: 14px;
-}
-.summary-box {
-  border: 1px solid #ccc; border-radius: 4px;
-  padding: 8px; text-align: center;
-}
-.summary-box .num { font-size: 18pt; font-weight: 800; color: #1a3a5c; }
-.summary-box .lbl { font-size: 8pt; color: #666; }
-
-/* 섹션 제목 */
-.r-section {
-  background: #1a3a5c; color: white;
-  padding: 5px 10px; font-size: 11pt; font-weight: 700;
-  margin: 14px 0 8px 0; border-radius: 2px;
-}
-
-/* 상세 테이블 */
-.log-table {
-  width: 100%; border-collapse: collapse; font-size: 9pt;
+/* 사진 첨부 버튼 (2개) */
+.photo-btn-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
   margin-bottom: 10px;
 }
-.log-table th, .log-table td {
-  border: 1px solid #ccc; padding: 5px 6px; vertical-align: top;
-  text-align: left;
+.photo-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 18px 8px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--border-hi);
+  background: rgba(125,211,252,0.04);
+  transition: all 0.15s;
+  gap: 6px;
 }
-.log-table th {
-  background: #1a3a5c; color: white;
-  text-align: center; font-weight: 600;
+.photo-btn:active { transform: scale(0.97); }
+.photo-btn .ic { font-size: 30px; line-height: 1; }
+.photo-btn .lbl { font-size: 13px; font-weight: 700; color: var(--text); }
+.photo-btn.cam {
+  background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.35);
 }
-.log-table .c-date  { width: 16%; }
-.log-table .c-mold  { width: 14%; }
-.log-table .c-stage { width: 8%; text-align: center; }
-.log-table .c-status{ width: 10%; text-align: center; }
-.log-table .c-body  { width: 36%; }
-.log-table .c-iatf  { width: 8%; text-align: center; }
-.log-table .c-author{ width: 8%; text-align: center; }
-.log-table td .lbl { color: #666; font-weight: 600; }
-.log-table td .sec { margin-bottom: 2px; }
-.log-table .status-tag { font-size: 8pt; padding: 1px 6px; border-radius: 8px; font-weight: 700; display: inline-block; }
-.log-table .status-tag.진행중  { background: #cfe2ff; color: #084298; }
-.log-table .status-tag.완료    { background: #d1e7dd; color: #0a3622; }
-.log-table .status-tag.보류    { background: #fff3cd; color: #664d03; }
-.log-table .status-tag.문제발생 { background: #f8d7da; color: #58151c; }
+.photo-btn.cam:hover, .photo-btn.cam:active {
+  background: rgba(74,222,128,0.18); border-color: var(--green);
+}
+.photo-btn.cam .lbl { color: var(--green); }
+.photo-btn.gal {
+  background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.35);
+}
+.photo-btn.gal:hover, .photo-btn.gal:active {
+  background: rgba(125,211,252,0.18); border-color: var(--ice);
+}
+.photo-btn.gal .lbl { color: var(--ice); }
 
-/* IATF 후보 */
-.iatf-list {
-  border: 1px solid #c4b5fd; border-radius: 4px;
-  padding: 8px 12px; background: #faf7ff; margin-bottom: 10px;
+.photo-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.photo-item {
+  position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border);
 }
-.iatf-list .it { font-size: 9pt; margin: 3px 0; }
-.iatf-list .it .tag { font-weight: 700; color: #6f42c1; margin-right: 5px; }
-
-/* 사진 그리드 */
-.photos-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;
+.photo-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-item .del-btn {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(220,53,69,0.9); color: white;
+  border: none; border-radius: 50%;
+  width: 22px; height: 22px; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
-.photos-grid .p {
-  border: 1px solid #ccc; aspect-ratio: 1; overflow: hidden;
-  position: relative;
-}
-.photos-grid .p img { width: 100%; height: 100%; object-fit: cover; }
-.photos-grid .p .cap {
+.photo-item .size-label {
   position: absolute; bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,0.55); color: white;
-  font-size: 7pt; padding: 1px 3px; text-align: center;
+  background: rgba(0,0,0,0.6); color: white; font-size: 10px;
+  padding: 2px 4px; text-align: center;
 }
 
-/* 푸터 3칸 */
-.r-footer {
-  border-top: 1px solid #888; margin-top: 16px; padding-top: 6px;
-  font-size: 8pt; color: #666;
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+/* 버튼 */
+.btn {
+  padding: 13px 16px; border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: inherit; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
 }
-.r-footer .f-left   { text-align: left; }
-.r-footer .f-center { text-align: center; }
-.r-footer .f-right  { text-align: right; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
+.btn-success { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+.btn-secondary { background: var(--bg-card-hi); color: var(--text-mid); border: 1px solid var(--border-hi); }
+.btn-danger { background: rgba(220,53,69,0.85); color: white; }
+
+.action-row { display: flex; gap: 8px; margin-top: 6px; }
+.action-row .btn { flex: 1; }
+
+/* 목록 */
+/* 새 필터 바 (목록 탭) */
+.filter-bar {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px; margin-bottom: 12px;
+}
+.filter-bar > input[type="text"] {
+  width: 100%; background: var(--bg-dark); margin-bottom: 8px; padding: 10px;
+  border: 1px solid var(--border-hi); border-radius: 6px;
+  color: var(--text); font-size: 14px; font-family: inherit;
+}
+.filter-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.filter-group { flex: 1; }
+.filter-group label {
+  display: block; font-size: 11px; color: var(--text-sub);
+  margin-bottom: 4px; font-weight: 600;
+}
+.filter-group input, .filter-group select {
+  width: 100%; padding: 8px 10px; font-size: 13px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 6px;
+}
+.filter-actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 6px; padding-top: 8px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.btn-mini {
+  padding: 7px 12px; font-size: 12px; font-weight: 600;
+  border-radius: 6px; cursor: pointer; font-family: inherit;
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border: 1px solid var(--border-hi);
+}
+.btn-mini:active { transform: scale(0.96); }
+.btn-mini.btn-pdf-go {
+  margin-left: auto;
+  background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+  color: white; border: none; font-weight: 700;
+}
+.filter-count {
+  font-size: 12px; color: var(--ice); font-weight: 700;
+  background: rgba(125,211,252,0.12);
+  padding: 4px 10px; border-radius: 10px;
+}
+
+.search-bar {
+  display: flex; gap: 8px; margin-bottom: 12px;
+  background: var(--bg-card); padding: 10px; border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.search-bar input { background: var(--bg-dark); flex: 1; padding: 9px; }
+.search-bar select { background: var(--bg-dark); width: 110px; padding: 9px; }
+
+.log-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px;
+  margin-bottom: 10px;
+}
+.log-item .head-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.log-item .date {
+  color: var(--ice); font-weight: 700; font-size: 14px;
+}
+.log-item .mold {
+  background: rgba(125,211,252,0.15); color: var(--ice);
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+.log-item .stage-tag {
+  background: rgba(196,181,253,0.15); color: var(--purple);
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+.log-item .status-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.status-tag.진행중   { background: rgba(125,211,252,0.18); color: var(--ice); }
+.status-tag.완료     { background: rgba(74,222,128,0.18); color: var(--green); }
+.status-tag.보류     { background: rgba(253,186,116,0.18); color: var(--orange); }
+.status-tag.문제발생 { background: rgba(252,165,165,0.18); color: var(--rose); }
+.log-item .author { color: var(--text-sub); font-size: 12px; margin-left: auto; }
+.log-item .body { color: var(--text); font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+.log-item .body .lbl { color: var(--text-sub); font-weight: 600; margin-right: 4px; }
+.log-item .body .sec { margin-top: 6px; }
+.log-item .photos-row {
+  display: flex; gap: 6px; margin-top: 10px; overflow-x: auto;
+}
+.log-item .photos-row img {
+  width: 72px; height: 72px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--border); cursor: pointer; flex-shrink: 0;
+}
+.log-item .footer-row {
+  display: flex; gap: 6px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.log-item .footer-row button {
+  padding: 6px 12px; font-size: 12px; border-radius: 6px;
+  border: 1px solid var(--border-hi); background: var(--bg-card-hi);
+  color: var(--text-mid); cursor: pointer; font-family: inherit;
+}
+.log-item .footer-row button.del { color: var(--rose); border-color: rgba(252,165,165,0.3); }
+
+.iatf-tag {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+}
+.iatf-tag.fmea { background: rgba(196,181,253,0.18); color: var(--purple); border: 1px solid rgba(196,181,253,0.3); }
+.iatf-tag.cp   { background: rgba(125,211,252,0.18); color: var(--ice); border: 1px solid rgba(125,211,252,0.3); }
+
+.empty {
+  text-align: center; padding: 40px 20px; color: var(--text-sub);
+  font-size: 14px;
+}
+
+/* 통계 */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+}
+.stat-box {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; text-align: center;
+}
+.stat-box .num { font-size: 26px; font-weight: 800; color: var(--ice); }
+.stat-box .lbl { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+.stat-box.green .num { color: var(--green); }
+.stat-box.orange .num { color: var(--orange); }
+.stat-box.rose .num { color: var(--rose); }
+
+.mold-summary { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.mold-summary h3 { font-size: 13px; color: var(--text-sub); margin-bottom: 10px; }
+.mold-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 4px; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.mold-row:last-child { border-bottom: none; }
+.mold-row .name { color: var(--text); font-weight: 600; }
+.mold-row .cnt { color: var(--ice); font-weight: 700; }
+
+/* IATF 연계 카드 */
+.iatf-card { border-color: rgba(196,181,253,0.3); }
+.iatf-card[open] .iatf-arrow { transform: rotate(90deg); display: inline-block; }
+.iatf-arrow { display: inline-block; transition: transform 0.2s; color: var(--purple); }
+.iatf-check {
+  display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+  color: var(--text); font-size: 13px; line-height: 1.4;
+}
+.iatf-check input[type="checkbox"] {
+  width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px;
+  accent-color: var(--purple);
+}
 
 /* 토스트 */
 .toast {
@@ -220,22 +361,15 @@ body {
 }
 .toast.show { opacity: 1; }
 
-/* 인쇄 — 보고서만 출력 */
-@media print {
-  body { background: white !important; }
-  .app-header, .config-panel, .btn-row, .preview-hint { display: none !important; }
-  .preview-wrap { background: white !important; padding: 0 !important; }
-  .report-page {
-    max-width: 100% !important; min-height: auto !important;
-    margin: 0 !important; padding: 12mm !important;
-    box-shadow: none !important; page-break-after: auto;
-  }
-  .r-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .log-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .approval th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .info-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  @page { size: A4; margin: 0; }
+/* 이미지 확대 모달 */
+.modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  z-index: 9998; align-items: center; justify-content: center; padding: 20px;
 }
+.modal.show { display: flex; }
+.modal img { max-width: 100%; max-height: 90vh; border-radius: 6px; }
+
+.footer { text-align: center; margin-top: 20px; font-size: 11px; color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -246,72 +380,348 @@ body {
   'use strict';
   var s; try{ s = JSON.parse(localStorage.getItem('mm_user_session')||'null'); }catch(e){ s=null; }
   if(!s || !s.exp || s.exp <= Date.now()){
-    location.replace('index.html'); document.documentElement.style.display='none';
+    try{ localStorage.removeItem('mm_user_session'); }catch(e){}
+    location.replace('index.html');
+    document.documentElement.style.display = 'none';
     throw new Error('Unauthorized');
   }
   window.__msmSession = s;
+
+  /* 위치 추적 (마스터 제외) */
+  if(s.role !== 'admin' && s.id){
+    var LK = 'mm_last_loc';
+    var last; try{ last = JSON.parse(localStorage.getItem(LK)||'null'); }catch(e){ last = null; }
+    var now = Date.now();
+    var pageName = 'tryout_report';
+    if(!(last && last.ts && (now-last.ts) < 5*60*1000 && last.page === pageName)){
+      fetch('https://ipapi.co/json/').then(function(r){return r.json()}).then(function(d){
+        fetch('https://xrmwfsuitikqibwqxede.supabase.co/rest/v1/mm_user_location', {
+          method:'POST',
+          headers:{
+            'apikey':'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN',
+            'Authorization':'Bearer sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN',
+            'Content-Type':'application/json','Prefer':'return=minimal'
+          },
+          body: JSON.stringify({
+            user_id:s.id, user_name:s.name||null, factory:s.factory||null, dept:s.dept||null,
+            lat:d.latitude||null, lng:d.longitude||null, ip:d.ip||null,
+            city:d.city||null, region:d.region||null, country:d.country_name||null, org:d.org||null,
+            device_info:(navigator.userAgent||'').slice(0,180)+' | page:'+pageName,
+            recorded_at: new Date().toISOString()
+          })
+        }).then(function(){ localStorage.setItem(LK, JSON.stringify({ip:d.ip,page:pageName,ts:now})); }).catch(function(){});
+      }).catch(function(){});
+    }
+  }
 })();
 </script>
 
 <div class="app-header">
-  <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.1</span></h1>
+  <a href="index.html" class="back-btn">‹ 메인</a>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.6</span></h1>
 </div>
 
-<div class="config-panel no-print">
-  <div class="config-row">
-    <label>보고서 제목</label>
-    <input type="text" id="cfgTitle" value="Tryout 작업 보고서">
-  </div>
-  <div class="config-row">
-    <label>보고서 번호</label>
-    <input type="text" id="cfgDocNo" placeholder="자동 생성됨">
-  </div>
-  <div class="config-row">
-    <label>회사명</label>
-    <input type="text" id="cfgCompany" value="㈜태진다이텍">
-  </div>
-  <div class="config-row">
-    <label>비고</label>
-    <input type="text" id="cfgMemo" placeholder="(선택)">
-  </div>
+<div class="user-bar">
+  <span class="user-badge" id="userBadge">👤 사용자</span>
+</div>
 
-  <details style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
-    <summary style="cursor:pointer;font-size:12px;color:var(--purple);font-weight:700;padding:4px 0">📌 PDF 하단 푸터 (3칸)</summary>
-    <div style="padding-top:8px">
-      <div class="config-row">
-        <label>왼쪽</label>
-        <input type="text" id="cfgFooterLeft" placeholder="예: 문서번호 / 부서">
+<div class="tabs">
+  <div class="tab active" data-tab="write">📝 작성</div>
+  <div class="tab" data-tab="list">📋 목록</div>
+  <div class="tab" data-tab="stat">📊 통계</div>
+  <div class="tab" data-tab="pdf">📄 보고서</div>
+</div>
+
+<div class="container">
+
+  <!-- ============ 작성 탭 ============ -->
+  <div id="page-write">
+    <div class="card">
+      <h2>📅 기본 정보</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>날짜 <span class="req">*</span></label>
+          <input type="date" id="logDate">
+        </div>
+        <div class="form-group">
+          <label>금형재번 <span class="req">*</span></label>
+          <input type="text" id="moldNo" placeholder="금형마스터에서 선택 (재번 기준)" autocomplete="off" list="moldList">
+          <datalist id="moldList"></datalist>
+          <div id="moldInfo" style="font-size:11px;color:var(--text-sub);margin-top:4px;min-height:14px"></div>
+        </div>
       </div>
-      <div class="config-row">
-        <label>가운데</label>
-        <input type="text" id="cfgFooterCenter" placeholder="예: 회사명 / 비밀등급">
+
+      <div class="form-group">
+        <label>차수 <span class="req">*</span></label>
+        <div class="chip-group" id="stageChips">
+          <button type="button" class="chip" data-val="1차">1차</button>
+          <button type="button" class="chip" data-val="2차">2차</button>
+          <button type="button" class="chip" data-val="3차">3차</button>
+          <button type="button" class="chip" data-val="양산전">양산전</button>
+          <button type="button" class="chip" data-val="기타">기타</button>
+        </div>
       </div>
-      <div class="config-row">
-        <label>오른쪽</label>
-        <input type="text" id="cfgFooterRight" placeholder="예: 페이지 또는 시각">
-      </div>
-      <button type="button" onclick="clearFooter()" style="background:transparent;color:var(--rose);border:1px solid var(--rose);padding:6px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;width:100%;margin-top:4px">🗑 푸터 정보 지우기</button>
     </div>
-  </details>
 
-  <div class="config-row" style="margin-top:8px">
-    <label class="check"><input type="checkbox" id="cfgPhotos" checked> 사진 포함</label>
-    <label class="check"><input type="checkbox" id="cfgIatf" checked> IATF 후보 섹션</label>
-    <label class="check"><input type="checkbox" id="cfgIssuesOnly"> 문제발생만</label>
+    <div class="card">
+      <h2>📝 작업 내용</h2>
+
+      <div class="form-group">
+        <label>오늘 한 작업 <span class="opt">(필수 아님)</span></label>
+        <textarea id="workDone" placeholder="예: 코어 가공, A면 연마, 게이트 수정"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>문제점 / 이슈 <span class="opt">(있으면)</span></label>
+        <textarea id="issues" placeholder="예: 게이트 부근 버 발생, 사이클 타임 초과"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>다음 작업 / 계획 <span class="opt">(있으면)</span></label>
+        <textarea id="nextPlan" placeholder="예: 내일 게이트 재가공 후 2차 시사 예정"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>상태 <span class="req">*</span></label>
+        <div class="chip-group" id="statusChips">
+          <button type="button" class="chip s-prog"  data-val="진행중">진행중</button>
+          <button type="button" class="chip s-done"  data-val="완료">완료</button>
+          <button type="button" class="chip s-hold"  data-val="보류">보류</button>
+          <button type="button" class="chip s-issue" data-val="문제발생">문제발생</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📷 사진 첨부 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(자동 20KB 이하로 압축)</span></h2>
+
+      <div class="photo-btn-row">
+        <label for="photoCam" class="photo-btn cam">
+          <div class="ic">📸</div>
+          <div class="lbl">사진 촬영</div>
+        </label>
+        <label for="photoGal" class="photo-btn gal">
+          <div class="ic">🖼️</div>
+          <div class="lbl">갤러리에서 선택</div>
+        </label>
+      </div>
+      <input type="file" id="photoCam" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="photoGal" accept="image/*" multiple style="display:none">
+
+      <div class="photo-list" id="photoList"></div>
+    </div>
+
+    <details class="card iatf-card">
+      <summary style="cursor:pointer;list-style:none;font-size:14px;color:var(--purple);font-weight:700;display:flex;align-items:center;gap:6px">
+        <span class="iatf-arrow">▶</span> 📋 IATF 연계 정보 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(선택 · FMEA/관리계획서 작성용)</span>
+      </summary>
+      <div style="padding-top:12px;border-top:1px solid var(--border);margin-top:10px">
+
+        <div class="form-group">
+          <label>이슈 분류 <span class="opt">(문제발생 시)</span></label>
+          <select id="failureCategory">
+            <option value="">-- 선택 안 함 --</option>
+            <option>치수불량</option>
+            <option>표면결함</option>
+            <option>조립불량</option>
+            <option>작동불량</option>
+            <option>강도/내구 문제</option>
+            <option>외관/색상 문제</option>
+            <option>금형 자체 손상</option>
+            <option>설비/공정 문제</option>
+            <option>재료 문제</option>
+            <option>기타</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>측정 항목 / 측정값 <span class="opt">(있으면)</span></label>
+          <input type="text" id="measurementTarget" placeholder="예: 두께 1.52mm / 길이 100.2mm / 게이트 폭" autocomplete="off">
+          <div style="font-size:11px;color:var(--text-sub);margin-top:4px">관리계획서의 측정 특성 후보가 됩니다</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;padding:12px;background:rgba(196,181,253,0.08);border:1px solid rgba(196,181,253,0.25);border-radius:8px">
+          <label class="iatf-check">
+            <input type="checkbox" id="fmeaFlag">
+            <span><b style="color:var(--purple)">🔍 FMEA 검토 필요</b> <span style="font-size:11px;color:var(--text-sub)">— 이 이슈는 PFMEA 고장 모드 후보</span></span>
+          </label>
+          <label class="iatf-check">
+            <input type="checkbox" id="cpFlag">
+            <span><b style="color:var(--purple)">📊 관리계획서 반영</b> <span style="font-size:11px;color:var(--text-sub)">— 이 측정 항목은 양산 시 관리 대상</span></span>
+          </label>
+        </div>
+      </div>
+    </details>
+
+    <div class="action-row">
+      <button class="btn btn-secondary" type="button" onclick="resetForm()">🗑 초기화</button>
+      <button class="btn btn-primary" id="btnSave" type="button" onclick="saveLog()">💾 저장</button>
+    </div>
   </div>
+
+  <!-- ============ 목록 탭 ============ -->
+  <div id="page-list" style="display:none">
+    <div class="filter-bar">
+      <input type="text" id="searchKw" placeholder="🔍 금형재번/작업내용/작성자 검색" autocomplete="off">
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>기간</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="date" id="filterFrom" style="flex:1">
+            <span style="color:var(--text-sub)">~</span>
+            <input type="date" id="filterTo" style="flex:1">
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>차수</label>
+          <select id="filterStage">
+            <option value="">전체</option>
+            <option>1차</option><option>2차</option><option>3차</option>
+            <option>양산전</option><option>기타</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>금형재번</label>
+          <input type="text" id="filterMold" placeholder="전체" list="moldFilterList" autocomplete="off">
+          <datalist id="moldFilterList"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>상태</label>
+          <select id="searchStatus">
+            <option value="">전체</option>
+            <option>진행중</option><option>완료</option><option>보류</option><option>문제발생</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>IATF</label>
+          <select id="searchIatf">
+            <option value="">전체</option>
+            <option value="fmea">🔍 FMEA만</option>
+            <option value="cp">📊 CP만</option>
+            <option value="any">🔍📊 둘 다</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn-mini" type="button" onclick="resetFilter()">🗑 필터 초기화</button>
+        <span class="filter-count" id="filterCount">0건</span>
+      </div>
+    </div>
+    <div id="logList"></div>
+  </div>
+
+  <!-- ============ 통계 탭 ============ -->
+  <div id="page-stat" style="display:none">
+    <div class="stat-grid">
+      <div class="stat-box">       <div class="num" id="statTotal">0</div>     <div class="lbl">총 일지</div>      </div>
+      <div class="stat-box green">  <div class="num" id="statDone">0</div>      <div class="lbl">완료</div>          </div>
+      <div class="stat-box">       <div class="num" id="statProg">0</div>      <div class="lbl">진행중</div>        </div>
+      <div class="stat-box rose">   <div class="num" id="statIssue">0</div>     <div class="lbl">문제발생</div>      </div>
+      <div class="stat-box orange"> <div class="num" id="statHold">0</div>      <div class="lbl">보류</div>          </div>
+      <div class="stat-box">       <div class="num" id="statMold">0</div>      <div class="lbl">금형 종류</div>      </div>
+      <div class="stat-box">       <div class="num" id="statFmea" style="color:var(--purple)">0</div>  <div class="lbl">🔍 FMEA 후보</div></div>
+      <div class="stat-box">       <div class="num" id="statCp" style="color:var(--ice)">0</div>      <div class="lbl">📊 CP 후보</div>  </div>
+    </div>
+
+    <div class="mold-summary">
+      <h3>📦 금형별 일지 건수 (Top 10)</h3>
+      <div id="moldSummary"></div>
+    </div>
+
+    <div class="mold-summary" style="margin-top:12px">
+      <h3>⚠ 이슈 분류 통계 (FMEA 후보 분석용)</h3>
+      <div id="categorySummary"></div>
+    </div>
+  </div>
+
+  <!-- ============ 보고서 탭 ============ -->
+  <div id="page-pdf" style="display:none">
+    <div class="card" style="border-color:rgba(196,181,253,0.3)">
+      <h2 style="color:var(--purple)">📄 Tryout 보고서 출력</h2>
+      <p style="color:var(--text-mid);font-size:13px;line-height:1.6;margin-bottom:14px">
+        필터 조건에 맞는 작업일지를 모아 <b style="color:var(--purple)">공식 Tryout 보고서</b>로 PDF 출력합니다.<br>
+        결재 4단계(작성·검토·확인·승인), 요약 통계, IATF 후보, 첨부 사진 모두 포함.
+      </p>
+
+      <div class="filter-bar" style="background:var(--bg-card-hi);margin-bottom:14px">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>기간</label>
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="date" id="pdfFrom" style="flex:1">
+              <span style="color:var(--text-sub)">~</span>
+              <input type="date" id="pdfTo" style="flex:1">
+            </div>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>차수</label>
+            <select id="pdfStage">
+              <option value="">전체</option>
+              <option>1차</option><option>2차</option><option>3차</option>
+              <option>양산전</option><option>기타</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>금형재번</label>
+            <input type="text" id="pdfMold" placeholder="전체" list="moldFilterList" autocomplete="off">
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>상태</label>
+            <select id="pdfStatus">
+              <option value="">전체</option>
+              <option>진행중</option><option>완료</option><option>보류</option><option>문제발생</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>IATF</label>
+            <select id="pdfIatfFilter">
+              <option value="">전체</option>
+              <option value="fmea">🔍 FMEA만</option>
+              <option value="cp">📊 CP만</option>
+              <option value="any">🔍📊 둘 다</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-mini" type="button" onclick="resetPdfFilter()">🗑 필터 초기화</button>
+          <button class="btn-mini" type="button" onclick="usePdfListFilter()" style="background:rgba(125,211,252,0.15);color:var(--ice);border-color:rgba(125,211,252,0.3)">📋 목록 탭 필터 사용</button>
+          <span class="filter-count" id="pdfCount">0건</span>
+        </div>
+      </div>
+
+      <div style="background:rgba(125,211,252,0.05);border:1px solid rgba(125,211,252,0.2);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px">🎯 출력 대상 미리보기</div>
+        <div id="pdfPreview" style="font-size:13px;color:var(--text);line-height:1.7"></div>
+      </div>
+
+      <button class="btn" type="button" onclick="goPdfFromTab()" style="background:linear-gradient(135deg, #c4b5fd, #a78bfa);color:white;font-size:15px;padding:14px">
+        📄 보고서 페이지 열기 ›
+      </button>
+
+      <p style="font-size:11px;color:var(--text-sub);margin-top:8px;text-align:center">
+        보고서 페이지에서 제목, 회사명, 푸터 등 추가 설정 후 PDF로 출력합니다
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">Tryout 작업일지 v1.6 · msm</div>
 </div>
 
-<div class="btn-row no-print">
-  <button class="btn-back" type="button" onclick="location.href='tryout_report.html'">‹ 돌아가기</button>
-  <button class="btn-print" type="button" onclick="renderAndPrint()">🖨 PDF 출력 / 인쇄</button>
-</div>
-
-<div class="preview-wrap">
-  <div class="preview-hint no-print">↓ 미리보기 (인쇄 시 결재란 포함된 양식 그대로 출력)</div>
-  <div class="report-page" id="reportBody">
-    <div style="text-align:center;padding:40px;color:#999">데이터 로딩 중...</div>
-  </div>
+<div class="modal" id="imgModal" onclick="this.classList.remove('show')">
+  <img id="modalImg" alt="">
 </div>
 
 <div class="toast" id="toast"></div>
@@ -319,17 +729,40 @@ body {
 <script>
 function showVer(){
   alert(
-    '📄 Tryout 보고서 출력 변경 이력\n' +
+    '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.1 (현재)\n' +
-    '• PDF 하단 푸터 3칸 (좌/중/우) 추가\n' +
-    '• 푸터 값 localStorage 자동 저장/복원\n' +
-    '• 푸터 정보 지우기 버튼\n\n' +
+    'v1.6 (현재)\n' +
+    '• 📄 보고서 탭 신규 추가 (4번째 탭)\n' +
+    '• 보고서용 필터 + 출력 대상 미리보기\n' +
+    '• "📋 목록 탭 필터 사용" 버튼으로 필터 복사\n\n' +
+    'v1.5\n' +
+    '• 수정 기능: 목록에서 ✏️ 수정 클릭 → 작성 폼에 자동 로드\n' +
+    '• 필터 강화: 기간(시작~종료) / 차수 / 금형재번\n' +
+    '• 필터 결과 카운트 표시\n' +
+    '• 📄 보고서 PDF 출력 버튼 → tryout_pdf.html 연동\n\n' +
+    'v1.4\n' +
+    '• 사진 첨부: 카메라 촬영 / 갤러리 선택 버튼 분리\n' +
+    '• 압축 한도 10KB → 20KB 완화 (화질 향상)\n\n' +
+    'v1.3\n' +
+    '• 라벨 통일: 금형번호 → 금형재번\n' +
+    '  (금형마스터 컬럼명과 일치)\n\n' +
+    'v1.2\n' +
+    '• IATF 16949 연계 필드 추가:\n' +
+    '  - FMEA 검토 필요 체크\n' +
+    '  - 관리계획서 반영 체크\n' +
+    '  - 이슈 분류 (치수/표면/조립 등)\n' +
+    '  - 측정 항목/측정값\n' +
+    '• 목록에 IATF 태그 표시 + 필터링\n' +
+    '• 통계에 FMEA/CP 후보 카운트 + 이슈 분류 통계\n\n' +
+    'v1.1\n' +
+    '• 금형재번을 금형마스터(mm_mold_master)에서 자동완성\n' +
+    '• 선택 시 고객사/기종/재질/규격 자동 표시\n\n' +
     'v1.0\n' +
-    '• 작업일지 필터 결과를 보고서 양식으로 출력\n' +
-    '• 결재 4단계 (작성/검토/확인/승인)\n' +
-    '• 요약 통계 / 상세 테이블 / IATF 후보 / 사진\n' +
-    '• PDF 저장 (브라우저 인쇄 → PDF로 저장)'
+    '• 금형조립자 일별 작업일지\n' +
+    '• 작성/목록/통계 3개 탭\n' +
+    '• 사진 자동 10KB 이하 압축\n' +
+    '• Supabase tryout_logs 테이블 연동\n' +
+    '• 인증가드 + 위치추적'
   );
 }
 
@@ -339,8 +772,14 @@ function showVer(){
 const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL = 'tryout_logs';
-const LS_FOOTER = 'tryout_pdf_footer_';
+const TBL_MOLD = 'mm_mold_master';   // 금형마스터 테이블
+const PHOTO_MAX_BYTES = 20 * 1024;  // 20 KB
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const session = window.__msmSession;
+
+let moldMasterList = [];  // [{mold_no, vendor, material, model_code, ...}]
+let editingId = null;     // 수정 중인 일지 ID (null이면 새 작성)
 
 function $(id){ return document.getElementById(id); }
 function toast(msg){
@@ -350,264 +789,689 @@ function toast(msg){
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function pad2(n){ return String(n).padStart(2,'0'); }
 
-let allLogs = [];
-let filtered = [];
-let filterState = {};
-
-/* ============ 필터 상태 + 데이터 로드 ============ */
-async function init(){
+/* ============ 금형마스터 로딩 ============ */
+async function loadMoldMaster(){
   try {
-    filterState = JSON.parse(sessionStorage.getItem('tryout_pdf_filter') || '{}');
-  } catch(e) { filterState = {}; }
-
-  // 보고서 번호 자동 생성
-  const now = new Date();
-  const docNo = 'TR-' + now.getFullYear() + pad2(now.getMonth()+1) + '-' +
-                pad2(Math.floor(Math.random()*9000)+1000);
-  $('cfgDocNo').value = docNo;
-
-  // 푸터 복원 (이전에 저장된 값)
-  $('cfgFooterLeft').value   = localStorage.getItem(LS_FOOTER + 'left')   || '';
-  $('cfgFooterCenter').value = localStorage.getItem(LS_FOOTER + 'center') || '';
-  $('cfgFooterRight').value  = localStorage.getItem(LS_FOOTER + 'right')  || '';
-
-  await loadLogs();
-  applyFilter();
-  render();
-}
-
-window.clearFooter = function(){
-  if(!confirm('푸터 3칸 값을 모두 지울까요?')) return;
-  $('cfgFooterLeft').value = '';
-  $('cfgFooterCenter').value = '';
-  $('cfgFooterRight').value = '';
-  localStorage.removeItem(LS_FOOTER + 'left');
-  localStorage.removeItem(LS_FOOTER + 'center');
-  localStorage.removeItem(LS_FOOTER + 'right');
-  render();
-  toast('푸터 정보가 삭제되었습니다');
-};
-
-async function loadLogs(){
-  try {
-    const { data, error } = await sb.from(TBL).select('*')
-      .order('log_date', { ascending: true })
-      .order('created_at', { ascending: true });
+    const { data, error } = await sb.from(TBL_MOLD)
+      .select('mold_no,vendor,material,model_code,thick,width,pitch')
+      .not('mold_no', 'is', null)
+      .order('vendor', { ascending: true })
+      .order('mold_no', { ascending: true });
     if(error) throw error;
-    allLogs = data || [];
+    // mold_no 빈 값 제거 + 중복 제거 (같은 번호가 여러 행에 있을 수 있음)
+    const seen = new Set();
+    moldMasterList = (data || [])
+      .filter(m => m.mold_no && m.mold_no.trim())
+      .filter(m => { if(seen.has(m.mold_no)) return false; seen.add(m.mold_no); return true; });
+    renderMoldDatalist();
   } catch(err){
-    toast('데이터 로딩 실패');
-    allLogs = [];
+    console.warn('금형마스터 로딩 실패:', err);
+    moldMasterList = [];
   }
 }
 
-function applyFilter(){
-  const f = filterState;
-  filtered = allLogs.filter(l => {
-    if(f.status && l.status !== f.status) return false;
-    if(f.stage && l.stage !== f.stage) return false;
-    if(f.mold && l.mold_no !== f.mold) return false;
-    if(f.from && (l.log_date||'') < f.from) return false;
-    if(f.to && (l.log_date||'') > f.to) return false;
-    if(f.iatf === 'fmea' && !l.fmea_flag) return false;
-    if(f.iatf === 'cp' && !l.cp_flag) return false;
-    if(f.iatf === 'any' && !(l.fmea_flag || l.cp_flag)) return false;
-    if(f.kw){
-      const blob = ((l.mold_no||'')+' '+(l.work_done||'')+' '+(l.author||'')+' '+(l.issues||'')).toLowerCase();
-      if(!blob.includes(f.kw.toLowerCase())) return false;
-    }
-    if($('cfgIssuesOnly').checked && l.status !== '문제발생') return false;
-    return true;
-  });
+function renderMoldDatalist(){
+  const dl = $('moldList');
+  const dl2 = $('moldFilterList');
+  if(dl){
+    dl.innerHTML = moldMasterList.map(m => {
+      const label = m.mold_no + (m.vendor ? ' (' + m.vendor + ')' : '');
+      return '<option value="' + escapeHtml(m.mold_no) + '" label="' + escapeHtml(label) + '">';
+    }).join('');
+  }
+  if(dl2){
+    dl2.innerHTML = moldMasterList.map(m =>
+      '<option value="' + escapeHtml(m.mold_no) + '">'
+    ).join('');
+  }
 }
 
-/* ============ 보고서 렌더링 ============ */
-function render(){
-  applyFilter();
-  const includePhotos = $('cfgPhotos').checked;
-  const includeIatf = $('cfgIatf').checked;
-  const title = $('cfgTitle').value || 'Tryout 작업 보고서';
-  const docNo = $('cfgDocNo').value || '-';
-  const company = $('cfgCompany').value || '';
-  const memo = $('cfgMemo').value || '';
+function showMoldInfo(){
+  const v = $('moldNo').value.trim();
+  const info = $('moldInfo');
+  if(!v){ info.textContent = ''; return; }
+  const m = moldMasterList.find(x => x.mold_no === v);
+  if(!m){
+    info.innerHTML = '<span style="color:var(--orange)">⚠ 금형마스터에 없는 번호입니다 (새로 등록 가능)</span>';
+    return;
+  }
+  const parts = [];
+  if(m.vendor)     parts.push('🏢 ' + escapeHtml(m.vendor));
+  if(m.model_code) parts.push('🔖 ' + escapeHtml(m.model_code));
+  if(m.material)   parts.push('🧱 ' + escapeHtml(m.material));
+  if(m.thick || m.width || m.pitch){
+    const dim = [m.thick&&(m.thick+'T'), m.width&&(m.width+'W'), m.pitch&&('P'+m.pitch)].filter(Boolean).join('·');
+    if(dim) parts.push('📏 ' + dim);
+  }
+  info.innerHTML = '<span style="color:var(--ice)">✓ ' + parts.join(' · ') + '</span>';
+}
 
-  const today = new Date();
-  const dateStr = today.getFullYear() + '. ' + pad2(today.getMonth()+1) + '. ' + pad2(today.getDate()) + '.';
-
-  // 대상 기간/금형 표시
-  const periodStr = (filterState.from || filterState.to)
-    ? (filterState.from || '~') + ' ~ ' + (filterState.to || '~')
-    : (filtered.length ? filtered[0].log_date + ' ~ ' + filtered[filtered.length-1].log_date : '-');
-  const moldStr = filterState.mold || '전체';
-  const stageStr = filterState.stage || '전체';
-
-  // 요약 통계
-  const cnt = { 완료:0, 진행중:0, 문제발생:0, 보류:0 };
-  const moldSet = new Set();
-  const fmeaCnt = filtered.filter(l => l.fmea_flag).length;
-  const cpCnt = filtered.filter(l => l.cp_flag).length;
-  filtered.forEach(l => {
-    if(cnt[l.status] !== undefined) cnt[l.status]++;
-    if(l.mold_no) moldSet.add(l.mold_no);
-  });
-
-  let html = '';
-
-  // 헤더
-  html += '<div class="r-head">';
-  if(company) html += '<div class="company">' + escapeHtml(company) + '</div>';
-  html += '<div class="title">' + escapeHtml(title) + '</div>';
-  html += '<div class="meta">';
-  html += '<div>문서번호 <span>' + escapeHtml(docNo) + '</span></div>';
-  html += '<div>작성일 <span>' + dateStr + '</span></div>';
-  html += '</div>';
-  html += '</div>';
-
-  // 결재란
-  html += '<table class="approval">';
-  html += '<tr><th>작성</th><th>검토</th><th>확인</th><th>승인</th></tr>';
-  html += '<tr><td></td><td></td><td></td><td></td></tr>';
-  html += '</table>';
-
-  // 정보 박스
-  html += '<div class="info-box">';
-  html += '<div class="sec"><span class="lbl">대상 기간:</span>' + escapeHtml(periodStr) + '</div>';
-  html += '<div class="sec"><span class="lbl">대상 금형:</span>' + escapeHtml(moldStr) + '</div>';
-  html += '<div class="sec"><span class="lbl">대상 차수:</span>' + escapeHtml(stageStr) + '</div>';
-  html += '<div class="sec"><span class="lbl">총 일지 수:</span>' + filtered.length + '건 / 금형 종류 ' + moldSet.size + '종</div>';
-  if(memo) html += '<div class="sec"><span class="lbl">비고:</span>' + escapeHtml(memo) + '</div>';
-  html += '</div>';
-
-  // 요약 4개 박스
-  html += '<div class="summary-grid">';
-  html += '<div class="summary-box"><div class="num" style="color:#0a3622">' + cnt.완료 + '</div><div class="lbl">완료</div></div>';
-  html += '<div class="summary-box"><div class="num" style="color:#084298">' + cnt.진행중 + '</div><div class="lbl">진행중</div></div>';
-  html += '<div class="summary-box"><div class="num" style="color:#664d03">' + cnt.보류 + '</div><div class="lbl">보류</div></div>';
-  html += '<div class="summary-box"><div class="num" style="color:#58151c">' + cnt.문제발생 + '</div><div class="lbl">문제발생</div></div>';
-  html += '</div>';
-
-  // 상세 테이블
-  html += '<div class="r-section">1. 일자별 작업 상세</div>';
-  if(!filtered.length){
-    html += '<p style="text-align:center;color:#888;padding:20px">해당 조건의 일지가 없습니다.</p>';
+/* ============ 헤더 사용자 배지 ============ */
+function setUserBadge(){
+  const el = $('userBadge');
+  if(session.role === 'admin'){
+    el.classList.add('admin');
+    el.innerHTML = '👤 관리자';
   } else {
-    html += '<table class="log-table">';
-    html += '<thead><tr>'+
-      '<th class="c-date">날짜</th>'+
-      '<th class="c-mold">금형재번</th>'+
-      '<th class="c-stage">차수</th>'+
-      '<th class="c-status">상태</th>'+
-      '<th class="c-body">작업/이슈/계획</th>'+
-      '<th class="c-iatf">IATF</th>'+
-      '<th class="c-author">작성자</th>'+
-      '</tr></thead><tbody>';
-
-    filtered.forEach(l => {
-      let body = '';
-      if(l.work_done) body += '<div class="sec"><span class="lbl">[작업]</span> ' + escapeHtml(l.work_done) + '</div>';
-      if(l.issues)    body += '<div class="sec"><span class="lbl">[이슈]</span> ' + escapeHtml(l.issues) + '</div>';
-      if(l.next_plan) body += '<div class="sec"><span class="lbl">[계획]</span> ' + escapeHtml(l.next_plan) + '</div>';
-      if(l.failure_category) body += '<div class="sec"><span class="lbl">[분류]</span> ' + escapeHtml(l.failure_category) + '</div>';
-      if(l.measurement_target) body += '<div class="sec"><span class="lbl">[측정]</span> ' + escapeHtml(l.measurement_target) + '</div>';
-      const iatfMark = [];
-      if(l.fmea_flag) iatfMark.push('🔍');
-      if(l.cp_flag)   iatfMark.push('📊');
-
-      html += '<tr>' +
-        '<td class="c-date">' + escapeHtml(l.log_date||'') + '</td>' +
-        '<td class="c-mold"><b>' + escapeHtml(l.mold_no||'') + '</b></td>' +
-        '<td class="c-stage">' + escapeHtml(l.stage||'') + '</td>' +
-        '<td class="c-status"><span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span></td>' +
-        '<td class="c-body">' + (body || '<span style="color:#999">-</span>') + '</td>' +
-        '<td class="c-iatf">' + iatfMark.join(' ') + '</td>' +
-        '<td class="c-author">' + escapeHtml(l.author||'') + '</td>' +
-        '</tr>';
-    });
-    html += '</tbody></table>';
+    let txt = '👤 ' + (session.name || '-');
+    if(session.dept) txt += ' · ' + session.dept;
+    if(session.position) txt += ' ' + session.position;
+    el.innerHTML = txt;
   }
+}
 
-  // IATF 후보 섹션
-  if(includeIatf){
-    const iatfLogs = filtered.filter(l => l.fmea_flag || l.cp_flag);
-    if(iatfLogs.length){
-      html += '<div class="r-section">2. IATF 16949 연계 후보</div>';
-      html += '<div class="iatf-list">';
-      html += '<div style="font-size:9pt;color:#666;margin-bottom:6px">FMEA 검토 후보: ' + fmeaCnt + '건 · 관리계획서 반영 후보: ' + cpCnt + '건</div>';
-      iatfLogs.forEach(l => {
-        const tags = [];
-        if(l.fmea_flag) tags.push('🔍 FMEA');
-        if(l.cp_flag) tags.push('📊 CP');
-        html += '<div class="it">';
-        html += '<span class="tag">' + tags.join(' / ') + '</span>';
-        html += escapeHtml(l.log_date||'') + ' · ' + escapeHtml(l.mold_no||'') + ' · ';
-        html += escapeHtml(l.failure_category || l.issues || l.work_done || '');
-        if(l.measurement_target) html += ' (측정: ' + escapeHtml(l.measurement_target) + ')';
-        html += '</div>';
-      });
-      html += '</div>';
-    }
-  }
+/* ============ 폼 상태 ============ */
+let currentStage = '';
+let currentStatus = '진행중';
+let photos = [];  // base64 배열
 
-  // 사진 섹션
-  if(includePhotos){
-    const photosFlat = [];
-    filtered.forEach(l => {
-      (l.photos || []).forEach(p => {
-        photosFlat.push({ date: l.log_date, mold: l.mold_no, src: p });
-      });
+function setupChips(){
+  // 차수
+  $('stageChips').querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      $('stageChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      currentStage = c.dataset.val;
     });
-    if(photosFlat.length){
-      const idx = includeIatf && filtered.some(l => l.fmea_flag || l.cp_flag) ? 3 : 2;
-      html += '<div class="r-section">' + idx + '. 첨부 사진 (' + photosFlat.length + '장)</div>';
-      html += '<div class="photos-grid">';
-      photosFlat.slice(0, 32).forEach(p => {
-        html += '<div class="p"><img src="' + p.src + '"><div class="cap">' + escapeHtml(p.date||'') + ' · ' + escapeHtml(p.mold||'') + '</div></div>';
-      });
-      html += '</div>';
-      if(photosFlat.length > 32){
-        html += '<p style="font-size:8pt;color:#888">사진이 많아 첫 32장만 인쇄됩니다 (전체 ' + photosFlat.length + '장)</p>';
+  });
+  // 상태 (기본: 진행중)
+  $('statusChips').querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      $('statusChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      currentStatus = c.dataset.val;
+    });
+  });
+  // 기본 진행중 활성화
+  $('statusChips').querySelector('[data-val="진행중"]').classList.add('active');
+}
+
+function setDefaultDate(){
+  const d = new Date();
+  $('logDate').value = d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+/* ============ 사진 압축 (10KB 이하) ============ */
+function compressToTargetSize(file, targetBytes) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        // 최대 크기를 점진적으로 줄여서 10KB 이하 맞추기
+        let maxDim = 800;
+        let quality = 0.8;
+
+        function tryEncode() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim) {
+            if(w > h){ h = h * maxDim / w; w = maxDim; }
+            else     { w = w * maxDim / h; h = maxDim; }
+          }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          // base64 길이로 대략 바이트 계산 (한 글자 ≈ 0.75 byte)
+          const approxBytes = dataUrl.length * 0.75;
+
+          if(approxBytes <= targetBytes || (maxDim <= 120 && quality <= 0.3)){
+            resolve({ data: dataUrl, bytes: Math.round(approxBytes) });
+            return;
+          }
+
+          // 너무 크면 quality 먼저 줄이고 그래도 크면 차원 축소
+          if(quality > 0.4) {
+            quality -= 0.1;
+          } else {
+            maxDim = Math.floor(maxDim * 0.85);
+            quality = 0.6;
+          }
+          tryEncode();
+        }
+        tryEncode();
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function setupPhotoInput(){
+  async function handleFiles(files){
+    if(!files.length) return;
+    for(const f of files){
+      if(!f.type.startsWith('image/')) continue;
+      try {
+        toast('압축 중...');
+        const result = await compressToTargetSize(f, PHOTO_MAX_BYTES);
+        photos.push(result);
+        renderPhotos();
+      } catch(err) {
+        toast('압축 실패: ' + err.message);
       }
     }
+    toast('사진 ' + files.length + '장 추가됨');
   }
 
-  // 푸터 3칸
-  const fL = $('cfgFooterLeft').value.trim() || (company || 'msm Smart Factory');
-  const fC = $('cfgFooterCenter').value.trim() || 'Tryout Report';
-  const fR = $('cfgFooterRight').value.trim() || today.toLocaleString('ko-KR');
-
-  html += '<div class="r-footer">';
-  html += '<div class="f-left">'   + escapeHtml(fL) + '</div>';
-  html += '<div class="f-center">' + escapeHtml(fC) + '</div>';
-  html += '<div class="f-right">'  + escapeHtml(fR) + '</div>';
-  html += '</div>';
-
-  $('reportBody').innerHTML = html;
+  $('photoCam').addEventListener('change', async function(e){
+    const files = Array.from(e.target.files || []);
+    await handleFiles(files);
+    e.target.value = '';
+  });
+  $('photoGal').addEventListener('change', async function(e){
+    const files = Array.from(e.target.files || []);
+    await handleFiles(files);
+    e.target.value = '';
+  });
 }
 
-window.renderAndPrint = function(){
-  render();
-  setTimeout(() => window.print(), 300);
+function renderPhotos(){
+  const el = $('photoList');
+  el.innerHTML = '';
+  photos.forEach((p, idx) => {
+    const div = document.createElement('div');
+    div.className = 'photo-item';
+    const img = document.createElement('img');
+    img.src = p.data;
+    img.onclick = () => openModal(p.data);
+    const del = document.createElement('button');
+    del.className = 'del-btn';
+    del.textContent = '×';
+    del.onclick = (e) => { e.stopPropagation(); photos.splice(idx, 1); renderPhotos(); };
+    const size = document.createElement('div');
+    size.className = 'size-label';
+    size.textContent = p.existing ? '기존' : ((p.bytes / 1024).toFixed(1) + ' KB');
+    div.appendChild(img); div.appendChild(del); div.appendChild(size);
+    el.appendChild(div);
+  });
+}
+
+function openModal(src){
+  $('modalImg').src = src;
+  $('imgModal').classList.add('show');
+}
+
+/* ============ 저장 ============ */
+async function saveLog(){
+  const date = $('logDate').value;
+  const moldNo = $('moldNo').value.trim();
+  const workDone = $('workDone').value.trim();
+  const issues = $('issues').value.trim();
+  const nextPlan = $('nextPlan').value.trim();
+
+  if(!date){ toast('날짜를 입력하세요'); return; }
+  if(!moldNo){ toast('금형재번을 입력하세요'); return; }
+  if(!currentStage){ toast('차수를 선택하세요'); return; }
+  if(!currentStatus){ toast('상태를 선택하세요'); return; }
+
+  const author = session.role === 'admin' ? '관리자' : (session.name || '');
+  const dept = session.dept || '';
+
+  const payload = {
+    log_date: date,
+    author: author,
+    dept: dept,
+    mold_no: moldNo,
+    stage: currentStage,
+    work_done: workDone || null,
+    issues: issues || null,
+    next_plan: nextPlan || null,
+    status: currentStatus,
+    photos: photos.length ? photos.map(p => p.data) : null,
+    /* IATF 연계 */
+    fmea_flag: $('fmeaFlag').checked,
+    cp_flag: $('cpFlag').checked,
+    failure_category: $('failureCategory').value || null,
+    measurement_target: $('measurementTarget').value.trim() || null
+  };
+
+  try {
+    toast(editingId ? '수정 중...' : '저장 중...');
+    if(editingId){
+      const { error } = await sb.from(TBL).update(payload).eq('id', editingId);
+      if(error) throw error;
+      toast('✓ 수정 완료');
+      editingId = null;
+      updateSaveBtnLabel();
+    } else {
+      const { error } = await sb.from(TBL).insert(payload);
+      if(error) throw error;
+      toast('✓ 저장 완료');
+    }
+    resetForm();
+    await loadList();
+    await loadStat();
+  } catch(err) {
+    alert((editingId?'수정':'저장') + ' 실패: ' + (err.message || err));
+  }
+}
+
+function resetForm(){
+  editingId = null;
+  updateSaveBtnLabel();
+  $('logDate').value = '';
+  $('moldNo').value = '';
+  $('moldInfo').innerHTML = '';
+  $('workDone').value = '';
+  $('issues').value = '';
+  $('nextPlan').value = '';
+  $('fmeaFlag').checked = false;
+  $('cpFlag').checked = false;
+  $('failureCategory').value = '';
+  $('measurementTarget').value = '';
+  photos = [];
+  renderPhotos();
+  $('stageChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  $('statusChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  $('statusChips').querySelector('[data-val="진행중"]').classList.add('active');
+  currentStage = '';
+  currentStatus = '진행중';
+  setDefaultDate();
+}
+
+/* ============ 목록 ============ */
+let allLogs = [];
+
+async function loadList(){
+  try {
+    const { data, error } = await sb.from(TBL)
+      .select('*').order('log_date', { ascending: false }).order('created_at', { ascending: false })
+      .limit(300);
+    if(error) throw error;
+    allLogs = data || [];
+    renderList();
+  } catch(err) {
+    $('logList').innerHTML = '<div class="empty">로딩 실패: ' + escapeHtml(err.message || err) + '</div>';
+  }
+}
+
+function renderList(){
+  const kw = $('searchKw').value.trim().toLowerCase();
+  const st = $('searchStatus').value;
+  const iatf = $('searchIatf').value;
+  const stage = $('filterStage').value;
+  const mold = $('filterMold').value.trim();
+  const from = $('filterFrom').value;
+  const to = $('filterTo').value;
+
+  const filtered = allLogs.filter(l => {
+    if(st && l.status !== st) return false;
+    if(stage && l.stage !== stage) return false;
+    if(mold && l.mold_no !== mold) return false;
+    if(from && (l.log_date||'') < from) return false;
+    if(to && (l.log_date||'') > to) return false;
+    if(iatf === 'fmea' && !l.fmea_flag) return false;
+    if(iatf === 'cp'   && !l.cp_flag)   return false;
+    if(iatf === 'any'  && !(l.fmea_flag || l.cp_flag)) return false;
+    if(kw){
+      const blob = ((l.mold_no||'') + ' ' + (l.work_done||'') + ' ' + (l.author||'') + ' ' + (l.issues||'') + ' ' + (l.failure_category||'') + ' ' + (l.measurement_target||'')).toLowerCase();
+      if(!blob.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  $('filterCount').textContent = filtered.length + '건';
+  window.__filteredLogs = filtered;  // PDF용으로 보관
+
+  const el = $('logList');
+  if(!filtered.length){
+    el.innerHTML = '<div class="empty">📭 일지가 없습니다</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(l => {
+    const photoHtml = (l.photos && l.photos.length)
+      ? '<div class="photos-row">' + l.photos.map(p => '<img src="'+p+'" onclick="openImgModal(\''+p+'\')">').join('') + '</div>'
+      : '';
+    let body = '';
+    if(l.work_done) body += '<div class="sec"><span class="lbl">작업:</span>' + escapeHtml(l.work_done) + '</div>';
+    if(l.issues)    body += '<div class="sec"><span class="lbl">이슈:</span>' + escapeHtml(l.issues) + '</div>';
+    if(l.next_plan) body += '<div class="sec"><span class="lbl">계획:</span>' + escapeHtml(l.next_plan) + '</div>';
+    if(l.failure_category) body += '<div class="sec"><span class="lbl">분류:</span>' + escapeHtml(l.failure_category) + '</div>';
+    if(l.measurement_target) body += '<div class="sec"><span class="lbl">측정:</span>' + escapeHtml(l.measurement_target) + '</div>';
+
+    const iatfTags = [];
+    if(l.fmea_flag) iatfTags.push('<span class="iatf-tag fmea">🔍 FMEA</span>');
+    if(l.cp_flag)   iatfTags.push('<span class="iatf-tag cp">📊 CP</span>');
+    const iatfHtml = iatfTags.length ? '<div style="margin-top:8px;display:flex;gap:6px">' + iatfTags.join('') + '</div>' : '';
+
+    return '<div class="log-item">' +
+      '<div class="head-row">' +
+        '<span class="date">' + escapeHtml(l.log_date||'') + '</span>' +
+        '<span class="mold">📦 ' + escapeHtml(l.mold_no||'') + '</span>' +
+        (l.stage ? '<span class="stage-tag">' + escapeHtml(l.stage) + '</span>' : '') +
+        '<span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span>' +
+        '<span class="author">' + escapeHtml(l.author||'') + '</span>' +
+      '</div>' +
+      '<div class="body">' + (body || '<span style="color:var(--text-dim)">내용 없음</span>') + '</div>' +
+      iatfHtml +
+      photoHtml +
+      '<div class="footer-row">' +
+        '<button onclick="editLog(' + l.id + ')">✏️ 수정</button>' +
+        '<button onclick="deleteLog(' + l.id + ')" class="del">🗑 삭제</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.openImgModal = function(src){ openModal(src); };
+
+function updateSaveBtnLabel(){
+  const btn = $('btnSave');
+  if(!btn) return;
+  btn.innerHTML = editingId ? '✏️ 수정 저장' : '💾 저장';
+}
+
+window.editLog = function(id){
+  const l = allLogs.find(x => x.id === id);
+  if(!l){ toast('일지를 찾을 수 없음'); return; }
+
+  // 작성 탭으로 이동
+  document.querySelector('.tab[data-tab="write"]').click();
+
+  // 폼에 값 채우기
+  editingId = l.id;
+  $('logDate').value = l.log_date || '';
+  $('moldNo').value = l.mold_no || '';
+  showMoldInfo();
+  $('workDone').value = l.work_done || '';
+  $('issues').value = l.issues || '';
+  $('nextPlan').value = l.next_plan || '';
+  $('failureCategory').value = l.failure_category || '';
+  $('measurementTarget').value = l.measurement_target || '';
+  $('fmeaFlag').checked = !!l.fmea_flag;
+  $('cpFlag').checked = !!l.cp_flag;
+
+  // 차수 칩 활성화
+  $('stageChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  if(l.stage){
+    const chip = $('stageChips').querySelector('[data-val="'+l.stage+'"]');
+    if(chip) chip.classList.add('active');
+  }
+  currentStage = l.stage || '';
+
+  // 상태 칩 활성화
+  $('statusChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  const st = l.status || '진행중';
+  const chip2 = $('statusChips').querySelector('[data-val="'+st+'"]');
+  if(chip2) chip2.classList.add('active');
+  currentStatus = st;
+
+  // 기존 사진 로드 (URL 형태로 photos 배열에 넣기 - 크기 표시는 '기존'으로)
+  photos = (l.photos || []).map(p => ({ data: p, bytes: 0, existing: true }));
+  renderPhotos();
+
+  // IATF 카드 자동 펼침 (값이 있으면)
+  if(l.failure_category || l.measurement_target || l.fmea_flag || l.cp_flag){
+    const iatfCard = document.querySelector('.iatf-card');
+    if(iatfCard) iatfCard.open = true;
+  }
+
+  updateSaveBtnLabel();
+  toast('✏️ 수정 모드');
+  window.scrollTo({top: 0, behavior: 'smooth'});
 };
 
-/* 설정 변경 시 즉시 재렌더 */
-document.addEventListener('DOMContentLoaded', () => {
-  ['cfgTitle','cfgDocNo','cfgCompany','cfgMemo'].forEach(id => {
-    $(id).addEventListener('input', render);
+window.deleteLog = async function(id){
+  if(!confirm('이 일지를 삭제할까요?')) return;
+  try {
+    const { error } = await sb.from(TBL).delete().eq('id', id);
+    if(error) throw error;
+    toast('✓ 삭제됨');
+    await loadList();
+    await loadStat();
+  } catch(err){
+    alert('삭제 실패: ' + (err.message || err));
+  }
+};
+
+/* ============ 통계 ============ */
+async function loadStat(){
+  if(!allLogs.length) await loadList();
+  const total = allLogs.length;
+  const cnt = { 완료:0, 진행중:0, 문제발생:0, 보류:0 };
+  const moldCnt = {};
+  const catCnt = {};
+  let fmeaCnt = 0, cpCnt = 0;
+  allLogs.forEach(l => {
+    if(cnt[l.status] !== undefined) cnt[l.status]++;
+    moldCnt[l.mold_no] = (moldCnt[l.mold_no]||0) + 1;
+    if(l.fmea_flag) fmeaCnt++;
+    if(l.cp_flag) cpCnt++;
+    if(l.failure_category) catCnt[l.failure_category] = (catCnt[l.failure_category]||0) + 1;
   });
-  ['cfgPhotos','cfgIatf','cfgIssuesOnly'].forEach(id => {
-    $(id).addEventListener('change', render);
-  });
-  // 푸터 — 입력 시 즉시 저장 + 재렌더
-  ['cfgFooterLeft','cfgFooterCenter','cfgFooterRight'].forEach(id => {
-    $(id).addEventListener('input', () => {
-      const key = id.replace('cfgFooter','').toLowerCase();
-      localStorage.setItem(LS_FOOTER + key, $(id).value);
-      render();
+  $('statTotal').textContent = total;
+  $('statDone').textContent = cnt.완료;
+  $('statProg').textContent = cnt.진행중;
+  $('statIssue').textContent = cnt.문제발생;
+  $('statHold').textContent = cnt.보류;
+  $('statMold').textContent = Object.keys(moldCnt).length;
+  $('statFmea').textContent = fmeaCnt;
+  $('statCp').textContent = cpCnt;
+
+  const moldList = Object.entries(moldCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  $('moldSummary').innerHTML = moldList.length
+    ? moldList.map(([mold, n]) =>
+        '<div class="mold-row"><span class="name">📦 ' + escapeHtml(mold) + '</span><span class="cnt">' + n + '건</span></div>'
+      ).join('')
+    : '<div style="color:var(--text-sub);text-align:center;padding:10px">데이터 없음</div>';
+
+  const catList = Object.entries(catCnt).sort((a,b)=>b[1]-a[1]);
+  $('categorySummary').innerHTML = catList.length
+    ? catList.map(([cat, n]) =>
+        '<div class="mold-row"><span class="name">⚠ ' + escapeHtml(cat) + '</span><span class="cnt" style="color:var(--purple)">' + n + '건</span></div>'
+      ).join('')
+    : '<div style="color:var(--text-sub);text-align:center;padding:10px">이슈 분류된 일지 없음</div>';
+}
+
+/* ============ 탭 전환 ============ */
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const tab = t.dataset.tab;
+      $('page-write').style.display = tab==='write' ? '' : 'none';
+      $('page-list').style.display  = tab==='list'  ? '' : 'none';
+      $('page-stat').style.display  = tab==='stat'  ? '' : 'none';
+      $('page-pdf').style.display   = tab==='pdf'   ? '' : 'none';
+
+      if(tab === 'list') loadList();
+      else if(tab === 'stat') loadStat();
+      else if(tab === 'pdf') loadPdfPreview();
     });
   });
-  init();
+}
+
+/* ============ 목록 검색 이벤트 ============ */
+function setupSearch(){
+  $('searchKw').addEventListener('input', renderList);
+  $('searchStatus').addEventListener('change', renderList);
+  $('searchIatf').addEventListener('change', renderList);
+  $('filterStage').addEventListener('change', renderList);
+  $('filterMold').addEventListener('change', renderList);
+  $('filterMold').addEventListener('input', renderList);
+  $('filterFrom').addEventListener('change', renderList);
+  $('filterTo').addEventListener('change', renderList);
+}
+
+window.resetFilter = function(){
+  $('searchKw').value = '';
+  $('searchStatus').value = '';
+  $('searchIatf').value = '';
+  $('filterStage').value = '';
+  $('filterMold').value = '';
+  $('filterFrom').value = '';
+  $('filterTo').value = '';
+  renderList();
+};
+
+/* ============ 보고서 탭 ============ */
+async function loadPdfPreview(){
+  if(!allLogs.length) await loadList();
+  // 차수/금형 datalist 채워주기
+  renderMoldDatalist();
+  renderPdfPreview();
+}
+
+function renderPdfPreview(){
+  const f = getPdfFilter();
+  const filtered = allLogs.filter(l => filterMatchPdf(l, f));
+
+  $('pdfCount').textContent = filtered.length + '건';
+
+  // 미리보기 정보
+  const stages = {};
+  const statuses = {};
+  const molds = new Set();
+  let fmeaN = 0, cpN = 0;
+  filtered.forEach(l => {
+    if(l.stage) stages[l.stage] = (stages[l.stage]||0) + 1;
+    if(l.status) statuses[l.status] = (statuses[l.status]||0) + 1;
+    if(l.mold_no) molds.add(l.mold_no);
+    if(l.fmea_flag) fmeaN++;
+    if(l.cp_flag) cpN++;
+  });
+
+  const periodStr = (f.from || f.to)
+    ? (f.from || '~') + ' ~ ' + (f.to || '~')
+    : (filtered.length ? filtered[0].log_date + ' ~ ' + filtered[filtered.length-1].log_date : '데이터 없음');
+
+  let html = '';
+  html += '<div>📅 <span style="color:var(--ice)">대상 기간:</span> ' + escapeHtml(periodStr) + '</div>';
+  html += '<div>📦 <span style="color:var(--ice)">금형 종류:</span> ' + molds.size + '종' + (f.mold ? ' (' + escapeHtml(f.mold) + ')' : '') + '</div>';
+  html += '<div>📋 <span style="color:var(--ice)">총 일지 수:</span> <b style="color:var(--ice)">' + filtered.length + '건</b></div>';
+
+  if(Object.keys(statuses).length){
+    const stTxt = Object.entries(statuses).map(([k,v]) => k+' '+v).join(' · ');
+    html += '<div>🏷 <span style="color:var(--ice)">상태:</span> ' + escapeHtml(stTxt) + '</div>';
+  }
+  if(Object.keys(stages).length){
+    const sgTxt = Object.entries(stages).map(([k,v]) => k+' '+v).join(' · ');
+    html += '<div>🔢 <span style="color:var(--ice)">차수:</span> ' + escapeHtml(sgTxt) + '</div>';
+  }
+  if(fmeaN || cpN){
+    html += '<div>🔍 <span style="color:var(--purple)">IATF 후보:</span> FMEA ' + fmeaN + '건 · CP ' + cpN + '건</div>';
+  }
+
+  $('pdfPreview').innerHTML = html;
+}
+
+function getPdfFilter(){
+  return {
+    from: $('pdfFrom').value,
+    to: $('pdfTo').value,
+    stage: $('pdfStage').value,
+    mold: $('pdfMold').value.trim(),
+    status: $('pdfStatus').value,
+    iatf: $('pdfIatfFilter').value
+  };
+}
+
+function filterMatchPdf(l, f){
+  if(f.status && l.status !== f.status) return false;
+  if(f.stage && l.stage !== f.stage) return false;
+  if(f.mold && l.mold_no !== f.mold) return false;
+  if(f.from && (l.log_date||'') < f.from) return false;
+  if(f.to && (l.log_date||'') > f.to) return false;
+  if(f.iatf === 'fmea' && !l.fmea_flag) return false;
+  if(f.iatf === 'cp' && !l.cp_flag) return false;
+  if(f.iatf === 'any' && !(l.fmea_flag || l.cp_flag)) return false;
+  return true;
+}
+
+window.resetPdfFilter = function(){
+  $('pdfFrom').value = '';
+  $('pdfTo').value = '';
+  $('pdfStage').value = '';
+  $('pdfMold').value = '';
+  $('pdfStatus').value = '';
+  $('pdfIatfFilter').value = '';
+  renderPdfPreview();
+};
+
+window.usePdfListFilter = function(){
+  // 목록 탭의 현재 필터를 PDF 탭으로 복사
+  $('pdfFrom').value = $('filterFrom').value;
+  $('pdfTo').value = $('filterTo').value;
+  $('pdfStage').value = $('filterStage').value;
+  $('pdfMold').value = $('filterMold').value;
+  $('pdfStatus').value = $('searchStatus').value;
+  $('pdfIatfFilter').value = $('searchIatf').value;
+  renderPdfPreview();
+  toast('목록 탭 필터를 가져왔습니다');
+};
+
+window.goPdfFromTab = function(){
+  const f = getPdfFilter();
+  // 키워드는 PDF 탭에 없으므로 빈 값
+  const filterState = {
+    kw: '',
+    status: f.status,
+    iatf: f.iatf,
+    stage: f.stage,
+    mold: f.mold,
+    from: f.from,
+    to: f.to
+  };
+  const filtered = allLogs.filter(l => filterMatchPdf(l, f));
+  if(!filtered.length){
+    if(!confirm('필터링된 일지가 없습니다. 전체 일지로 보고서를 만들까요?')) return;
+  }
+  sessionStorage.setItem('tryout_pdf_filter', JSON.stringify(filterState));
+  location.href = 'tryout_pdf.html';
+};
+
+/* (구) 목록 탭에서의 PDF 이동 — 호환 유지 */
+window.goPdf = function(){
+  const filtered = window.__filteredLogs || [];
+  if(!filtered.length){
+    if(!confirm('필터링된 일지가 없습니다. 전체 일지로 보고서를 만들까요?')) return;
+  }
+  const filterState = {
+    kw: $('searchKw').value,
+    status: $('searchStatus').value,
+    iatf: $('searchIatf').value,
+    stage: $('filterStage').value,
+    mold: $('filterMold').value,
+    from: $('filterFrom').value,
+    to: $('filterTo').value
+  };
+  sessionStorage.setItem('tryout_pdf_filter', JSON.stringify(filterState));
+  location.href = 'tryout_pdf.html';
+};
+
+/* ============ 초기화 ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  setUserBadge();
+  setupChips();
+  setupPhotoInput();
+  setupTabs();
+  setupSearch();
+  setDefaultDate();
+
+  // 금형마스터 로드 + 입력 변경 이벤트
+  $('moldNo').addEventListener('input', showMoldInfo);
+  $('moldNo').addEventListener('change', showMoldInfo);
+  loadMoldMaster();
+
+  // PDF 탭 필터 이벤트
+  ['pdfFrom','pdfTo','pdfStage','pdfMold','pdfStatus','pdfIatfFilter'].forEach(id => {
+    const el = $(id);
+    if(el){
+      el.addEventListener('change', renderPdfPreview);
+      el.addEventListener('input', renderPdfPreview);
+    }
+  });
 });
 
 })();
