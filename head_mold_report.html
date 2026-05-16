@@ -112,9 +112,10 @@ header h1 .ver {
 }
 .btn-pdf { background: #dc3545; }
 .btn-excel { background: #28a745; }
-.btn-save { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); }
+.btn-save { background: linear-gradient(135deg, #0ea5e9, #0284c7); }
 .btn-secondary {
-  background: #e9ecef; color: var(--text);
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border: 1px solid var(--border-hi);
 }
 
 .summary-table {
@@ -187,8 +188,8 @@ header h1 .ver {
   flex: 1; padding: 8px 4px; border: none; border-radius: 6px;
   font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
-.card-btn.view { background: #e9ecef; color: var(--text); }
-.card-btn.edit { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; }
+.card-btn.view { background: var(--bg-card-hi); color: var(--text); border: 1px solid var(--border-hi); }
+.card-btn.edit { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
 .card-btn.del { background: var(--bg-card); color: #dc3545; border: 1px solid #dc3545; }
 
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); }
@@ -210,7 +211,7 @@ header h1 .ver {
   flex: 1; padding: 12px; border: none; border-radius: 6px;
   font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
-.btn-primary { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; }
+.btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
 .btn-danger { background: #dc3545; color: white; }
 
 .password-wrap { position: relative; }
@@ -335,7 +336,7 @@ header h1 .ver {
 <!-- ======================================================== -->
 
 <header>
-  <h1>📄 소모품 보고서 <span class="ver" onclick="showVerReport()">v2.4</span></h1>
+  <h1>📄 소모품 보고서 <span class="ver" onclick="showVerReport()">v2.5</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -454,7 +455,7 @@ header h1 .ver {
         <button class="btn-excel" id="btnExcel" type="button">📊 Excel 출력</button>
         <button class="btn-save" id="btnSave" type="button">💾 저장</button>
       </div>
-      <button class="btn-secondary" id="btnReset" type="button" style="width:100%;padding:10px;border:none;border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer">초기화</button>
+      <button class="btn-secondary" id="btnReset" type="button" style="width:100%;padding:10px;background:var(--bg-card-hi);color:var(--text-mid);border:1px solid var(--border-hi);border-radius:6px;font-family:inherit;font-size:14px;cursor:pointer">🗑 초기화</button>
     </div>
   </div>
 
@@ -525,7 +526,7 @@ header h1 .ver {
 </div>
 
 <div class="app-footer">
-  소모품 보고서 v2.4 · msm · 다크테마
+  소모품 보고서 v2.5 · msm · 다크테마
 </div>
 
 <script>
@@ -533,15 +534,18 @@ function showVerReport(){
   alert(
     '📄 소모품 보고서 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v2.4 (현재)\n' +
+    'v2.5 (현재)\n' +
+    '• 하단 버튼 가시성 수정\n' +
+    '  (저장/초기화 버튼이 다크 배경에 묻혀 안 보이던 문제)\n' +
+    '• PDF/Excel/저장 ice 블루 그라데이션\n\n' +
+    'v2.4\n' +
     '• 요약/세부 박스 다크 가독성 개선\n' +
     '• 인라인 스타일 색상 변수화\n\n' +
     'v2.3\n' +
-    '• 인증 가드 추가: 미인증 시 메인 강제 이동\n' +
-    '• 페이지 진입 위치 추적 자동 기록\n\n' +
+    '• 인증 가드 추가\n' +
+    '• 페이지 진입 위치 추적\n\n' +
     'v2.2\n' +
-    '• 양식 카드 라벨 글자색 가독성 개선\n' +
-    '• h3 제목 ice 강조색 적용\n\n' +
+    '• 양식 카드 라벨 글자색 가독성 개선\n\n' +
     'v2.1\n' +
     '• 인덱스 다크테마 적용 (인쇄/PDF는 흰 배경)\n\n' +
     'v2.0 이전\n' +
