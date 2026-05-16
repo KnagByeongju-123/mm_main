@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tryout 작업일지</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:     #334155;
+  --border-hi:  #475569;
+  --text:       #e2e8f0;
+  --text-mid:   #cbd5e1;
+  --text-sub:   #94a3b8;
+  --text-dim:   #64748b;
+  --ice:        #7dd3fc;
+  --orange:     #fdba74;
+  --green:      #4ade80;
+  --rose:       #fca5a5;
+  --purple:     #c4b5fd;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh; padding-bottom: 40px;
+}
+
+/* 헤더 */
+.app-header {
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.back-btn {
+  background: rgba(125,211,252,0.1); color: var(--ice);
+  border: 1px solid rgba(125,211,252,0.3);
+  padding: 6px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 600; text-decoration: none;
+}
+.app-header h1 {
+  font-size: 18px; font-weight: 700; color: var(--ice); flex: 1;
+}
+.ver { font-size: 11px; color: var(--text-sub); margin-left: 6px; cursor: pointer; font-weight: 500; }
+
+.user-bar {
+  text-align: center; padding: 10px;
+  background: var(--bg-dark); border-bottom: 1px solid var(--border);
+}
+.user-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.3);
+  color: var(--ice); padding: 5px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 500;
+}
+.user-badge.admin {
+  background: rgba(253,186,116,0.1); border-color: rgba(253,186,116,0.3); color: var(--orange);
+}
+
+/* 탭 */
+.tabs {
+  display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.tab {
+  flex: 1; padding: 14px 8px; text-align: center;
+  font-size: 14px; font-weight: 600; color: var(--text-sub);
+  cursor: pointer; border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+.tab.active { color: var(--ice); border-bottom-color: var(--ice); background: var(--bg-card-hi); }
+
+.container { max-width: 720px; margin: 0 auto; padding: 14px; }
+
+/* 카드 */
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.card h2 {
+  font-size: 14px; color: var(--ice); margin-bottom: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+/* 폼 요소 */
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--text-mid); margin-bottom: 6px;
+}
+.form-group label .req { color: var(--rose); margin-left: 2px; }
+.form-group label .opt { color: var(--text-dim); font-size: 11px; font-weight: 400; margin-left: 4px; }
+
+input[type="text"], input[type="date"], textarea, select {
+  width: 100%; padding: 11px 12px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 6px;
+  font-size: 15px; font-family: inherit;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--ice); }
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+
+/* 차수/상태 칩 버튼 */
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  padding: 8px 14px; border: 1px solid var(--border-hi);
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border-radius: 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.chip:active { transform: scale(0.95); }
+.chip.active { background: rgba(125,211,252,0.18); border-color: var(--ice); color: var(--ice); }
+.chip.s-prog.active   { background: rgba(125,211,252,0.18); border-color: var(--ice); color: var(--ice); }
+.chip.s-done.active   { background: rgba(74,222,128,0.18); border-color: var(--green); color: var(--green); }
+.chip.s-hold.active   { background: rgba(253,186,116,0.18); border-color: var(--orange); color: var(--orange); }
+.chip.s-issue.active  { background: rgba(252,165,165,0.18); border-color: var(--rose); color: var(--rose); }
+
+/* 사진 영역 */
+.photo-area {
+  border: 2px dashed var(--border-hi); border-radius: 8px;
+  padding: 16px; text-align: center; cursor: pointer;
+  background: rgba(125,211,252,0.04);
+  transition: all 0.2s;
+}
+.photo-area:active { background: rgba(125,211,252,0.08); border-color: var(--ice); }
+.photo-area .ic { font-size: 26px; }
+.photo-area .label { color: var(--text-mid); font-size: 14px; margin-top: 4px; font-weight: 600; }
+.photo-area .hint { color: var(--text-sub); font-size: 11px; margin-top: 2px; }
+
+.photo-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.photo-item {
+  position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.photo-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-item .del-btn {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(220,53,69,0.9); color: white;
+  border: none; border-radius: 50%;
+  width: 22px; height: 22px; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.photo-item .size-label {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.6); color: white; font-size: 10px;
+  padding: 2px 4px; text-align: center;
+}
+
+/* 버튼 */
+.btn {
+  padding: 13px 16px; border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: inherit; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
+.btn-success { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+.btn-secondary { background: var(--bg-card-hi); color: var(--text-mid); border: 1px solid var(--border-hi); }
+.btn-danger { background: rgba(220,53,69,0.85); color: white; }
+
+.action-row { display: flex; gap: 8px; margin-top: 6px; }
+.action-row .btn { flex: 1; }
+
+/* 목록 */
+.search-bar {
+  display: flex; gap: 8px; margin-bottom: 12px;
+  background: var(--bg-card); padding: 10px; border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.search-bar input { background: var(--bg-dark); flex: 1; padding: 9px; }
+.search-bar select { background: var(--bg-dark); width: 110px; padding: 9px; }
+
+.log-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px;
+  margin-bottom: 10px;
+}
+.log-item .head-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.log-item .date {
+  color: var(--ice); font-weight: 700; font-size: 14px;
+}
+.log-item .mold {
+  background: rgba(125,211,252,0.15); color: var(--ice);
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+.log-item .stage-tag {
+  background: rgba(196,181,253,0.15); color: var(--purple);
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+.log-item .status-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.status-tag.진행중   { background: rgba(125,211,252,0.18); color: var(--ice); }
+.status-tag.완료     { background: rgba(74,222,128,0.18); color: var(--green); }
+.status-tag.보류     { background: rgba(253,186,116,0.18); color: var(--orange); }
+.status-tag.문제발생 { background: rgba(252,165,165,0.18); color: var(--rose); }
+.log-item .author { color: var(--text-sub); font-size: 12px; margin-left: auto; }
+.log-item .body { color: var(--text); font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+.log-item .body .lbl { color: var(--text-sub); font-weight: 600; margin-right: 4px; }
+.log-item .body .sec { margin-top: 6px; }
+.log-item .photos-row {
+  display: flex; gap: 6px; margin-top: 10px; overflow-x: auto;
+}
+.log-item .photos-row img {
+  width: 72px; height: 72px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--border); cursor: pointer; flex-shrink: 0;
+}
+.log-item .footer-row {
+  display: flex; gap: 6px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.log-item .footer-row button {
+  padding: 6px 12px; font-size: 12px; border-radius: 6px;
+  border: 1px solid var(--border-hi); background: var(--bg-card-hi);
+  color: var(--text-mid); cursor: pointer; font-family: inherit;
+}
+.log-item .footer-row button.del { color: var(--rose); border-color: rgba(252,165,165,0.3); }
+
+.iatf-tag {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+}
+.iatf-tag.fmea { background: rgba(196,181,253,0.18); color: var(--purple); border: 1px solid rgba(196,181,253,0.3); }
+.iatf-tag.cp   { background: rgba(125,211,252,0.18); color: var(--ice); border: 1px solid rgba(125,211,252,0.3); }
+
+.empty {
+  text-align: center; padding: 40px 20px; color: var(--text-sub);
+  font-size: 14px;
+}
+
+/* 통계 */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+}
+.stat-box {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; text-align: center;
+}
+.stat-box .num { font-size: 26px; font-weight: 800; color: var(--ice); }
+.stat-box .lbl { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+.stat-box.green .num { color: var(--green); }
+.stat-box.orange .num { color: var(--orange); }
+.stat-box.rose .num { color: var(--rose); }
+
+.mold-summary { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+.mold-summary h3 { font-size: 13px; color: var(--text-sub); margin-bottom: 10px; }
+.mold-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 4px; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.mold-row:last-child { border-bottom: none; }
+.mold-row .name { color: var(--text); font-weight: 600; }
+.mold-row .cnt { color: var(--ice); font-weight: 700; }
+
+/* IATF 연계 카드 */
+.iatf-card { border-color: rgba(196,181,253,0.3); }
+.iatf-card[open] .iatf-arrow { transform: rotate(90deg); display: inline-block; }
+.iatf-arrow { display: inline-block; transition: transform 0.2s; color: var(--purple); }
+.iatf-check {
+  display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+  color: var(--text); font-size: 13px; line-height: 1.4;
+}
+.iatf-check input[type="checkbox"] {
+  width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px;
+  accent-color: var(--purple);
+}
+
+/* 토스트 */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(15,23,42,0.95); border: 1px solid var(--ice);
+  color: var(--ice); padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; z-index: 9999;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* 이미지 확대 모달 */
+.modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  z-index: 9998; align-items: center; justify-content: center; padding: 20px;
+}
+.modal.show { display: flex; }
+.modal img { max-width: 100%; max-height: 90vh; border-radius: 6px; }
+
+.footer { text-align: center; margin-top: 20px; font-size: 11px; color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- 인증 가드 -->
+<script>
+(function(){
+  'use strict';
+  var s; try{ s = JSON.parse(localStorage.getItem('mm_user_session')||'null'); }catch(e){ s=null; }
+  if(!s || !s.exp || s.exp <= Date.now()){
+    try{ localStorage.removeItem('mm_user_session'); }catch(e){}
+    location.replace('index.html');
+    document.documentElement.style.display = 'none';
+    throw new Error('Unauthorized');
+  }
+  window.__msmSession = s;
+
+  /* 위치 추적 (마스터 제외) */
+  if(s.role !== 'admin' && s.id){
+    var LK = 'mm_last_loc';
+    var last; try{ last = JSON.parse(localStorage.getItem(LK)||'null'); }catch(e){ last = null; }
+    var now = Date.now();
+    var pageName = 'tryout_report';
+    if(!(last && last.ts && (now-last.ts) < 5*60*1000 && last.page === pageName)){
+      fetch('https://ipapi.co/json/').then(function(r){return r.json()}).then(function(d){
+        fetch('https://xrmwfsuitikqibwqxede.supabase.co/rest/v1/mm_user_location', {
+          method:'POST',
+          headers:{
+            'apikey':'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN',
+            'Authorization':'Bearer sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN',
+            'Content-Type':'application/json','Prefer':'return=minimal'
+          },
+          body: JSON.stringify({
+            user_id:s.id, user_name:s.name||null, factory:s.factory||null, dept:s.dept||null,
+            lat:d.latitude||null, lng:d.longitude||null, ip:d.ip||null,
+            city:d.city||null, region:d.region||null, country:d.country_name||null, org:d.org||null,
+            device_info:(navigator.userAgent||'').slice(0,180)+' | page:'+pageName,
+            recorded_at: new Date().toISOString()
+          })
+        }).then(function(){ localStorage.setItem(LK, JSON.stringify({ip:d.ip,page:pageName,ts:now})); }).catch(function(){});
+      }).catch(function(){});
+    }
+  }
+})();
+</script>
+
+<div class="app-header">
+  <a href="index.html" class="back-btn">‹ 메인</a>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.2</span></h1>
+</div>
+
+<div class="user-bar">
+  <span class="user-badge" id="userBadge">👤 사용자</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="write">📝 작성</div>
+  <div class="tab" data-tab="list">📋 목록</div>
+  <div class="tab" data-tab="stat">📊 통계</div>
+</div>
+
+<div class="container">
+
+  <!-- ============ 작성 탭 ============ -->
+  <div id="page-write">
+    <div class="card">
+      <h2>📅 기본 정보</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>날짜 <span class="req">*</span></label>
+          <input type="date" id="logDate">
+        </div>
+        <div class="form-group">
+          <label>금형번호 <span class="req">*</span></label>
+          <input type="text" id="moldNo" placeholder="금형마스터에서 선택" autocomplete="off" list="moldList">
+          <datalist id="moldList"></datalist>
+          <div id="moldInfo" style="font-size:11px;color:var(--text-sub);margin-top:4px;min-height:14px"></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>차수 <span class="req">*</span></label>
+        <div class="chip-group" id="stageChips">
+          <button type="button" class="chip" data-val="1차">1차</button>
+          <button type="button" class="chip" data-val="2차">2차</button>
+          <button type="button" class="chip" data-val="3차">3차</button>
+          <button type="button" class="chip" data-val="양산전">양산전</button>
+          <button type="button" class="chip" data-val="기타">기타</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 작업 내용</h2>
+
+      <div class="form-group">
+        <label>오늘 한 작업 <span class="opt">(필수 아님)</span></label>
+        <textarea id="workDone" placeholder="예: 코어 가공, A면 연마, 게이트 수정"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>문제점 / 이슈 <span class="opt">(있으면)</span></label>
+        <textarea id="issues" placeholder="예: 게이트 부근 버 발생, 사이클 타임 초과"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>다음 작업 / 계획 <span class="opt">(있으면)</span></label>
+        <textarea id="nextPlan" placeholder="예: 내일 게이트 재가공 후 2차 시사 예정"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>상태 <span class="req">*</span></label>
+        <div class="chip-group" id="statusChips">
+          <button type="button" class="chip s-prog"  data-val="진행중">진행중</button>
+          <button type="button" class="chip s-done"  data-val="완료">완료</button>
+          <button type="button" class="chip s-hold"  data-val="보류">보류</button>
+          <button type="button" class="chip s-issue" data-val="문제발생">문제발생</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📷 사진 첨부 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(자동 10KB 이하로 압축)</span></h2>
+
+      <label for="photoInput" class="photo-area">
+        <div class="ic">📷</div>
+        <div class="label">사진 추가</div>
+        <div class="hint">탭해서 카메라/갤러리 열기</div>
+      </label>
+      <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+
+      <div class="photo-list" id="photoList"></div>
+    </div>
+
+    <details class="card iatf-card">
+      <summary style="cursor:pointer;list-style:none;font-size:14px;color:var(--purple);font-weight:700;display:flex;align-items:center;gap:6px">
+        <span class="iatf-arrow">▶</span> 📋 IATF 연계 정보 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(선택 · FMEA/관리계획서 작성용)</span>
+      </summary>
+      <div style="padding-top:12px;border-top:1px solid var(--border);margin-top:10px">
+
+        <div class="form-group">
+          <label>이슈 분류 <span class="opt">(문제발생 시)</span></label>
+          <select id="failureCategory">
+            <option value="">-- 선택 안 함 --</option>
+            <option>치수불량</option>
+            <option>표면결함</option>
+            <option>조립불량</option>
+            <option>작동불량</option>
+            <option>강도/내구 문제</option>
+            <option>외관/색상 문제</option>
+            <option>금형 자체 손상</option>
+            <option>설비/공정 문제</option>
+            <option>재료 문제</option>
+            <option>기타</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>측정 항목 / 측정값 <span class="opt">(있으면)</span></label>
+          <input type="text" id="measurementTarget" placeholder="예: 두께 1.52mm / 길이 100.2mm / 게이트 폭" autocomplete="off">
+          <div style="font-size:11px;color:var(--text-sub);margin-top:4px">관리계획서의 측정 특성 후보가 됩니다</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;padding:12px;background:rgba(196,181,253,0.08);border:1px solid rgba(196,181,253,0.25);border-radius:8px">
+          <label class="iatf-check">
+            <input type="checkbox" id="fmeaFlag">
+            <span><b style="color:var(--purple)">🔍 FMEA 검토 필요</b> <span style="font-size:11px;color:var(--text-sub)">— 이 이슈는 PFMEA 고장 모드 후보</span></span>
+          </label>
+          <label class="iatf-check">
+            <input type="checkbox" id="cpFlag">
+            <span><b style="color:var(--purple)">📊 관리계획서 반영</b> <span style="font-size:11px;color:var(--text-sub)">— 이 측정 항목은 양산 시 관리 대상</span></span>
+          </label>
+        </div>
+      </div>
+    </details>
+
+    <div class="action-row">
+      <button class="btn btn-secondary" type="button" onclick="resetForm()">🗑 초기화</button>
+      <button class="btn btn-primary" type="button" onclick="saveLog()">💾 저장</button>
+    </div>
+  </div>
+
+  <!-- ============ 목록 탭 ============ -->
+  <div id="page-list" style="display:none">
+    <div class="search-bar">
+      <input type="text" id="searchKw" placeholder="금형번호/작업내용/작성자 검색" autocomplete="off">
+      <select id="searchStatus">
+        <option value="">상태 전체</option>
+        <option>진행중</option>
+        <option>완료</option>
+        <option>보류</option>
+        <option>문제발생</option>
+      </select>
+      <select id="searchIatf">
+        <option value="">IATF 전체</option>
+        <option value="fmea">🔍 FMEA만</option>
+        <option value="cp">📊 CP만</option>
+        <option value="any">🔍📊 둘 다</option>
+      </select>
+    </div>
+    <div id="logList"></div>
+  </div>
+
+  <!-- ============ 통계 탭 ============ -->
+  <div id="page-stat" style="display:none">
+    <div class="stat-grid">
+      <div class="stat-box">       <div class="num" id="statTotal">0</div>     <div class="lbl">총 일지</div>      </div>
+      <div class="stat-box green">  <div class="num" id="statDone">0</div>      <div class="lbl">완료</div>          </div>
+      <div class="stat-box">       <div class="num" id="statProg">0</div>      <div class="lbl">진행중</div>        </div>
+      <div class="stat-box rose">   <div class="num" id="statIssue">0</div>     <div class="lbl">문제발생</div>      </div>
+      <div class="stat-box orange"> <div class="num" id="statHold">0</div>      <div class="lbl">보류</div>          </div>
+      <div class="stat-box">       <div class="num" id="statMold">0</div>      <div class="lbl">금형 종류</div>      </div>
+      <div class="stat-box">       <div class="num" id="statFmea" style="color:var(--purple)">0</div>  <div class="lbl">🔍 FMEA 후보</div></div>
+      <div class="stat-box">       <div class="num" id="statCp" style="color:var(--ice)">0</div>      <div class="lbl">📊 CP 후보</div>  </div>
+    </div>
+
+    <div class="mold-summary">
+      <h3>📦 금형별 일지 건수 (Top 10)</h3>
+      <div id="moldSummary"></div>
+    </div>
+
+    <div class="mold-summary" style="margin-top:12px">
+      <h3>⚠ 이슈 분류 통계 (FMEA 후보 분석용)</h3>
+      <div id="categorySummary"></div>
+    </div>
+  </div>
+
+  <div class="footer">Tryout 작업일지 v1.2 · msm</div>
+</div>
+
+<div class="modal" id="imgModal" onclick="this.classList.remove('show')">
+  <img id="modalImg" alt="">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showVer(){
+  alert(
+    '🧪 Tryout 작업일지 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.2 (현재)\n' +
+    '• IATF 16949 연계 필드 추가:\n' +
+    '  - FMEA 검토 필요 체크\n' +
+    '  - 관리계획서 반영 체크\n' +
+    '  - 이슈 분류 (치수/표면/조립 등)\n' +
+    '  - 측정 항목/측정값\n' +
+    '• 목록에 IATF 태그 표시 + 필터링\n' +
+    '• 통계에 FMEA/CP 후보 카운트 + 이슈 분류 통계\n\n' +
+    'v1.1\n' +
+    '• 금형번호를 금형마스터(mm_mold_master)에서 자동완성\n' +
+    '• 선택 시 고객사/기종/재질/규격 자동 표시\n\n' +
+    'v1.0\n' +
+    '• 금형조립자 일별 작업일지\n' +
+    '• 작성/목록/통계 3개 탭\n' +
+    '• 사진 자동 10KB 이하 압축\n' +
+    '• Supabase tryout_logs 테이블 연동\n' +
+    '• 인증가드 + 위치추적'
+  );
+}
+
+(function(){
+'use strict';
+
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL = 'tryout_logs';
+const TBL_MOLD = 'mm_mold_master';   // 금형마스터 테이블
+const PHOTO_MAX_BYTES = 10 * 1024;  // 10 KB
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const session = window.__msmSession;
+
+let moldMasterList = [];  // [{mold_no, vendor, material, model_code, ...}]
+
+function $(id){ return document.getElementById(id); }
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ============ 금형마스터 로딩 ============ */
+async function loadMoldMaster(){
+  try {
+    const { data, error } = await sb.from(TBL_MOLD)
+      .select('mold_no,vendor,material,model_code,thick,width,pitch')
+      .not('mold_no', 'is', null)
+      .order('vendor', { ascending: true })
+      .order('mold_no', { ascending: true });
+    if(error) throw error;
+    // mold_no 빈 값 제거 + 중복 제거 (같은 번호가 여러 행에 있을 수 있음)
+    const seen = new Set();
+    moldMasterList = (data || [])
+      .filter(m => m.mold_no && m.mold_no.trim())
+      .filter(m => { if(seen.has(m.mold_no)) return false; seen.add(m.mold_no); return true; });
+    renderMoldDatalist();
+  } catch(err){
+    console.warn('금형마스터 로딩 실패:', err);
+    moldMasterList = [];
+  }
+}
+
+function renderMoldDatalist(){
+  const dl = $('moldList');
+  if(!dl) return;
+  dl.innerHTML = moldMasterList.map(m => {
+    const label = m.mold_no + (m.vendor ? ' (' + m.vendor + ')' : '');
+    return '<option value="' + escapeHtml(m.mold_no) + '" label="' + escapeHtml(label) + '">';
+  }).join('');
+}
+
+function showMoldInfo(){
+  const v = $('moldNo').value.trim();
+  const info = $('moldInfo');
+  if(!v){ info.textContent = ''; return; }
+  const m = moldMasterList.find(x => x.mold_no === v);
+  if(!m){
+    info.innerHTML = '<span style="color:var(--orange)">⚠ 금형마스터에 없는 번호입니다 (새로 등록 가능)</span>';
+    return;
+  }
+  const parts = [];
+  if(m.vendor)     parts.push('🏢 ' + escapeHtml(m.vendor));
+  if(m.model_code) parts.push('🔖 ' + escapeHtml(m.model_code));
+  if(m.material)   parts.push('🧱 ' + escapeHtml(m.material));
+  if(m.thick || m.width || m.pitch){
+    const dim = [m.thick&&(m.thick+'T'), m.width&&(m.width+'W'), m.pitch&&('P'+m.pitch)].filter(Boolean).join('·');
+    if(dim) parts.push('📏 ' + dim);
+  }
+  info.innerHTML = '<span style="color:var(--ice)">✓ ' + parts.join(' · ') + '</span>';
+}
+
+/* ============ 헤더 사용자 배지 ============ */
+function setUserBadge(){
+  const el = $('userBadge');
+  if(session.role === 'admin'){
+    el.classList.add('admin');
+    el.innerHTML = '👤 관리자';
+  } else {
+    let txt = '👤 ' + (session.name || '-');
+    if(session.dept) txt += ' · ' + session.dept;
+    if(session.position) txt += ' ' + session.position;
+    el.innerHTML = txt;
+  }
+}
+
+/* ============ 폼 상태 ============ */
+let currentStage = '';
+let currentStatus = '진행중';
+let photos = [];  // base64 배열
+
+function setupChips(){
+  // 차수
+  $('stageChips').querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      $('stageChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      currentStage = c.dataset.val;
+    });
+  });
+  // 상태 (기본: 진행중)
+  $('statusChips').querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      $('statusChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      currentStatus = c.dataset.val;
+    });
+  });
+  // 기본 진행중 활성화
+  $('statusChips').querySelector('[data-val="진행중"]').classList.add('active');
+}
+
+function setDefaultDate(){
+  const d = new Date();
+  $('logDate').value = d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+/* ============ 사진 압축 (10KB 이하) ============ */
+function compressToTargetSize(file, targetBytes) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        // 최대 크기를 점진적으로 줄여서 10KB 이하 맞추기
+        let maxDim = 800;
+        let quality = 0.8;
+
+        function tryEncode() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim) {
+            if(w > h){ h = h * maxDim / w; w = maxDim; }
+            else     { w = w * maxDim / h; h = maxDim; }
+          }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          // base64 길이로 대략 바이트 계산 (한 글자 ≈ 0.75 byte)
+          const approxBytes = dataUrl.length * 0.75;
+
+          if(approxBytes <= targetBytes || (maxDim <= 120 && quality <= 0.3)){
+            resolve({ data: dataUrl, bytes: Math.round(approxBytes) });
+            return;
+          }
+
+          // 너무 크면 quality 먼저 줄이고 그래도 크면 차원 축소
+          if(quality > 0.4) {
+            quality -= 0.1;
+          } else {
+            maxDim = Math.floor(maxDim * 0.85);
+            quality = 0.6;
+          }
+          tryEncode();
+        }
+        tryEncode();
+      };
+      img.onerror = () => reject(new Error('이미지 로드 실패'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function setupPhotoInput(){
+  $('photoInput').addEventListener('change', async function(e){
+    const files = Array.from(e.target.files || []);
+    if(!files.length) return;
+    for(const f of files){
+      if(!f.type.startsWith('image/')) continue;
+      try {
+        toast('압축 중...');
+        const result = await compressToTargetSize(f, PHOTO_MAX_BYTES);
+        photos.push(result);
+        renderPhotos();
+      } catch(err) {
+        toast('압축 실패: ' + err.message);
+      }
+    }
+    e.target.value = '';
+    toast('사진 ' + files.length + '장 추가됨');
+  });
+}
+
+function renderPhotos(){
+  const el = $('photoList');
+  el.innerHTML = '';
+  photos.forEach((p, idx) => {
+    const div = document.createElement('div');
+    div.className = 'photo-item';
+    const img = document.createElement('img');
+    img.src = p.data;
+    img.onclick = () => openModal(p.data);
+    const del = document.createElement('button');
+    del.className = 'del-btn';
+    del.textContent = '×';
+    del.onclick = (e) => { e.stopPropagation(); photos.splice(idx, 1); renderPhotos(); };
+    const size = document.createElement('div');
+    size.className = 'size-label';
+    size.textContent = (p.bytes / 1024).toFixed(1) + ' KB';
+    div.appendChild(img); div.appendChild(del); div.appendChild(size);
+    el.appendChild(div);
+  });
+}
+
+function openModal(src){
+  $('modalImg').src = src;
+  $('imgModal').classList.add('show');
+}
+
+/* ============ 저장 ============ */
+async function saveLog(){
+  const date = $('logDate').value;
+  const moldNo = $('moldNo').value.trim();
+  const workDone = $('workDone').value.trim();
+  const issues = $('issues').value.trim();
+  const nextPlan = $('nextPlan').value.trim();
+
+  if(!date){ toast('날짜를 입력하세요'); return; }
+  if(!moldNo){ toast('금형번호를 입력하세요'); return; }
+  if(!currentStage){ toast('차수를 선택하세요'); return; }
+  if(!currentStatus){ toast('상태를 선택하세요'); return; }
+
+  const author = session.role === 'admin' ? '관리자' : (session.name || '');
+  const dept = session.dept || '';
+
+  const payload = {
+    log_date: date,
+    author: author,
+    dept: dept,
+    mold_no: moldNo,
+    stage: currentStage,
+    work_done: workDone || null,
+    issues: issues || null,
+    next_plan: nextPlan || null,
+    status: currentStatus,
+    photos: photos.length ? photos.map(p => p.data) : null,
+    /* IATF 연계 */
+    fmea_flag: $('fmeaFlag').checked,
+    cp_flag: $('cpFlag').checked,
+    failure_category: $('failureCategory').value || null,
+    measurement_target: $('measurementTarget').value.trim() || null
+  };
+
+  try {
+    toast('저장 중...');
+    const { error } = await sb.from(TBL).insert(payload);
+    if(error) throw error;
+    toast('✓ 저장 완료');
+    resetForm();
+    await loadList();  // 목록 갱신
+    await loadStat();  // 통계 갱신
+  } catch(err) {
+    alert('저장 실패: ' + (err.message || err));
+  }
+}
+
+function resetForm(){
+  $('logDate').value = '';
+  $('moldNo').value = '';
+  $('moldInfo').innerHTML = '';
+  $('workDone').value = '';
+  $('issues').value = '';
+  $('nextPlan').value = '';
+  $('fmeaFlag').checked = false;
+  $('cpFlag').checked = false;
+  $('failureCategory').value = '';
+  $('measurementTarget').value = '';
+  photos = [];
+  renderPhotos();
+  $('stageChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  $('statusChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  $('statusChips').querySelector('[data-val="진행중"]').classList.add('active');
+  currentStage = '';
+  currentStatus = '진행중';
+  setDefaultDate();
+}
+
+/* ============ 목록 ============ */
+let allLogs = [];
+
+async function loadList(){
+  try {
+    const { data, error } = await sb.from(TBL)
+      .select('*').order('log_date', { ascending: false }).order('created_at', { ascending: false })
+      .limit(300);
+    if(error) throw error;
+    allLogs = data || [];
+    renderList();
+  } catch(err) {
+    $('logList').innerHTML = '<div class="empty">로딩 실패: ' + escapeHtml(err.message || err) + '</div>';
+  }
+}
+
+function renderList(){
+  const kw = $('searchKw').value.trim().toLowerCase();
+  const st = $('searchStatus').value;
+  const iatf = $('searchIatf').value;
+  const filtered = allLogs.filter(l => {
+    if(st && l.status !== st) return false;
+    if(iatf === 'fmea' && !l.fmea_flag) return false;
+    if(iatf === 'cp'   && !l.cp_flag)   return false;
+    if(iatf === 'any'  && !(l.fmea_flag || l.cp_flag)) return false;
+    if(kw){
+      const blob = ((l.mold_no||'') + ' ' + (l.work_done||'') + ' ' + (l.author||'') + ' ' + (l.issues||'') + ' ' + (l.failure_category||'') + ' ' + (l.measurement_target||'')).toLowerCase();
+      if(!blob.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  const el = $('logList');
+  if(!filtered.length){
+    el.innerHTML = '<div class="empty">📭 일지가 없습니다</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(l => {
+    const photoHtml = (l.photos && l.photos.length)
+      ? '<div class="photos-row">' + l.photos.map(p => '<img src="'+p+'" onclick="openImgModal(\''+p+'\')">').join('') + '</div>'
+      : '';
+    let body = '';
+    if(l.work_done) body += '<div class="sec"><span class="lbl">작업:</span>' + escapeHtml(l.work_done) + '</div>';
+    if(l.issues)    body += '<div class="sec"><span class="lbl">이슈:</span>' + escapeHtml(l.issues) + '</div>';
+    if(l.next_plan) body += '<div class="sec"><span class="lbl">계획:</span>' + escapeHtml(l.next_plan) + '</div>';
+    if(l.failure_category) body += '<div class="sec"><span class="lbl">분류:</span>' + escapeHtml(l.failure_category) + '</div>';
+    if(l.measurement_target) body += '<div class="sec"><span class="lbl">측정:</span>' + escapeHtml(l.measurement_target) + '</div>';
+
+    const iatfTags = [];
+    if(l.fmea_flag) iatfTags.push('<span class="iatf-tag fmea">🔍 FMEA</span>');
+    if(l.cp_flag)   iatfTags.push('<span class="iatf-tag cp">📊 CP</span>');
+    const iatfHtml = iatfTags.length ? '<div style="margin-top:8px;display:flex;gap:6px">' + iatfTags.join('') + '</div>' : '';
+
+    return '<div class="log-item">' +
+      '<div class="head-row">' +
+        '<span class="date">' + escapeHtml(l.log_date||'') + '</span>' +
+        '<span class="mold">📦 ' + escapeHtml(l.mold_no||'') + '</span>' +
+        (l.stage ? '<span class="stage-tag">' + escapeHtml(l.stage) + '</span>' : '') +
+        '<span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span>' +
+        '<span class="author">' + escapeHtml(l.author||'') + '</span>' +
+      '</div>' +
+      '<div class="body">' + (body || '<span style="color:var(--text-dim)">내용 없음</span>') + '</div>' +
+      iatfHtml +
+      photoHtml +
+      '<div class="footer-row">' +
+        '<button onclick="deleteLog(' + l.id + ')" class="del">🗑 삭제</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.openImgModal = function(src){ openModal(src); };
+
+window.deleteLog = async function(id){
+  if(!confirm('이 일지를 삭제할까요?')) return;
+  try {
+    const { error } = await sb.from(TBL).delete().eq('id', id);
+    if(error) throw error;
+    toast('✓ 삭제됨');
+    await loadList();
+    await loadStat();
+  } catch(err){
+    alert('삭제 실패: ' + (err.message || err));
+  }
+};
+
+/* ============ 통계 ============ */
+async function loadStat(){
+  if(!allLogs.length) await loadList();
+  const total = allLogs.length;
+  const cnt = { 완료:0, 진행중:0, 문제발생:0, 보류:0 };
+  const moldCnt = {};
+  const catCnt = {};
+  let fmeaCnt = 0, cpCnt = 0;
+  allLogs.forEach(l => {
+    if(cnt[l.status] !== undefined) cnt[l.status]++;
+    moldCnt[l.mold_no] = (moldCnt[l.mold_no]||0) + 1;
+    if(l.fmea_flag) fmeaCnt++;
+    if(l.cp_flag) cpCnt++;
+    if(l.failure_category) catCnt[l.failure_category] = (catCnt[l.failure_category]||0) + 1;
+  });
+  $('statTotal').textContent = total;
+  $('statDone').textContent = cnt.완료;
+  $('statProg').textContent = cnt.진행중;
+  $('statIssue').textContent = cnt.문제발생;
+  $('statHold').textContent = cnt.보류;
+  $('statMold').textContent = Object.keys(moldCnt).length;
+  $('statFmea').textContent = fmeaCnt;
+  $('statCp').textContent = cpCnt;
+
+  const moldList = Object.entries(moldCnt).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  $('moldSummary').innerHTML = moldList.length
+    ? moldList.map(([mold, n]) =>
+        '<div class="mold-row"><span class="name">📦 ' + escapeHtml(mold) + '</span><span class="cnt">' + n + '건</span></div>'
+      ).join('')
+    : '<div style="color:var(--text-sub);text-align:center;padding:10px">데이터 없음</div>';
+
+  const catList = Object.entries(catCnt).sort((a,b)=>b[1]-a[1]);
+  $('categorySummary').innerHTML = catList.length
+    ? catList.map(([cat, n]) =>
+        '<div class="mold-row"><span class="name">⚠ ' + escapeHtml(cat) + '</span><span class="cnt" style="color:var(--purple)">' + n + '건</span></div>'
+      ).join('')
+    : '<div style="color:var(--text-sub);text-align:center;padding:10px">이슈 분류된 일지 없음</div>';
+}
+
+/* ============ 탭 전환 ============ */
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const tab = t.dataset.tab;
+      $('page-write').style.display = tab==='write' ? '' : 'none';
+      $('page-list').style.display  = tab==='list'  ? '' : 'none';
+      $('page-stat').style.display  = tab==='stat'  ? '' : 'none';
+
+      if(tab === 'list') loadList();
+      else if(tab === 'stat') loadStat();
+    });
+  });
+}
+
+/* ============ 목록 검색 이벤트 ============ */
+function setupSearch(){
+  $('searchKw').addEventListener('input', renderList);
+  $('searchStatus').addEventListener('change', renderList);
+  $('searchIatf').addEventListener('change', renderList);
+}
+
+/* ============ 초기화 ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  setUserBadge();
+  setupChips();
+  setupPhotoInput();
+  setupTabs();
+  setupSearch();
+  setDefaultDate();
+
+  // 금형마스터 로드 + 입력 변경 이벤트
+  $('moldNo').addEventListener('input', showMoldInfo);
+  $('moldNo').addEventListener('change', showMoldInfo);
+  loadMoldMaster();
+});
+
+})();
+</script>
+
+</body>
+</html>
