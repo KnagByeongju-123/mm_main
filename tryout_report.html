@@ -418,7 +418,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.5</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.6</span></h1>
 </div>
 
 <div class="user-bar">
@@ -429,6 +429,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
   <div class="tab active" data-tab="write">📝 작성</div>
   <div class="tab" data-tab="list">📋 목록</div>
   <div class="tab" data-tab="stat">📊 통계</div>
+  <div class="tab" data-tab="pdf">📄 보고서</div>
 </div>
 
 <div class="container">
@@ -613,7 +614,6 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
       <div class="filter-actions">
         <button class="btn-mini" type="button" onclick="resetFilter()">🗑 필터 초기화</button>
         <span class="filter-count" id="filterCount">0건</span>
-        <button class="btn-mini btn-pdf-go" type="button" onclick="goPdf()">📄 보고서 PDF 출력 ›</button>
       </div>
     </div>
     <div id="logList"></div>
@@ -643,7 +643,81 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v1.5 · msm</div>
+  <!-- ============ 보고서 탭 ============ -->
+  <div id="page-pdf" style="display:none">
+    <div class="card" style="border-color:rgba(196,181,253,0.3)">
+      <h2 style="color:var(--purple)">📄 Tryout 보고서 출력</h2>
+      <p style="color:var(--text-mid);font-size:13px;line-height:1.6;margin-bottom:14px">
+        필터 조건에 맞는 작업일지를 모아 <b style="color:var(--purple)">공식 Tryout 보고서</b>로 PDF 출력합니다.<br>
+        결재 4단계(작성·검토·확인·승인), 요약 통계, IATF 후보, 첨부 사진 모두 포함.
+      </p>
+
+      <div class="filter-bar" style="background:var(--bg-card-hi);margin-bottom:14px">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>기간</label>
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="date" id="pdfFrom" style="flex:1">
+              <span style="color:var(--text-sub)">~</span>
+              <input type="date" id="pdfTo" style="flex:1">
+            </div>
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>차수</label>
+            <select id="pdfStage">
+              <option value="">전체</option>
+              <option>1차</option><option>2차</option><option>3차</option>
+              <option>양산전</option><option>기타</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>금형재번</label>
+            <input type="text" id="pdfMold" placeholder="전체" list="moldFilterList" autocomplete="off">
+          </div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>상태</label>
+            <select id="pdfStatus">
+              <option value="">전체</option>
+              <option>진행중</option><option>완료</option><option>보류</option><option>문제발생</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>IATF</label>
+            <select id="pdfIatfFilter">
+              <option value="">전체</option>
+              <option value="fmea">🔍 FMEA만</option>
+              <option value="cp">📊 CP만</option>
+              <option value="any">🔍📊 둘 다</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-actions">
+          <button class="btn-mini" type="button" onclick="resetPdfFilter()">🗑 필터 초기화</button>
+          <button class="btn-mini" type="button" onclick="usePdfListFilter()" style="background:rgba(125,211,252,0.15);color:var(--ice);border-color:rgba(125,211,252,0.3)">📋 목록 탭 필터 사용</button>
+          <span class="filter-count" id="pdfCount">0건</span>
+        </div>
+      </div>
+
+      <div style="background:rgba(125,211,252,0.05);border:1px solid rgba(125,211,252,0.2);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:6px">🎯 출력 대상 미리보기</div>
+        <div id="pdfPreview" style="font-size:13px;color:var(--text);line-height:1.7"></div>
+      </div>
+
+      <button class="btn" type="button" onclick="goPdfFromTab()" style="background:linear-gradient(135deg, #c4b5fd, #a78bfa);color:white;font-size:15px;padding:14px">
+        📄 보고서 페이지 열기 ›
+      </button>
+
+      <p style="font-size:11px;color:var(--text-sub);margin-top:8px;text-align:center">
+        보고서 페이지에서 제목, 회사명, 푸터 등 추가 설정 후 PDF로 출력합니다
+      </p>
+    </div>
+  </div>
+
+  <div class="footer">Tryout 작업일지 v1.6 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -657,7 +731,11 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.5 (현재)\n' +
+    'v1.6 (현재)\n' +
+    '• 📄 보고서 탭 신규 추가 (4번째 탭)\n' +
+    '• 보고서용 필터 + 출력 대상 미리보기\n' +
+    '• "📋 목록 탭 필터 사용" 버튼으로 필터 복사\n\n' +
+    'v1.5\n' +
     '• 수정 기능: 목록에서 ✏️ 수정 클릭 → 작성 폼에 자동 로드\n' +
     '• 필터 강화: 기간(시작~종료) / 차수 / 금형재번\n' +
     '• 필터 결과 카운트 표시\n' +
@@ -1205,9 +1283,11 @@ function setupTabs(){
       $('page-write').style.display = tab==='write' ? '' : 'none';
       $('page-list').style.display  = tab==='list'  ? '' : 'none';
       $('page-stat').style.display  = tab==='stat'  ? '' : 'none';
+      $('page-pdf').style.display   = tab==='pdf'   ? '' : 'none';
 
       if(tab === 'list') loadList();
       else if(tab === 'stat') loadStat();
+      else if(tab === 'pdf') loadPdfPreview();
     });
   });
 }
@@ -1235,12 +1315,128 @@ window.resetFilter = function(){
   renderList();
 };
 
+/* ============ 보고서 탭 ============ */
+async function loadPdfPreview(){
+  if(!allLogs.length) await loadList();
+  // 차수/금형 datalist 채워주기
+  renderMoldDatalist();
+  renderPdfPreview();
+}
+
+function renderPdfPreview(){
+  const f = getPdfFilter();
+  const filtered = allLogs.filter(l => filterMatchPdf(l, f));
+
+  $('pdfCount').textContent = filtered.length + '건';
+
+  // 미리보기 정보
+  const stages = {};
+  const statuses = {};
+  const molds = new Set();
+  let fmeaN = 0, cpN = 0;
+  filtered.forEach(l => {
+    if(l.stage) stages[l.stage] = (stages[l.stage]||0) + 1;
+    if(l.status) statuses[l.status] = (statuses[l.status]||0) + 1;
+    if(l.mold_no) molds.add(l.mold_no);
+    if(l.fmea_flag) fmeaN++;
+    if(l.cp_flag) cpN++;
+  });
+
+  const periodStr = (f.from || f.to)
+    ? (f.from || '~') + ' ~ ' + (f.to || '~')
+    : (filtered.length ? filtered[0].log_date + ' ~ ' + filtered[filtered.length-1].log_date : '데이터 없음');
+
+  let html = '';
+  html += '<div>📅 <span style="color:var(--ice)">대상 기간:</span> ' + escapeHtml(periodStr) + '</div>';
+  html += '<div>📦 <span style="color:var(--ice)">금형 종류:</span> ' + molds.size + '종' + (f.mold ? ' (' + escapeHtml(f.mold) + ')' : '') + '</div>';
+  html += '<div>📋 <span style="color:var(--ice)">총 일지 수:</span> <b style="color:var(--ice)">' + filtered.length + '건</b></div>';
+
+  if(Object.keys(statuses).length){
+    const stTxt = Object.entries(statuses).map(([k,v]) => k+' '+v).join(' · ');
+    html += '<div>🏷 <span style="color:var(--ice)">상태:</span> ' + escapeHtml(stTxt) + '</div>';
+  }
+  if(Object.keys(stages).length){
+    const sgTxt = Object.entries(stages).map(([k,v]) => k+' '+v).join(' · ');
+    html += '<div>🔢 <span style="color:var(--ice)">차수:</span> ' + escapeHtml(sgTxt) + '</div>';
+  }
+  if(fmeaN || cpN){
+    html += '<div>🔍 <span style="color:var(--purple)">IATF 후보:</span> FMEA ' + fmeaN + '건 · CP ' + cpN + '건</div>';
+  }
+
+  $('pdfPreview').innerHTML = html;
+}
+
+function getPdfFilter(){
+  return {
+    from: $('pdfFrom').value,
+    to: $('pdfTo').value,
+    stage: $('pdfStage').value,
+    mold: $('pdfMold').value.trim(),
+    status: $('pdfStatus').value,
+    iatf: $('pdfIatfFilter').value
+  };
+}
+
+function filterMatchPdf(l, f){
+  if(f.status && l.status !== f.status) return false;
+  if(f.stage && l.stage !== f.stage) return false;
+  if(f.mold && l.mold_no !== f.mold) return false;
+  if(f.from && (l.log_date||'') < f.from) return false;
+  if(f.to && (l.log_date||'') > f.to) return false;
+  if(f.iatf === 'fmea' && !l.fmea_flag) return false;
+  if(f.iatf === 'cp' && !l.cp_flag) return false;
+  if(f.iatf === 'any' && !(l.fmea_flag || l.cp_flag)) return false;
+  return true;
+}
+
+window.resetPdfFilter = function(){
+  $('pdfFrom').value = '';
+  $('pdfTo').value = '';
+  $('pdfStage').value = '';
+  $('pdfMold').value = '';
+  $('pdfStatus').value = '';
+  $('pdfIatfFilter').value = '';
+  renderPdfPreview();
+};
+
+window.usePdfListFilter = function(){
+  // 목록 탭의 현재 필터를 PDF 탭으로 복사
+  $('pdfFrom').value = $('filterFrom').value;
+  $('pdfTo').value = $('filterTo').value;
+  $('pdfStage').value = $('filterStage').value;
+  $('pdfMold').value = $('filterMold').value;
+  $('pdfStatus').value = $('searchStatus').value;
+  $('pdfIatfFilter').value = $('searchIatf').value;
+  renderPdfPreview();
+  toast('목록 탭 필터를 가져왔습니다');
+};
+
+window.goPdfFromTab = function(){
+  const f = getPdfFilter();
+  // 키워드는 PDF 탭에 없으므로 빈 값
+  const filterState = {
+    kw: '',
+    status: f.status,
+    iatf: f.iatf,
+    stage: f.stage,
+    mold: f.mold,
+    from: f.from,
+    to: f.to
+  };
+  const filtered = allLogs.filter(l => filterMatchPdf(l, f));
+  if(!filtered.length){
+    if(!confirm('필터링된 일지가 없습니다. 전체 일지로 보고서를 만들까요?')) return;
+  }
+  sessionStorage.setItem('tryout_pdf_filter', JSON.stringify(filterState));
+  location.href = 'tryout_pdf.html';
+};
+
+/* (구) 목록 탭에서의 PDF 이동 — 호환 유지 */
 window.goPdf = function(){
   const filtered = window.__filteredLogs || [];
   if(!filtered.length){
     if(!confirm('필터링된 일지가 없습니다. 전체 일지로 보고서를 만들까요?')) return;
   }
-  // 현재 필터 조건을 sessionStorage에 저장 후 PDF 페이지로 이동
   const filterState = {
     kw: $('searchKw').value,
     status: $('searchStatus').value,
@@ -1267,6 +1463,15 @@ document.addEventListener('DOMContentLoaded', () => {
   $('moldNo').addEventListener('input', showMoldInfo);
   $('moldNo').addEventListener('change', showMoldInfo);
   loadMoldMaster();
+
+  // PDF 탭 필터 이벤트
+  ['pdfFrom','pdfTo','pdfStage','pdfMold','pdfStatus','pdfIatfFilter'].forEach(id => {
+    const el = $(id);
+    if(el){
+      el.addEventListener('change', renderPdfPreview);
+      el.addEventListener('input', renderPdfPreview);
+    }
+  });
 });
 
 })();
