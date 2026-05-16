@@ -135,6 +135,37 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 .photo-area .label { color: var(--text-mid); font-size: 14px; margin-top: 4px; font-weight: 600; }
 .photo-area .hint { color: var(--text-sub); font-size: 11px; margin-top: 2px; }
 
+/* 사진 첨부 버튼 (2개) */
+.photo-btn-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 10px;
+}
+.photo-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 18px 8px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--border-hi);
+  background: rgba(125,211,252,0.04);
+  transition: all 0.15s;
+  gap: 6px;
+}
+.photo-btn:active { transform: scale(0.97); }
+.photo-btn .ic { font-size: 30px; line-height: 1; }
+.photo-btn .lbl { font-size: 13px; font-weight: 700; color: var(--text); }
+.photo-btn.cam {
+  background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.35);
+}
+.photo-btn.cam:hover, .photo-btn.cam:active {
+  background: rgba(74,222,128,0.18); border-color: var(--green);
+}
+.photo-btn.cam .lbl { color: var(--green); }
+.photo-btn.gal {
+  background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.35);
+}
+.photo-btn.gal:hover, .photo-btn.gal:active {
+  background: rgba(125,211,252,0.18); border-color: var(--ice);
+}
+.photo-btn.gal .lbl { color: var(--ice); }
+
 .photo-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
 .photo-item {
   position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
@@ -342,7 +373,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.3</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.4</span></h1>
 </div>
 
 <div class="user-bar">
@@ -417,14 +448,20 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
 
     <div class="card">
-      <h2>📷 사진 첨부 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(자동 10KB 이하로 압축)</span></h2>
+      <h2>📷 사진 첨부 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(자동 20KB 이하로 압축)</span></h2>
 
-      <label for="photoInput" class="photo-area">
-        <div class="ic">📷</div>
-        <div class="label">사진 추가</div>
-        <div class="hint">탭해서 카메라/갤러리 열기</div>
-      </label>
-      <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+      <div class="photo-btn-row">
+        <label for="photoCam" class="photo-btn cam">
+          <div class="ic">📸</div>
+          <div class="lbl">사진 촬영</div>
+        </label>
+        <label for="photoGal" class="photo-btn gal">
+          <div class="ic">🖼️</div>
+          <div class="lbl">갤러리에서 선택</div>
+        </label>
+      </div>
+      <input type="file" id="photoCam" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="photoGal" accept="image/*" multiple style="display:none">
 
       <div class="photo-list" id="photoList"></div>
     </div>
@@ -522,7 +559,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v1.3 · msm</div>
+  <div class="footer">Tryout 작업일지 v1.4 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -536,7 +573,10 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.3 (현재)\n' +
+    'v1.4 (현재)\n' +
+    '• 사진 첨부: 카메라 촬영 / 갤러리 선택 버튼 분리\n' +
+    '• 압축 한도 10KB → 20KB 완화 (화질 향상)\n\n' +
+    'v1.3\n' +
     '• 라벨 통일: 금형번호 → 금형재번\n' +
     '  (금형마스터 컬럼명과 일치)\n\n' +
     'v1.2\n' +
@@ -566,7 +606,7 @@ const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL = 'tryout_logs';
 const TBL_MOLD = 'mm_mold_master';   // 금형마스터 테이블
-const PHOTO_MAX_BYTES = 10 * 1024;  // 10 KB
+const PHOTO_MAX_BYTES = 20 * 1024;  // 20 KB
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const session = window.__msmSession;
@@ -731,8 +771,7 @@ function compressToTargetSize(file, targetBytes) {
 }
 
 function setupPhotoInput(){
-  $('photoInput').addEventListener('change', async function(e){
-    const files = Array.from(e.target.files || []);
+  async function handleFiles(files){
     if(!files.length) return;
     for(const f of files){
       if(!f.type.startsWith('image/')) continue;
@@ -745,8 +784,18 @@ function setupPhotoInput(){
         toast('압축 실패: ' + err.message);
       }
     }
-    e.target.value = '';
     toast('사진 ' + files.length + '장 추가됨');
+  }
+
+  $('photoCam').addEventListener('change', async function(e){
+    const files = Array.from(e.target.files || []);
+    await handleFiles(files);
+    e.target.value = '';
+  });
+  $('photoGal').addEventListener('change', async function(e){
+    const files = Array.from(e.target.files || []);
+    await handleFiles(files);
+    e.target.value = '';
   });
 }
 
