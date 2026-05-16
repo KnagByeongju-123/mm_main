@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v1.3</title>
+<title>스마트팩토리 v1.4</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -69,30 +69,80 @@ html, body {
   margin-bottom: 10px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease, transform 0.18s ease;
+  position: relative;
 }
-.acc[open] { border-color: rgba(56,189,248,0.5); box-shadow: 0 2px 12px rgba(56,189,248,0.15); }
+.acc:active {
+  transform: scale(0.985);
+  transition: transform 0.08s ease;
+}
+/* 카드별 호버/탭 시 은은한 색상 변화 */
+.acc.c-hq:hover, .acc.c-hq:focus-within { background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.4); }
+.acc.c-f1:hover, .acc.c-f1:focus-within { background: rgba(94,234,212,0.08); border-color: rgba(94,234,212,0.4); }
+.acc.c-f2:hover, .acc.c-f2:focus-within { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.4); }
+.acc.c-f3:hover, .acc.c-f3:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
+.acc.c-master:hover, .acc.c-master:focus-within { background: rgba(253,186,116,0.08); border-color: rgba(253,186,116,0.4); }
+
+/* 열렸을 때 카드별 색상 글로우 */
+.acc[open] {
+  border-color: rgba(56,189,248,0.5);
+  box-shadow: 0 4px 20px rgba(56,189,248,0.18);
+}
+.acc.c-hq[open] { box-shadow: 0 4px 20px rgba(125,211,252,0.22); border-color: rgba(125,211,252,0.55); }
+.acc.c-f1[open] { box-shadow: 0 4px 20px rgba(94,234,212,0.22); border-color: rgba(94,234,212,0.55); }
+.acc.c-f2[open] { box-shadow: 0 4px 20px rgba(147,197,253,0.22); border-color: rgba(147,197,253,0.55); }
+.acc.c-f3[open] { box-shadow: 0 4px 20px rgba(196,181,253,0.22); border-color: rgba(196,181,253,0.55); }
+.acc.c-master[open] { box-shadow: 0 4px 20px rgba(253,186,116,0.22); border-color: rgba(253,186,116,0.55); }
+
 .acc summary {
   list-style: none; cursor: pointer;
   padding: 14px 16px;
   display: flex; align-items: center; gap: 14px;
   user-select: none;
+  transition: background 0.25s ease;
 }
 .acc summary::-webkit-details-marker { display: none; }
 .acc summary::marker { display: none; }
+
 .acc .icon {
   width: 46px; height: 46px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   font-size: 26px; flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
-.acc .title { flex: 1; font-size: 19px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px; }
+.acc[open] .icon {
+  transform: scale(1.08) rotate(-3deg);
+}
+.acc.c-hq[open] .icon     { box-shadow: 0 0 16px rgba(125,211,252,0.4); }
+.acc.c-f1[open] .icon     { box-shadow: 0 0 16px rgba(94,234,212,0.4); }
+.acc.c-f2[open] .icon     { box-shadow: 0 0 16px rgba(147,197,253,0.4); }
+.acc.c-f3[open] .icon     { box-shadow: 0 0 16px rgba(196,181,253,0.4); }
+.acc.c-master[open] .icon { box-shadow: 0 0 16px rgba(253,186,116,0.4); }
+
+.acc .title {
+  flex: 1; font-size: 19px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px;
+  transition: color 0.3s ease;
+}
+.acc.c-hq[open] .title     { color: #bae6fd; }
+.acc.c-f1[open] .title     { color: #99f6e4; }
+.acc.c-f2[open] .title     { color: #bfdbfe; }
+.acc.c-f3[open] .title     { color: #ddd6fe; }
+.acc.c-master[open] .title { color: #fed7aa; }
+
 .acc .count {
   font-size: 14px; color: #7dd3fc; font-weight: 700;
   min-width: 26px; text-align: center;
   background: rgba(56,189,248,0.15); border-radius: 10px;
   padding: 2px 8px;
+  transition: transform 0.3s ease, background 0.3s ease;
 }
-.acc .arrow { font-size: 18px; color: #64748b; transition: transform 0.25s; margin-left: 2px; }
+.acc[open] .count { transform: scale(1.08); }
+
+.acc .arrow {
+  font-size: 18px; color: #64748b;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
+  margin-left: 2px;
+}
 .acc[open] .arrow { transform: rotate(90deg); color: #38bdf8; }
 
 .acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
@@ -101,24 +151,50 @@ html, body {
 .acc.c-f3 .icon     { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
 
-.acc-body { padding: 4px 8px 10px 8px; border-top: 1px solid rgba(71,85,105,0.4); background: rgba(15,23,42,0.5); }
+.acc-body {
+  padding: 4px 8px 10px 8px;
+  border-top: 1px solid rgba(71,85,105,0.4);
+  background: rgba(15,23,42,0.5);
+  animation: slideDown 0.3s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .sub-item {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 10px; border-radius: 10px;
   text-decoration: none; color: inherit; cursor: pointer;
+  transition: background 0.25s ease, transform 0.12s ease, padding-left 0.25s ease;
+  position: relative;
 }
-.sub-item:active { background: rgba(56,189,248,0.1); }
+.sub-item:hover {
+  background: rgba(56,189,248,0.08);
+  padding-left: 14px;
+}
+.sub-item:active {
+  background: rgba(56,189,248,0.18);
+  transform: scale(0.99);
+  transition: transform 0.06s ease;
+}
 .sub-item + .sub-item { border-top: 1px solid rgba(71,85,105,0.25); }
 .sub-item .s-icon {
   width: 34px; height: 34px; border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   font-size: 17px; flex-shrink: 0;
   background: rgba(56,189,248,0.15); color: #7dd3fc;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
+}
+.sub-item:hover .s-icon {
+  transform: scale(1.1) rotate(-5deg);
+  background: rgba(56,189,248,0.25);
 }
 .sub-item .s-text { flex: 1; min-width: 0; }
-.sub-item .s-label { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+.sub-item .s-label { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; transition: color 0.2s ease; }
+.sub-item:hover .s-label { color: #bae6fd; }
 .sub-item .s-desc { font-size: 11px; color: #94a3b8; line-height: 1.3; }
-.sub-item .s-arrow { font-size: 15px; color: #64748b; }
+.sub-item .s-arrow { font-size: 15px; color: #64748b; transition: transform 0.25s ease, color 0.2s ease; }
+.sub-item:hover .s-arrow { transform: translateX(3px); color: #7dd3fc; }
 
 .footer { text-align: center; margin-top: 24px; font-size: 11px; color: #64748b; }
 
@@ -189,7 +265,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1>스마트팩토리 <span class="ver">v1.3</span></h1>
+  <h1>스마트팩토리 <span class="ver">v1.4</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -257,7 +333,7 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v1.3 · msm Smart Factory · 공장 이모지 정비</div>
+  <div class="footer">v1.4 · msm Smart Factory · 카드 인터랙션 효과</div>
 </div>
 
 <script>
