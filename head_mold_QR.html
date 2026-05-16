@@ -3,81 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>위치 QR 생성기 v1.0</title>
+<title>위치 QR 생성기</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:    #334155;
+  --border-hi: #475569;
+  --text:      #e2e8f0;
+  --text-mid:  #cbd5e1;
+  --text-sub:  #94a3b8;
+  --text-dim:  #64748b;
+  --ice:       #7dd3fc;
+  --ice-lt:    #bae6fd;
+  --orange:    #fdba74;
+  --green:     #4ade80;
+  --purple:    #c4b5fd;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
-  background: #f5f7fa; color: #1a3a5c; min-height: 100vh; padding-bottom: 40px;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh; padding-bottom: 40px;
 }
+
 .app-header {
-  background: #1a3a5c; color: white; padding: 14px 16px;
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  color: var(--ice); padding: 14px 16px;
   display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
 }
-.app-header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-.ver { font-size: 11px; opacity: 0.7; font-weight: 400; margin-left: 8px; }
+.app-header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: var(--ice); }
+.ver { font-size: 11px; opacity: 0.65; font-weight: 500; margin-left: 8px; color: var(--text-sub); cursor: pointer; }
 .app-header a {
-  color: white; text-decoration: none; font-size: 13px;
-  padding: 6px 12px; background: rgba(255,255,255,0.15); border-radius: 6px;
+  color: var(--ice); text-decoration: none; font-size: 13px;
+  padding: 6px 12px; background: rgba(125,211,252,0.12);
+  border: 1px solid rgba(125,211,252,0.3); border-radius: 6px;
 }
 
 .container { max-width: 600px; margin: 0 auto; padding: 16px; }
 
 .card {
-  background: white; border-radius: 10px; padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
 }
-.card h2 { font-size: 15px; margin-bottom: 12px; color: #1a3a5c; }
+.card h2 { font-size: 15px; margin-bottom: 12px; color: var(--ice); }
 
 .tab-bar {
-  display: flex; background: white; border-radius: 8px; overflow: hidden;
-  margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  display: flex; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; margin-bottom: 12px;
 }
 .tab {
   flex: 1; padding: 12px; text-align: center; font-size: 14px;
-  font-weight: 600; color: #888; cursor: pointer; border-bottom: 3px solid transparent;
+  font-weight: 600; color: var(--text-sub); cursor: pointer;
+  border-bottom: 3px solid transparent;
 }
-.tab.active { color: #1a3a5c; border-bottom-color: #1a3a5c; background: #f8fbff; }
+.tab.active { color: var(--ice); border-bottom-color: var(--ice); background: var(--bg-card-hi); }
 
 .form-group { margin-bottom: 12px; }
-.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #555; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-mid); }
 input[type="text"], textarea {
-  width: 100%; padding: 10px 12px; border: 1px solid #ccc;
+  width: 100%; padding: 10px 12px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi);
   border-radius: 6px; font-size: 15px; font-family: inherit;
 }
-input[type="text"]:focus, textarea:focus { outline: none; border-color: #1a3a5c; }
+input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--ice); }
+input[type="text"]::placeholder, textarea::placeholder { color: var(--text-dim); }
 textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 .btn {
   padding: 12px 16px; border: none; border-radius: 6px;
   font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
-.btn-primary { background: #1a3a5c; color: white; width: 100%; }
-.btn-secondary { background: #e9ecef; color: #333; }
+.btn-primary {
+  background: linear-gradient(135deg, rgba(125,211,252,0.2), rgba(56,189,248,0.3));
+  color: var(--ice); width: 100%;
+  border: 1px solid rgba(125,211,252,0.4);
+}
+.btn-secondary {
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border: 1px solid var(--border-hi);
+}
 
 .hint {
-  font-size: 12px; color: #666; background: #f0f4f8;
+  font-size: 12px; color: var(--text-sub); background: rgba(125,211,252,0.06);
+  border: 1px solid rgba(125,211,252,0.15);
   padding: 10px 12px; border-radius: 6px; line-height: 1.6; margin-top: 8px;
 }
 .hint code {
-  background: #1a3a5c; color: white; padding: 1px 5px;
-  border-radius: 3px; font-size: 11px; font-family: monospace;
+  background: var(--bg-dark); color: var(--ice); padding: 1px 5px;
+  border: 1px solid var(--border); border-radius: 3px;
+  font-size: 11px; font-family: monospace;
 }
 
-/* QR 결과 - 단일 */
+/* QR 결과 — 단일 (인쇄 시 흰 배경, 화면에선 다크 박스) */
 .qr-result { text-align: center; padding-top: 8px; }
 .qr-result.hidden { display: none; }
 .qr-label-area {
-  background: white; border: 2px solid #1a3a5c; border-radius: 8px;
+  background: white;  /* QR 라벨은 흰색 유지 (인쇄 품질) */
+  border: 2px solid var(--ice); border-radius: 8px;
   padding: 16px; display: inline-block; margin-bottom: 12px;
 }
 .qr-loc {
   font-size: 36px; font-weight: 800; letter-spacing: 4px;
   margin-bottom: 8px; color: #1a3a5c;
 }
-.qr-img-wrap {
-  background: white; padding: 8px; display: inline-block;
-}
+.qr-img-wrap { background: white; padding: 8px; display: inline-block; }
 .qr-img-wrap img { width: 200px; height: 200px; display: block; }
 .qr-caption { font-size: 12px; color: #666; margin-top: 6px; }
 
@@ -85,15 +117,22 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
   display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
 }
 .qr-actions .btn { flex: 1; min-width: 120px; }
-.btn-print { background: #28a745; color: white; }
-.btn-download { background: #6f42c1; color: white; }
+.btn-print {
+  background: rgba(74,222,128,0.15); color: var(--green);
+  border: 1px solid rgba(74,222,128,0.35);
+}
+.btn-download {
+  background: rgba(196,181,253,0.15); color: var(--purple);
+  border: 1px solid rgba(196,181,253,0.35);
+}
 
-/* QR 결과 - 다중 (A4) */
+/* QR 결과 — 다중 (A4) */
 .batch-result { display: none; }
 .batch-result.show { display: block; }
 .batch-grid {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
-  background: white; padding: 16px; border-radius: 8px; margin-top: 12px;
+  background: white;  /* 인쇄용이므로 흰색 */
+  padding: 16px; border-radius: 8px; margin-top: 12px;
 }
 .batch-item {
   border: 1px dashed #ccc; padding: 12px 8px; text-align: center;
@@ -108,48 +147,55 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.85); color: white; padding: 10px 20px;
-  border-radius: 20px; font-size: 13px; z-index: 9999;
+  background: rgba(15,23,42,0.95); color: var(--ice);
+  border: 1px solid var(--ice);
+  padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 9999;
   opacity: 0; transition: opacity 0.3s; pointer-events: none;
 }
 .toast.show { opacity: 1; }
 
-/* 인쇄 */
-@media print {
-  body { background: white; padding: 0; }
-  .app-header, .container > .tab-bar, .container > .card:not(.print-area),
-  .qr-actions, .hint, .toast { display: none !important; }
-  .container { max-width: 100%; padding: 0; }
-  .card.print-area { box-shadow: none; padding: 0; }
+.footer {
+  text-align: center; margin-top: 24px;
+  font-size: 11px; color: var(--text-dim);
+}
 
-  /* 단일 인쇄: 가운데 큰 라벨 */
+/* 인쇄 — 흰 배경으로 강제 */
+@media print {
+  body { background: white !important; color: black !important; padding: 0; }
+  .app-header, .container > .tab-bar, .container > .card:not(.print-area),
+  .qr-actions, .hint, .toast, .footer { display: none !important; }
+  .container { max-width: 100%; padding: 0; }
+  .card.print-area { background: white !important; border: none; padding: 0; }
+
+  /* 단일 인쇄 */
   .qr-result:not(.hidden) {
     page-break-after: always; padding-top: 30mm;
   }
   .qr-label-area {
-    border-width: 3px; padding: 24px;
+    border: 3px solid #1a3a5c; padding: 24px;
   }
-  .qr-loc { font-size: 64px; }
+  .qr-loc { font-size: 64px; color: #1a3a5c; }
   .qr-img-wrap img { width: 320px; height: 320px; }
 
-  /* 다중 인쇄: A4에 격자 */
+  /* 다중 인쇄 */
   .batch-grid {
     padding: 0; gap: 8mm;
     grid-template-columns: repeat(2, 1fr);
+    background: white !important;
   }
   .batch-item {
     border: 2px solid #1a3a5c; padding: 12mm 4mm; min-height: 60mm;
+    color: #1a3a5c;
   }
-  .batch-item .b-loc { font-size: 28pt; }
+  .batch-item .b-loc { font-size: 28pt; color: #1a3a5c; }
   .batch-item .b-img img { width: 140px; height: 140px; }
   @page { size: A4; margin: 12mm; }
 }
 </style>
-</head>
-<body>
+</head><body>
 
 <div class="app-header">
-  <h1>🔳 위치 QR 생성기 <span class="ver">v1.0</span></h1>
+  <h1>🔳 위치 QR 생성기 <span class="ver" onclick="showVer()">v1.1</span></h1>
   <a href="head_moldpart.html">🏠</a>
 </div>
 
@@ -216,8 +262,24 @@ textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 
 <div class="toast" id="toast"></div>
 
+<div class="footer">v1.1 · msm Smart Factory · 다크테마</div>
+
 <script>
 'use strict';
+
+function showVer(){
+  alert(
+    '🔳 위치 QR 생성기 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.1 (현재)\n' +
+    '• 인덱스 다크테마 적용\n' +
+    '• QR 라벨/배치 영역은 흰 배경 유지\n' +
+    '  (인쇄 품질 확보)\n\n' +
+    'v1.0\n' +
+    '• 단일/다중 QR 생성, 인쇄, PNG 다운로드'
+  );
+}
+
 (function(){
   function $(id) { return document.getElementById(id); }
 
