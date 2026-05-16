@@ -202,6 +202,51 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 .action-row .btn { flex: 1; }
 
 /* 목록 */
+/* 새 필터 바 (목록 탭) */
+.filter-bar {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px; margin-bottom: 12px;
+}
+.filter-bar > input[type="text"] {
+  width: 100%; background: var(--bg-dark); margin-bottom: 8px; padding: 10px;
+  border: 1px solid var(--border-hi); border-radius: 6px;
+  color: var(--text); font-size: 14px; font-family: inherit;
+}
+.filter-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.filter-group { flex: 1; }
+.filter-group label {
+  display: block; font-size: 11px; color: var(--text-sub);
+  margin-bottom: 4px; font-weight: 600;
+}
+.filter-group input, .filter-group select {
+  width: 100%; padding: 8px 10px; font-size: 13px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 6px;
+}
+.filter-actions {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 6px; padding-top: 8px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.btn-mini {
+  padding: 7px 12px; font-size: 12px; font-weight: 600;
+  border-radius: 6px; cursor: pointer; font-family: inherit;
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border: 1px solid var(--border-hi);
+}
+.btn-mini:active { transform: scale(0.96); }
+.btn-mini.btn-pdf-go {
+  margin-left: auto;
+  background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+  color: white; border: none; font-weight: 700;
+}
+.filter-count {
+  font-size: 12px; color: var(--ice); font-weight: 700;
+  background: rgba(125,211,252,0.12);
+  padding: 4px 10px; border-radius: 10px;
+}
+
 .search-bar {
   display: flex; gap: 8px; margin-bottom: 12px;
   background: var(--bg-card); padding: 10px; border-radius: 8px;
@@ -373,7 +418,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.4</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.5</span></h1>
 </div>
 
 <div class="user-bar">
@@ -510,27 +555,66 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
     <div class="action-row">
       <button class="btn btn-secondary" type="button" onclick="resetForm()">🗑 초기화</button>
-      <button class="btn btn-primary" type="button" onclick="saveLog()">💾 저장</button>
+      <button class="btn btn-primary" id="btnSave" type="button" onclick="saveLog()">💾 저장</button>
     </div>
   </div>
 
   <!-- ============ 목록 탭 ============ -->
   <div id="page-list" style="display:none">
-    <div class="search-bar">
-      <input type="text" id="searchKw" placeholder="금형재번/작업내용/작성자 검색" autocomplete="off">
-      <select id="searchStatus">
-        <option value="">상태 전체</option>
-        <option>진행중</option>
-        <option>완료</option>
-        <option>보류</option>
-        <option>문제발생</option>
-      </select>
-      <select id="searchIatf">
-        <option value="">IATF 전체</option>
-        <option value="fmea">🔍 FMEA만</option>
-        <option value="cp">📊 CP만</option>
-        <option value="any">🔍📊 둘 다</option>
-      </select>
+    <div class="filter-bar">
+      <input type="text" id="searchKw" placeholder="🔍 금형재번/작업내용/작성자 검색" autocomplete="off">
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>기간</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="date" id="filterFrom" style="flex:1">
+            <span style="color:var(--text-sub)">~</span>
+            <input type="date" id="filterTo" style="flex:1">
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>차수</label>
+          <select id="filterStage">
+            <option value="">전체</option>
+            <option>1차</option><option>2차</option><option>3차</option>
+            <option>양산전</option><option>기타</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>금형재번</label>
+          <input type="text" id="filterMold" placeholder="전체" list="moldFilterList" autocomplete="off">
+          <datalist id="moldFilterList"></datalist>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>상태</label>
+          <select id="searchStatus">
+            <option value="">전체</option>
+            <option>진행중</option><option>완료</option><option>보류</option><option>문제발생</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>IATF</label>
+          <select id="searchIatf">
+            <option value="">전체</option>
+            <option value="fmea">🔍 FMEA만</option>
+            <option value="cp">📊 CP만</option>
+            <option value="any">🔍📊 둘 다</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn-mini" type="button" onclick="resetFilter()">🗑 필터 초기화</button>
+        <span class="filter-count" id="filterCount">0건</span>
+        <button class="btn-mini btn-pdf-go" type="button" onclick="goPdf()">📄 보고서 PDF 출력 ›</button>
+      </div>
     </div>
     <div id="logList"></div>
   </div>
@@ -559,7 +643,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v1.4 · msm</div>
+  <div class="footer">Tryout 작업일지 v1.5 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -573,7 +657,12 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.4 (현재)\n' +
+    'v1.5 (현재)\n' +
+    '• 수정 기능: 목록에서 ✏️ 수정 클릭 → 작성 폼에 자동 로드\n' +
+    '• 필터 강화: 기간(시작~종료) / 차수 / 금형재번\n' +
+    '• 필터 결과 카운트 표시\n' +
+    '• 📄 보고서 PDF 출력 버튼 → tryout_pdf.html 연동\n\n' +
+    'v1.4\n' +
     '• 사진 첨부: 카메라 촬영 / 갤러리 선택 버튼 분리\n' +
     '• 압축 한도 10KB → 20KB 완화 (화질 향상)\n\n' +
     'v1.3\n' +
@@ -612,6 +701,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const session = window.__msmSession;
 
 let moldMasterList = [];  // [{mold_no, vendor, material, model_code, ...}]
+let editingId = null;     // 수정 중인 일지 ID (null이면 새 작성)
 
 function $(id){ return document.getElementById(id); }
 function toast(msg){
@@ -645,11 +735,18 @@ async function loadMoldMaster(){
 
 function renderMoldDatalist(){
   const dl = $('moldList');
-  if(!dl) return;
-  dl.innerHTML = moldMasterList.map(m => {
-    const label = m.mold_no + (m.vendor ? ' (' + m.vendor + ')' : '');
-    return '<option value="' + escapeHtml(m.mold_no) + '" label="' + escapeHtml(label) + '">';
-  }).join('');
+  const dl2 = $('moldFilterList');
+  if(dl){
+    dl.innerHTML = moldMasterList.map(m => {
+      const label = m.mold_no + (m.vendor ? ' (' + m.vendor + ')' : '');
+      return '<option value="' + escapeHtml(m.mold_no) + '" label="' + escapeHtml(label) + '">';
+    }).join('');
+  }
+  if(dl2){
+    dl2.innerHTML = moldMasterList.map(m =>
+      '<option value="' + escapeHtml(m.mold_no) + '">'
+    ).join('');
+  }
 }
 
 function showMoldInfo(){
@@ -814,7 +911,7 @@ function renderPhotos(){
     del.onclick = (e) => { e.stopPropagation(); photos.splice(idx, 1); renderPhotos(); };
     const size = document.createElement('div');
     size.className = 'size-label';
-    size.textContent = (p.bytes / 1024).toFixed(1) + ' KB';
+    size.textContent = p.existing ? '기존' : ((p.bytes / 1024).toFixed(1) + ' KB');
     div.appendChild(img); div.appendChild(del); div.appendChild(size);
     el.appendChild(div);
   });
@@ -860,19 +957,29 @@ async function saveLog(){
   };
 
   try {
-    toast('저장 중...');
-    const { error } = await sb.from(TBL).insert(payload);
-    if(error) throw error;
-    toast('✓ 저장 완료');
+    toast(editingId ? '수정 중...' : '저장 중...');
+    if(editingId){
+      const { error } = await sb.from(TBL).update(payload).eq('id', editingId);
+      if(error) throw error;
+      toast('✓ 수정 완료');
+      editingId = null;
+      updateSaveBtnLabel();
+    } else {
+      const { error } = await sb.from(TBL).insert(payload);
+      if(error) throw error;
+      toast('✓ 저장 완료');
+    }
     resetForm();
-    await loadList();  // 목록 갱신
-    await loadStat();  // 통계 갱신
+    await loadList();
+    await loadStat();
   } catch(err) {
-    alert('저장 실패: ' + (err.message || err));
+    alert((editingId?'수정':'저장') + ' 실패: ' + (err.message || err));
   }
 }
 
 function resetForm(){
+  editingId = null;
+  updateSaveBtnLabel();
   $('logDate').value = '';
   $('moldNo').value = '';
   $('moldInfo').innerHTML = '';
@@ -913,8 +1020,17 @@ function renderList(){
   const kw = $('searchKw').value.trim().toLowerCase();
   const st = $('searchStatus').value;
   const iatf = $('searchIatf').value;
+  const stage = $('filterStage').value;
+  const mold = $('filterMold').value.trim();
+  const from = $('filterFrom').value;
+  const to = $('filterTo').value;
+
   const filtered = allLogs.filter(l => {
     if(st && l.status !== st) return false;
+    if(stage && l.stage !== stage) return false;
+    if(mold && l.mold_no !== mold) return false;
+    if(from && (l.log_date||'') < from) return false;
+    if(to && (l.log_date||'') > to) return false;
     if(iatf === 'fmea' && !l.fmea_flag) return false;
     if(iatf === 'cp'   && !l.cp_flag)   return false;
     if(iatf === 'any'  && !(l.fmea_flag || l.cp_flag)) return false;
@@ -924,6 +1040,9 @@ function renderList(){
     }
     return true;
   });
+
+  $('filterCount').textContent = filtered.length + '건';
+  window.__filteredLogs = filtered;  // PDF용으로 보관
 
   const el = $('logList');
   if(!filtered.length){
@@ -959,6 +1078,7 @@ function renderList(){
       iatfHtml +
       photoHtml +
       '<div class="footer-row">' +
+        '<button onclick="editLog(' + l.id + ')">✏️ 수정</button>' +
         '<button onclick="deleteLog(' + l.id + ')" class="del">🗑 삭제</button>' +
       '</div>' +
     '</div>';
@@ -966,6 +1086,62 @@ function renderList(){
 }
 
 window.openImgModal = function(src){ openModal(src); };
+
+function updateSaveBtnLabel(){
+  const btn = $('btnSave');
+  if(!btn) return;
+  btn.innerHTML = editingId ? '✏️ 수정 저장' : '💾 저장';
+}
+
+window.editLog = function(id){
+  const l = allLogs.find(x => x.id === id);
+  if(!l){ toast('일지를 찾을 수 없음'); return; }
+
+  // 작성 탭으로 이동
+  document.querySelector('.tab[data-tab="write"]').click();
+
+  // 폼에 값 채우기
+  editingId = l.id;
+  $('logDate').value = l.log_date || '';
+  $('moldNo').value = l.mold_no || '';
+  showMoldInfo();
+  $('workDone').value = l.work_done || '';
+  $('issues').value = l.issues || '';
+  $('nextPlan').value = l.next_plan || '';
+  $('failureCategory').value = l.failure_category || '';
+  $('measurementTarget').value = l.measurement_target || '';
+  $('fmeaFlag').checked = !!l.fmea_flag;
+  $('cpFlag').checked = !!l.cp_flag;
+
+  // 차수 칩 활성화
+  $('stageChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  if(l.stage){
+    const chip = $('stageChips').querySelector('[data-val="'+l.stage+'"]');
+    if(chip) chip.classList.add('active');
+  }
+  currentStage = l.stage || '';
+
+  // 상태 칩 활성화
+  $('statusChips').querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+  const st = l.status || '진행중';
+  const chip2 = $('statusChips').querySelector('[data-val="'+st+'"]');
+  if(chip2) chip2.classList.add('active');
+  currentStatus = st;
+
+  // 기존 사진 로드 (URL 형태로 photos 배열에 넣기 - 크기 표시는 '기존'으로)
+  photos = (l.photos || []).map(p => ({ data: p, bytes: 0, existing: true }));
+  renderPhotos();
+
+  // IATF 카드 자동 펼침 (값이 있으면)
+  if(l.failure_category || l.measurement_target || l.fmea_flag || l.cp_flag){
+    const iatfCard = document.querySelector('.iatf-card');
+    if(iatfCard) iatfCard.open = true;
+  }
+
+  updateSaveBtnLabel();
+  toast('✏️ 수정 모드');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+};
 
 window.deleteLog = async function(id){
   if(!confirm('이 일지를 삭제할까요?')) return;
@@ -1041,7 +1217,42 @@ function setupSearch(){
   $('searchKw').addEventListener('input', renderList);
   $('searchStatus').addEventListener('change', renderList);
   $('searchIatf').addEventListener('change', renderList);
+  $('filterStage').addEventListener('change', renderList);
+  $('filterMold').addEventListener('change', renderList);
+  $('filterMold').addEventListener('input', renderList);
+  $('filterFrom').addEventListener('change', renderList);
+  $('filterTo').addEventListener('change', renderList);
 }
+
+window.resetFilter = function(){
+  $('searchKw').value = '';
+  $('searchStatus').value = '';
+  $('searchIatf').value = '';
+  $('filterStage').value = '';
+  $('filterMold').value = '';
+  $('filterFrom').value = '';
+  $('filterTo').value = '';
+  renderList();
+};
+
+window.goPdf = function(){
+  const filtered = window.__filteredLogs || [];
+  if(!filtered.length){
+    if(!confirm('필터링된 일지가 없습니다. 전체 일지로 보고서를 만들까요?')) return;
+  }
+  // 현재 필터 조건을 sessionStorage에 저장 후 PDF 페이지로 이동
+  const filterState = {
+    kw: $('searchKw').value,
+    status: $('searchStatus').value,
+    iatf: $('searchIatf').value,
+    stage: $('filterStage').value,
+    mold: $('filterMold').value,
+    from: $('filterFrom').value,
+    to: $('filterTo').value
+  };
+  sessionStorage.setItem('tryout_pdf_filter', JSON.stringify(filterState));
+  location.href = 'tryout_pdf.html';
+};
 
 /* ============ 초기화 ============ */
 document.addEventListener('DOMContentLoaded', () => {
