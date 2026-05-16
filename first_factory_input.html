@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>1공장 재고관리</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:     #334155;
+  --border-hi:  #475569;
+  --text:       #e2e8f0;
+  --text-mid:   #cbd5e1;
+  --text-sub:   #94a3b8;
+  --text-dim:   #64748b;
+  --ice:        #7dd3fc;
+  --ice-lt:     #bae6fd;
+  --orange:     #fdba74;
+  --green:      #4ade80;
+  --rose:       #fca5a5;
+  --purple:     #c4b5fd;
+}
+input, select, textarea { background-color: var(--bg-dark); color: var(--text); border-color: var(--border-hi); }
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  margin: 0; padding: 0; background: var(--bg-dark); color: var(--text); min-height: 100vh;
+  font-size: 15px;
+}
+header {
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; padding: 12px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+header h1 { margin: 0; font-size: 17px; }
+header h1 .ver {
+  font-size: 11px; opacity: 0.7; margin-left: 6px; font-weight: 400;
+}
+.btn-icon {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  width: 38px; height: 38px; border-radius: 50%; font-size: 18px;
+  cursor: pointer;
+}
+.tabs {
+  display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border);
+}
+.tab {
+  flex: 1; padding: 14px 4px; text-align: center; font-size: 13px;
+  border: none; background: var(--bg-card); cursor: pointer; color: var(--text-sub);
+  border-bottom: 3px solid transparent; font-family: inherit;
+}
+.tab.active { color: var(--ice); border-bottom-color: var(--ice); font-weight: 600; }
+
+.container { padding: 12px; padding-bottom: 80px; }
+
+.search-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.search-bar input, .search-bar select {
+  padding: 10px; border: 1px solid var(--border-hi); border-radius: 6px;
+  font-size: 15px; background: var(--bg-card);
+}
+.search-bar input { flex: 1; }
+.search-bar select { width: 110px; }
+
+.alert-bar {
+  background: rgba(253,186,116,0.12); color: var(--orange); padding: 10px 12px;
+  border-radius: 6px; margin-bottom: 12px; font-size: 13px;
+  border-left: 4px solid #ffc107; display: none;
+}
+.alert-bar.show { display: block; }
+
+.summary {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 12px;
+}
+.summary-card {
+  background: var(--bg-card); padding: 10px; border-radius: 8px;
+  text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.summary-card .num { font-size: 20px; font-weight: 700; color: var(--ice); }
+.summary-card .num.warn { color: #dc3545; }
+.summary-card .label { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+.item-card {
+  background: var(--bg-card); border-radius: 8px; padding: 10px 12px;
+  margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-left: 4px solid #1a3a5c;
+  display: flex; gap: 10px;
+}
+.item-card.low-stock { border-left-color: #dc3545; background: rgba(252,165,165,0.05); }
+.item-thumb {
+  width: 44px; height: 44px; border-radius: 6px; flex-shrink: 0;
+  background: var(--bg-card-hi); display: flex; align-items: center; justify-content: center;
+  overflow: hidden; font-size: 18px; color: var(--text-dim);
+  cursor: pointer;
+}
+.item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.item-body { flex: 1; min-width: 0; cursor: pointer; }
+.item-card .top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 2px; gap: 8px;
+}
+.item-name { font-weight: 600; font-size: 15px; flex: 1; word-break: break-all; }
+.item-cat {
+  font-size: 11px; padding: 2px 8px; border-radius: 10px;
+  background: rgba(125,211,252,0.12); color: var(--ice); white-space: nowrap;
+}
+.item-meta {
+  font-size: 12px; color: var(--text-sub); margin-bottom: 4px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.item-meta span::before { content: "ㆍ"; margin-right: 2px; color: #aaa; }
+.item-meta span:first-child::before { content: ""; margin-right: 0; }
+.item-stock {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.item-actions {
+  display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+  padding-left: 4px; border-left: 1px solid #eee; margin-left: 4px;
+}
+.item-actions button {
+  width: 32px; height: 28px; padding: 0; border: none; border-radius: 5px;
+  font-size: 12px; cursor: pointer; font-family: inherit;
+}
+.item-actions .btn-edit { background: rgba(125,211,252,0.12); color: var(--ice); }
+.item-actions .btn-del { background: var(--bg-card); color: #dc3545; border: 1px solid rgba(252,165,165,0.3); }
+.stock-num { font-size: 20px; font-weight: 700; color: var(--ice); }
+.stock-num.low { color: #dc3545; }
+.stock-unit { font-size: 13px; color: var(--text-sub); margin-left: 4px; font-weight: 400; }
+.tap-hint {
+  font-size: 11px; color: var(--text-sub); background: rgba(125,211,252,0.08);
+  padding: 3px 8px; border-radius: 10px;
+}
+.low-badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  background: #dc3545; color: white;
+  padding: 2px 6px; border-radius: 4px;
+  margin-left: 6px; vertical-align: middle;
+}
+
+.fab {
+  position: fixed; bottom: 20px; right: 20px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; border: none;
+  font-size: 28px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  cursor: pointer; z-index: 50;
+}
+
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: var(--bg-card); width: 100%; max-width: 500px;
+  border-radius: 16px 16px 0 0; padding: 20px;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h2 { margin: 0 0 16px 0; font-size: 18px; }
+.form-group { margin-bottom: 12px; }
+.form-group label {
+  display: block; font-size: 13px; color: var(--text-mid);
+  margin-bottom: 4px; font-weight: 500;
+}
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px; border: 1px solid var(--border-hi);
+  border-radius: 6px; font-size: 15px; font-family: inherit;
+}
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-row { display: flex; gap: 8px; }
+.form-row .form-group { flex: 1; }
+.modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
+.btn-primary, .btn-secondary, .btn-danger {
+  flex: 1; padding: 12px; border: none; border-radius: 6px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; }
+.btn-secondary { background: #e9ecef; color: var(--text); }
+.btn-danger { background: #dc3545; color: white; }
+
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 40px; }
+.eye-toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 18px;
+  padding: 4px;
+}
+
+.test-result {
+  padding: 8px; border-radius: 6px; font-size: 13px;
+  margin-top: 8px; display: none;
+}
+.test-result.success { background: rgba(74,222,128,0.15); color: var(--green); display: block; }
+.test-result.error { background: rgba(252,165,165,0.15); color: var(--rose); display: block; }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); }
+
+.history-item {
+  background: var(--bg-card); padding: 10px 12px; border-radius: 6px;
+  margin-bottom: 6px; font-size: 13px;
+}
+.history-item .row1 {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.history-item .row1 .info { flex: 1; min-width: 0; }
+.history-item .row1 .time { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+.history-item .row2 {
+  display: flex; gap: 6px; margin-top: 8px;
+  padding-top: 6px; border-top: 1px solid #f0f0f0;
+}
+.history-item .row2 button {
+  flex: 1; padding: 6px; border: none; border-radius: 5px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.history-item .row2 .h-edit { background: rgba(125,211,252,0.12); color: var(--ice); }
+.history-item .row2 .h-cancel { background: var(--bg-card); color: #dc3545; border: 1px solid rgba(252,165,165,0.3); }
+.history-item .row2 .h-del { background: rgba(253,186,116,0.12); color: var(--orange); border: 1px solid rgba(253,186,116,0.4); }
+.history-item.cancelled { opacity: 0.55; background: var(--bg-card-hi); }
+.history-item.cancelled .row2 { display: none; }
+.history-item .badge-cancel {
+  display: inline-block; font-size: 10px; padding: 1px 6px;
+  background: #6c757d; color: white; border-radius: 3px; margin-left: 6px;
+}
+.history-item .badge-deleted {
+  display: inline-block; font-size: 10px; padding: 1px 6px;
+  background: #dc3545; color: white; border-radius: 3px; margin-left: 6px;
+}
+.history-item.deleted { opacity: 0.5; background: rgba(252,165,165,0.05); border-left: 3px solid var(--rose); }
+.history-item.deleted .h-edit,
+.history-item.deleted .h-cancel,
+.history-item.deleted .h-del { display: none; }
+.history-item .row2 .h-restore { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+.history-item .row2 .h-purge { background: rgba(252,165,165,0.15); color: var(--rose); border: 1px solid rgba(252,165,165,0.3); }
+.history-type {
+  padding: 2px 8px; border-radius: 4px; font-weight: 600;
+  font-size: 11px; margin-right: 8px;
+}
+.history-type.in { background: rgba(74,222,128,0.15); color: var(--green); }
+.history-type.out { background: rgba(253,186,116,0.18); color: var(--orange); }
+.history-type.in-cancel { background: rgba(148,163,184,0.18); color: var(--text-mid); }
+.history-type.out-cancel { background: rgba(148,163,184,0.18); color: var(--text-mid); }
+.history-time { color: var(--text-dim); font-size: 11px; }
+
+.date-quick {
+  padding: 6px 12px; border: 1px solid var(--border); background: var(--bg-card);
+  border-radius: 16px; font-size: 12px; font-weight: 600;
+  color: var(--text-mid); cursor: pointer; font-family: inherit;
+}
+.date-quick.active { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; border-color: var(--ice); }
+
+/* 이력 검색창 */
+.hist-search-wrap {
+  position: relative;
+}
+.hist-search-row {
+  display: flex; gap: 6px; margin-bottom: 8px;
+}
+.hist-search-row input {
+  flex: 1; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: 14px; font-family: inherit;
+}
+.hist-search-row input:focus { outline: none; border-color: var(--ice); }
+.btn-hist-search {
+  padding: 9px 16px; background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white;
+  border: none; border-radius: 8px; font-size: 14px;
+  font-family: inherit; cursor: pointer; white-space: nowrap;
+}
+.btn-hist-search:active { opacity: 0.8; }
+.hist-autocomplete {
+  position: absolute; top: 100%; left: 0; right: 52px;
+  background: var(--bg-dark); border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 8px 8px; z-index: 200;
+  max-height: 200px; overflow-y: auto; display: none;
+}
+.hist-ac-item {
+  padding: 10px 12px; font-size: 13px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.hist-ac-item:last-child { border-bottom: none; }
+.hist-ac-item:hover, .hist-ac-item.active { background: rgba(125,211,252,0.12); }
+.hist-ac-item mark { background: none; color: var(--ice); font-weight: 700; }
+
+#errMsg {
+  position: fixed; bottom: 90px; left: 10px; right: 10px;
+  background: #dc3545; color: white; padding: 10px;
+  border-radius: 6px; font-size: 12px; z-index: 300;
+  display: none; word-break: break-all;
+}
+
+.qty-wrap { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.qty-btn {
+  width: 44px; height: 44px; border: 1px solid var(--border-hi); background: var(--bg-card);
+  border-radius: 6px; font-size: 22px; cursor: pointer; font-weight: 600;
+}
+.qty-input { width: 80px; text-align: center; font-size: 22px !important; font-weight: 600; }
+
+.action-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
+}
+.action-btn {
+  padding: 30px 12px; border: none; border-radius: 12px;
+  font-size: 18px; font-weight: 700; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: white; font-family: inherit;
+}
+.action-btn .ico { font-size: 36px; }
+.action-btn.in { background: #28a745; }
+.action-btn.out { background: #fd7e14; }
+.action-btn.edit {
+  background: #6c757d; padding: 14px; font-size: 14px; width: 100%;
+}
+.action-btn.edit .ico { font-size: 18px; }
+
+.detail-info {
+  background: var(--bg-card-hi); padding: 12px; border-radius: 8px; margin-bottom: 12px;
+}
+.detail-info .name { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.detail-info .meta { font-size: 12px; color: var(--text-sub); line-height: 1.6; }
+.detail-info .stock-big { font-size: 32px; font-weight: 700; color: var(--ice); margin-top: 8px; }
+.detail-info .stock-big.low { color: #dc3545; }
+.detail-photo {
+  width: 100%; max-height: 200px; object-fit: contain;
+  border-radius: 8px; margin-bottom: 12px; background: var(--bg-card-hi);
+}
+
+.photo-area {
+  border: 2px dashed var(--border-hi); border-radius: 8px; padding: 16px;
+  text-align: center; background: var(--bg-card-hi); cursor: pointer;
+}
+.photo-area.has-photo { border-style: solid; padding: 8px; }
+.photo-preview {
+  width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px;
+}
+.photo-info { font-size: 11px; color: var(--text-sub); margin-top: 6px; }
+.photo-buttons { display: flex; gap: 6px; margin-top: 8px; }
+.photo-buttons button {
+  flex: 1; padding: 8px; border: 1px solid var(--border-hi); background: var(--bg-card);
+  border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.photo-buttons button.remove { color: #dc3545; border-color: var(--rose); }
+input[type="file"] { display: none; }
+
+.app-footer {
+  text-align: center; padding: 20px 12px 30px;
+  font-size: 11px; color: var(--text-dim);
+}
+
+.cat-list {
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  margin-bottom: 8px;
+}
+.cat-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 10px; background: var(--bg-card);
+  border-bottom: 1px solid var(--border); font-size: 14px;
+  cursor: grab; user-select: none;
+  transition: background 0.15s;
+}
+.cat-item:last-child { border-bottom: none; }
+.cat-item.dragging { opacity: 0.4; background: rgba(125,211,252,0.12); }
+.cat-item.drag-over { background: rgba(125,211,252,0.18); border-top: 2px solid var(--ice); }
+.cat-drag-handle { color: var(--text-dim); font-size: 16px; flex-shrink: 0; cursor: grab; }
+.cat-item-name { flex: 1; color: var(--ice); font-weight: 500; }
+.cat-item-num { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+.cat-del {
+  background: none; border: none; color: var(--text-dim);
+  font-size: 18px; cursor: pointer; padding: 0 2px;
+  line-height: 1; flex-shrink: 0;
+}
+.cat-del:hover { color: #dc3545; }
+@media print {
+  body { background: white !important; color: black !important; }
+  .header, .tabs, .no-print { display: none !important; }
+}
+</style>
+</head>
+<body>
+<!-- ============ 인증 가드 (모든 페이지 공통) ============ -->
+<script>
+(function(){
+  'use strict';
+  // PIN 인증 세션 키 (index.html에서 저장)
+  var LK_AUTH = 'mm_user_session';
+  var LK_LAST_LOC = 'mm_last_loc';
+
+  function getSession(){
+    try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+  }
+
+  var s = getSession();
+
+  /* 1) 미인증 또는 세션 만료 → 메인으로 강제 이동 (페이지 렌더 차단) */
+  if(!s || !s.exp || s.exp <= Date.now()){
+    try{localStorage.removeItem(LK_AUTH)}catch(e){}
+    /* 페이지가 렌더되기 전 즉시 리다이렉트 */
+    location.replace('index.html');
+    /* DOM 차단 */
+    document.documentElement.style.display = 'none';
+    throw new Error('Unauthorized - redirecting');
+  }
+
+  /* 2) 세션을 호환 키에 자동 미러링 */
+  try{
+    if(s.role === 'admin'){
+      localStorage.setItem('msmUser_name', '관리자');
+      localStorage.setItem('msmUser_dept', '');
+    } else {
+      localStorage.setItem('msmUser_name', s.name || '');
+      localStorage.setItem('msmUser_dept', s.dept || '');
+    }
+  }catch(e){}
+
+  /* 3) 페이지 진입 위치 추적 (Supabase 비동기 INSERT, 실패해도 동작에 영향 없음) */
+  (function trackPageEntry(){
+    if(!s.id) return;
+    /* 마스터(관리자)는 추적 안 함 */
+    if(s.role === 'admin') return;
+
+    var SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+    var TBL_LOC = 'mm_user_location';
+    var pageName = (location.pathname.split('/').pop()||'').replace('.html','');
+
+    /* 같은 IP 5분 내 재접근은 스킵 (DB 부담 방지) */
+    var last = null;
+    try{ last = JSON.parse(localStorage.getItem(LK_LAST_LOC)||'null'); }catch(e){}
+    var now = Date.now();
+    if(last && last.ts && (now - last.ts) < 5*60*1000 && last.page === pageName){
+      return;  /* 5분 내 같은 페이지 재진입은 무시 */
+    }
+
+    /* IP 조회 후 INSERT */
+    fetch('https://ipapi.co/json/').then(function(r){return r.json()}).then(function(d){
+      var payload = {
+        user_id: s.id, user_name: s.name||null,
+        factory: s.factory||null, dept: s.dept||null,
+        lat: d.latitude||null, lng: d.longitude||null,
+        ip: d.ip||null, city: d.city||null, region: d.region||null,
+        country: d.country_name||null, org: d.org||null,
+        device_info: (navigator.userAgent||'').slice(0,180) + ' | page:' + pageName,
+        error_code: null,
+        recorded_at: new Date().toISOString()
+      };
+      fetch(SUPABASE_URL+'/rest/v1/'+TBL_LOC, {
+        method:'POST',
+        headers:{
+          'apikey':SUPABASE_KEY,
+          'Authorization':'Bearer '+SUPABASE_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      }).then(function(){
+        localStorage.setItem(LK_LAST_LOC, JSON.stringify({
+          ip:d.ip, page:pageName, ts:now
+        }));
+      }).catch(function(){});
+    }).catch(function(){});
+  })();
+
+  /* 4) 세션을 전역에 노출 (개별 페이지 스크립트에서 사용) */
+  window.__msmSession = s;
+})();
+</script>
+<!-- ======================================================== -->
+
+<header>
+  <h1>📦 1공장 재고관리 <span class="ver" onclick="showVerInput()">v1.0</span></h1>
+  <button class="btn-icon" id="btnSettings">⚙️</button>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-tab="list" type="button">재고</button>
+  <button class="tab" data-tab="history" type="button">이력</button>
+  <button class="tab" data-tab="export" type="button">일괄처리</button>
+</div>
+
+<div class="container">
+
+  <div id="page-list">
+    <div class="summary">
+      <div class="summary-card"><div class="num" id="sumTotal">0</div><div class="label">전체 품목</div></div>
+      <div class="summary-card"><div class="num warn" id="sumLow">0</div><div class="label">재고부족</div></div>
+      <div class="summary-card"><div class="num" id="sumValue">0</div><div class="label">재고금액(만)</div></div>
+    </div>
+
+    <div class="alert-bar" id="alertBar"></div>
+
+    <div id="locFilterBar" style="display:none;background:#fff3cd;border:1px solid #ffe69c;border-radius:8px;padding:10px 12px;margin-bottom:10px;align-items:center;gap:10px;font-size:13px">
+      <span style="font-size:18px">📍</span>
+      <span style="flex:1">위치 <b id="locFilterName" style="color:#1a3a5c;font-size:15px"></b> 품목만 보기 <span id="locFilterCount" style="color:#666;font-size:12px"></span></span>
+      <button id="btnLocClear" type="button" style="background:white;border:1px solid #ccc;color:#333;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">전체보기</button>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="품명/규격/위치 검색">
+      <select id="filterCat">
+        <option value="">전체</option>
+      </select>
+    </div>
+
+    <div id="itemList"></div>
+  </div>
+
+  <div id="page-history" style="display:none">
+    <div class="hist-search-wrap">
+      <div class="hist-search-row">
+        <input type="text" id="historySearch" placeholder="품명 검색 후 선택 또는 검색" autocomplete="off">
+        <button class="btn-hist-search" id="btnHistSearch" type="button">검색</button>
+      </div>
+      <div class="hist-autocomplete" id="histAC"></div>
+    </div>
+
+    <!-- 일자 빠른선택 -->
+    <div id="dateQuickBar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <button class="date-quick active" data-range="all" type="button">전체</button>
+      <button class="date-quick" data-range="today" type="button">오늘</button>
+      <button class="date-quick" data-range="week" type="button">이번주</button>
+      <button class="date-quick" data-range="month" type="button">이번달</button>
+      <button class="date-quick" data-range="custom" type="button">📅 기간</button>
+    </div>
+
+    <!-- 일자 직접 입력 -->
+    <div id="dateRangeBar" style="display:none;background:white;padding:10px;border-radius:8px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+      <div style="display:flex;gap:6px;align-items:center;font-size:13px">
+        <input type="date" id="dateFrom" style="flex:1;padding:6px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+        <span>~</span>
+        <input type="date" id="dateTo" style="flex:1;padding:6px;border:1px solid #ccc;border-radius:6px;font-size:13px">
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <label style="font-size:12px;color:#555;display:flex;align-items:center;gap:4px;cursor:pointer">
+        <input type="checkbox" id="showDeletedHist" style="width:16px;height:16px"> 삭제된 이력 보기
+      </label>
+      <div id="historyCount" style="font-size:12px;color:#666;text-align:right"></div>
+    </div>
+
+    <div id="historyList"></div>
+  </div>
+
+  <div id="page-export" style="display:none">
+    <div style="background:white;padding:16px;border-radius:8px;margin-bottom:12px;">
+      <h3 style="margin-top:0">📤 데이터 내보내기</h3>
+      <p style="font-size:13px;color:#666">현재 재고 또는 이력을 Excel 파일로 내려받습니다.</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn-primary" style="flex:1" id="btnExportItems">📦 재고목록</button>
+        <button class="btn-primary" style="flex:1" id="btnExportHistory">📋 입출고이력</button>
+      </div>
+    </div>
+
+    <div style="background:white;padding:16px;border-radius:8px;">
+      <h3 style="margin-top:0">📥 재고 일괄 업로드</h3>
+      <p style="font-size:13px;color:#666;line-height:1.5">
+        CSV 파일로 여러 품목을 한 번에 등록할 수 있습니다.<br>
+        <b>품명</b>이 같은 품목이 이미 있으면 <b>수정</b>되고, 없으면 <b>추가</b>됩니다.
+      </p>
+      <details style="margin:8px 0;font-size:12px;color:#666">
+        <summary style="cursor:pointer">📘 CSV 형식 보기</summary>
+        <pre style="background:#f5f5f5;padding:8px;border-radius:4px;font-size:11px;overflow-x:auto;white-space:pre-wrap;margin-top:6px">품명,분류,규격,단위,현재고,안전재고,단가,위치,거래처,비고
+펀치다이,금형부품,M10x50,EA,5,3,15000,A-01,동광공구,
+유압필터,유압부품,100T,EA,2,5,8000,B-03,코리아유압,1호기용</pre>
+        <p style="margin:6px 0 0 0">· 첫 줄은 헤더(컬럼명)이며 그대로 두세요<br>· 분류는 금형부품/소모공구/유압부품/전기부품/안전용품/기타 중 하나<br>· 빈 셀은 그대로 두면 됩니다<br>· 먼저 "재고 목록 Excel"로 받아서 양식으로 쓰셔도 됩니다</p>
+      </details>
+      <button class="btn-secondary" id="btnDownloadTemplate" style="width:100%;margin-bottom:8px">📋 양식 CSV 받기</button>
+      <button class="btn-primary" id="btnUploadCSV" style="width:100%">📥 CSV 업로드</button>
+      <input type="file" id="csvInput" accept=".csv,text/csv">
+      <div id="uploadResult" style="display:none;margin-top:10px;padding:10px;border-radius:6px;font-size:13px"></div>
+    </div>
+  </div>
+
+</div>
+
+<button class="fab" id="btnAdd">+</button>
+
+<div class="app-footer">
+  1공장 재고관리 v1.0 · msm · 프레스양산
+</div>
+
+<div id="errMsg"></div>
+
+<!-- 상세 모달 -->
+<div class="modal-bg" id="modalDetail">
+  <div class="modal">
+    <h2>품목 상세</h2>
+    <img id="dPhoto" class="detail-photo" style="display:none" alt="">
+    <div class="detail-info">
+      <div class="name" id="dName"></div>
+      <div class="meta" id="dMeta"></div>
+      <div class="stock-big" id="dStock"></div>
+    </div>
+    <div class="action-grid">
+      <button class="action-btn in" id="btnDoIn" type="button">
+        <span class="ico">📥</span><span>입고</span>
+      </button>
+      <button class="action-btn out" id="btnDoOut" type="button">
+        <span class="ico">📤</span><span>출고</span>
+      </button>
+    </div>
+    <button class="action-btn edit" id="btnDoEdit" type="button">
+      <span class="ico">✏️</span><span>품목 정보 수정</span>
+    </button>
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="btnDetailClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 품목 모달 -->
+<div class="modal-bg" id="modalItem">
+  <div class="modal">
+    <h2 id="itemTitle">품목 추가</h2>
+    <input type="hidden" id="editId">
+
+    <div class="form-group">
+      <label>참조 사진 (1:1 정사각, 약 10KB로 압축)</label>
+      <div class="photo-area" id="photoArea">
+        <div id="photoPlaceholder">
+          <div style="font-size:32px;color:#bbb">📷</div>
+          <div style="font-size:13px;color:#888;margin-top:4px">아래 버튼으로 사진 촬영 또는 선택</div>
+        </div>
+        <img id="photoPreview" class="photo-preview" style="display:none" alt="">
+        <div class="photo-info" id="photoInfo" style="display:none"></div>
+      </div>
+      <div class="photo-buttons" style="margin-top:8px">
+        <button type="button" id="btnTakePhoto">📷 촬영</button>
+        <button type="button" id="btnChoosePhoto">🖼 갤러리</button>
+        <button type="button" class="remove" id="btnRemovePhoto" style="display:none">🗑 제거</button>
+      </div>
+      <input type="file" id="photoInputCamera" accept="image/*" capture="environment">
+      <input type="file" id="photoInputGallery" accept="image/*">
+    </div>
+
+    <div class="form-group">
+      <label>분류 *</label>
+      <select id="fCategory"></select>
+    </div>
+    <div class="form-group">
+      <label>품명 *</label>
+      <input type="text" id="fName" placeholder="예: 펀치 다이">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>규격/모델</label>
+        <input type="text" id="fSpec" placeholder="예: M10x50, 100T">
+      </div>
+      <div class="form-group">
+        <label>단위</label>
+        <select id="fUnit">
+          <option value="EA">EA (개)</option>
+          <option value="SET">SET (세트)</option>
+          <option value="BOX">BOX (박스)</option>
+          <option value="L">L (리터)</option>
+          <option value="ML">ML (밀리리터)</option>
+          <option value="KG">KG (킬로그램)</option>
+          <option value="G">G (그램)</option>
+          <option value="M">M (미터)</option>
+          <option value="ROLL">ROLL (롤)</option>
+          <option value="DRUM">DRUM (드럼)</option>
+          <option value="PACK">PACK (팩)</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>현재고</label>
+        <input type="number" id="fStock" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>안전재고</label>
+        <input type="number" id="fMinStock" placeholder="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>단가(원)</label>
+        <input type="number" id="fPrice" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>위치(랙)</label>
+        <input type="text" id="fLocation" placeholder="A-01">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>거래처</label>
+      <input type="text" id="fVendor">
+    </div>
+    <div class="form-group">
+      <label>비고</label>
+      <textarea id="fMemo"></textarea>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="btnItemCancel" type="button">취소</button>
+      <button class="btn-danger" id="btnDelete" style="display:none" type="button">삭제</button>
+      <button class="btn-primary" id="btnItemSave" type="button">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수량 모달 -->
+<div class="modal-bg" id="modalStock">
+  <div class="modal">
+    <h2 id="stockTitle">입고</h2>
+    <div id="stockInfo" style="background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:12px;font-size:14px"></div>
+    <div class="form-group">
+      <label>수량</label>
+      <div class="qty-wrap">
+        <button class="qty-btn" id="qtyMinus" type="button">−</button>
+        <input type="number" id="stockQty" class="qty-input" value="1" min="1">
+        <button class="qty-btn" id="qtyPlus" type="button">+</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>담당자/메모</label>
+      <input type="text" id="stockMemo" placeholder="예: 홍길동, 1호기 교체용">
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="btnStockCancel" type="button">취소</button>
+      <button class="btn-primary" id="btnStockOk" type="button">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 분류 필터 선택 모달 (Excel 내보내기용) -->
+<div class="modal-bg" id="modalExportFilter">
+  <div class="modal">
+    <h2 id="exportFilterTitle">📤 분류 선택</h2>
+    <p style="font-size:13px;color:#666;margin:0 0 10px 0">내보낼 분류를 선택하세요. (체크된 분류만 포함)</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn-secondary" id="btnExportFilterAll" type="button" style="flex:1;padding:8px">전체선택</button>
+      <button class="btn-secondary" id="btnExportFilterNone" type="button" style="flex:1;padding:8px">전체해제</button>
+    </div>
+    <div id="exportFilterList" style="max-height:300px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;padding:8px;background:#fafafa"></div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="btnExportFilterCancel" type="button">취소</button>
+      <button class="btn-primary" id="btnExportFilterOk" type="button">내보내기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-bg" id="modalSettings">
+  <div class="modal">
+    <h2>⚙️ 설정</h2>
+
+    <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin-bottom:16px">
+      <h3 style="margin:0 0 8px 0;font-size:15px">🏷 분류 관리</h3>
+      <p style="font-size:12px;color:#666;margin:0 0 8px 0">추가/삭제 및 ≡ 드래그로 순서 변경 가능합니다.</p>
+      <div id="categoryList" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="newCategoryInput" placeholder="새 분류 입력" style="flex:1;padding:8px;border:1px solid #ccc;border-radius:6px;font-size:14px">
+        <button class="btn-primary" id="btnAddCategory" style="flex:0 0 auto;padding:8px 16px">+ 추가</button>
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:#aab2bd;text-align:center;margin:8px 0 0 0">☁️ 클라우드 자동 연결됨</p>
+
+    <div class="modal-buttons">
+      <button class="btn-secondary" id="btnSettingsClose" type="button">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showVerInput(){
+  alert(
+    '📦 1공장 재고관리 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.0 (현재)\n' +
+    '• 1공장 재고관리 페이지 오픈\n' +
+    '• 본사와 별도 DB 테이블 사용\n' +
+    '  (f1_inventory_items / f1_inventory_history)\n' +
+    '• 카테고리: 프레스부품/금형부품/유압부품/\n' +
+    '  전기부품/소모공구/안전용품/기타\n' +
+    '• 다크테마 + 인증가드 + 위치추적'
+  );
+}
+
+(function() {
+  'use strict';
+
+  const LS = 'f1Inv_';
+  const T_ITEMS = 'f1_inventory_items';
+  const T_HIST = 'f1_inventory_history';
+  const DEFAULT_CATEGORIES = ['프레스부품', '금형부품', '유압부품', '전기부품', '소모공구', '안전용품', '기타'];
+
+  // === Supabase 하드코딩 ===
+  const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+
+  let sb = null;
+  let items = [];
+  let hist = [];
+  let categories = [];
+  let curDetail = null;
+  let curStockType = 'in';
+  let curStockItem = null;
+  let curPhoto = null;
+  let locFilter = ''; // QR 스캔 시 위치 필터
+
+  // ============ Categories ============
+  function loadCategories() {
+    const stored = localStorage.getItem(LS + 'categories');
+    if (stored) {
+      try {
+        categories = JSON.parse(stored);
+        if (!Array.isArray(categories) || categories.length === 0) {
+          categories = DEFAULT_CATEGORIES.slice();
+        }
+      } catch(e) {
+        categories = DEFAULT_CATEGORIES.slice();
+      }
+    } else {
+      categories = DEFAULT_CATEGORIES.slice();
+    }
+  }
+
+  function saveCategories() {
+    localStorage.setItem(LS + 'categories', JSON.stringify(categories));
+  }
+
+  function fillCategorySelects() {
+    // 검색 필터
+    const filter = $('filterCat');
+    const curFilter = filter.value;
+    filter.innerHTML = '<option value="">전체</option>' +
+      categories.map(c => '<option>' + escapeHtml(c) + '</option>').join('');
+    if (curFilter && categories.includes(curFilter)) filter.value = curFilter;
+
+    // 품목 모달
+    const fCat = $('fCategory');
+    const curCat = fCat.value;
+    fCat.innerHTML = categories.map(c => '<option>' + escapeHtml(c) + '</option>').join('');
+    if (curCat && categories.includes(curCat)) fCat.value = curCat;
+  }
+
+  function renderCategoryList() {
+    const el = $('categoryList');
+    if (categories.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:#999;padding:8px 0">분류가 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="cat-list" id="catListInner"></div>';
+    const list = $('catListInner');
+
+    categories.forEach((c, i) => {
+      const usedCount = items.filter(it => it.category === c).length;
+      const row = document.createElement('div');
+      row.className = 'cat-item';
+      row.dataset.idx = i;
+      row.draggable = true;
+
+      const handle = document.createElement('span');
+      handle.className = 'cat-drag-handle';
+      handle.textContent = '≡';
+
+      const name = document.createElement('span');
+      name.className = 'cat-item-name';
+      name.textContent = c;
+
+      const num = document.createElement('span');
+      num.className = 'cat-item-num';
+      num.textContent = usedCount > 0 ? usedCount + '개' : '';
+
+      const del = document.createElement('button');
+      del.className = 'cat-del';
+      del.type = 'button';
+      del.textContent = '×';
+      del.addEventListener('click', () => {
+        const usedBy = items.filter(it => it.category === c);
+        if (usedBy.length > 0) {
+          if (!confirm('"' + c + '" 분류는 ' + usedBy.length + '개 품목에서 사용 중입니다.\n그래도 삭제하시겠습니까?')) return;
+        }
+        categories.splice(i, 1);
+        saveCategories();
+        renderCategoryList();
+        fillCategorySelects();
+      });
+
+      row.appendChild(handle);
+      row.appendChild(name);
+      row.appendChild(num);
+      row.appendChild(del);
+      list.appendChild(row);
+    });
+
+    // 드래그 정렬
+    let dragSrc = null;
+    list.querySelectorAll('.cat-item').forEach(row => {
+      row.addEventListener('dragstart', e => {
+        dragSrc = row;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        list.querySelectorAll('.cat-item').forEach(r => r.classList.remove('drag-over'));
+      });
+      row.addEventListener('dragover', e => {
+        e.preventDefault();
+        list.querySelectorAll('.cat-item').forEach(r => r.classList.remove('drag-over'));
+        if (row !== dragSrc) row.classList.add('drag-over');
+      });
+      row.addEventListener('drop', e => {
+        e.preventDefault();
+        if (!dragSrc || dragSrc === row) return;
+        const fromIdx = parseInt(dragSrc.dataset.idx);
+        const toIdx = parseInt(row.dataset.idx);
+        const moved = categories.splice(fromIdx, 1)[0];
+        categories.splice(toIdx, 0, moved);
+        saveCategories();
+        fillCategorySelects();
+        renderCategoryList();
+      });
+    });
+  }
+
+  function addCategory() {
+    const inp = $('newCategoryInput');
+    const v = inp.value.trim();
+    if (!v) { inp.focus(); return; }
+    if (categories.includes(v)) {
+      alert('이미 존재하는 분류입니다.');
+      return;
+    }
+    categories.push(v);
+    saveCategories();
+    inp.value = '';
+    renderCategoryList();
+    fillCategorySelects();
+  }
+
+  // CSV 등에서 새 분류가 들어올 때 자동 추가
+  function ensureCategory(name) {
+    if (!name) return;
+    if (!categories.includes(name)) {
+      categories.push(name);
+      saveCategories();
+      fillCategorySelects();
+    }
+  }
+
+  // ============ Util ============
+  const $ = id => document.getElementById(id);
+
+  function showErr(msg) {
+    const el = $('errMsg');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  window.addEventListener('error', e => showErr(e.message));
+
+  function escapeHtml(s) {
+    return String(s||'').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  // 모바일 안정 클릭 바인딩 - pointerdown 우선
+  function tap(el, fn) {
+    if (typeof el === 'string') el = $(el);
+    if (!el) return;
+    if (window.PointerEvent) {
+      el.addEventListener('pointerup', e => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        fn(e);
+      });
+    } else {
+      let touched = false;
+      el.addEventListener('touchend', e => {
+        e.preventDefault();
+        touched = true;
+        fn(e);
+        setTimeout(() => { touched = false; }, 500);
+      });
+      el.addEventListener('click', e => {
+        if (touched) return;
+        fn(e);
+      });
+    }
+  }
+
+  function openModal(id) { $(id).classList.add('show'); }
+  function closeModal(id) { $(id).classList.remove('show'); }
+
+  // ============ Supabase ============
+  function initSupabase() {
+    if (window.supabase) {
+      try {
+        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      } catch(e) {
+        showErr('Supabase 초기화 실패: ' + e.message);
+      }
+    }
+  }
+
+  async function loadData() {
+    if (sb) {
+      try {
+        const r1 = await sb.from(T_ITEMS).select('*');
+        if (r1.error) throw r1.error;
+        items = r1.data || [];
+        const r2 = await sb.from(T_HIST).select('*').order('created_at', { ascending: false }).limit(200);
+        if (r2.error) throw r2.error;
+        hist = r2.data || [];
+      } catch(e) {
+        showErr('클라우드 로딩 실패: ' + e.message);
+        loadLocal();
+      }
+    } else {
+      loadLocal();
+    }
+    // 기존 품목 데이터에서 사용 중인 분류 자동 추가
+    items.forEach(it => { if (it.category) ensureCategory(it.category); });
+    render();
+  }
+
+  function loadLocal() {
+    items = JSON.parse(localStorage.getItem(LS + 'items') || '[]');
+    hist = JSON.parse(localStorage.getItem(LS + 'history') || '[]');
+  }
+
+  function saveLocal() {
+    localStorage.setItem(LS + 'items', JSON.stringify(items));
+    localStorage.setItem(LS + 'history', JSON.stringify(hist));
+  }
+
+  // ============ Photo ============
+  // 사진 압축: 1:1 정사각형 + 약 10KB
+  async function compressImage(file, target = 10000) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          // 정사각형 크롭 (가운데 기준)
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width - side) / 2;
+          const sy = (img.height - side) / 2;
+
+          const make = (dim, q) => {
+            const c = document.createElement('canvas');
+            c.width = dim; c.height = dim;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, dim, dim);
+            // sx,sy,side,side 를 dim x dim 으로 그림 (1:1 비율 유지)
+            ctx.drawImage(img, sx, sy, side, side, 0, 0, dim, dim);
+            return c.toDataURL('image/jpeg', q);
+          };
+          // 정사각형이라 동일 면적이 더 적으므로 단계 조정
+          const tries = [
+            [240, 0.7], [240, 0.55], [220, 0.5], [200, 0.5],
+            [180, 0.45], [160, 0.45], [140, 0.4], [120, 0.4]
+          ];
+          let result = make(240, 0.7);
+          for (const [d, q] of tries) {
+            const r = make(d, q);
+            if (r.length <= target * 1.4) {
+              result = r;
+              if (r.length <= target) break;
+            }
+          }
+          resolve(result);
+        };
+        img.onerror = () => reject(new Error('이미지 로드 실패'));
+        img.src = ev.target.result;
+      };
+      reader.onerror = () => reject(new Error('파일 읽기 실패'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function onPhotoSelect(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showErr('이미지 파일만 가능합니다');
+      return;
+    }
+    try {
+      const data = await compressImage(file);
+      curPhoto = data;
+      showPhotoPreview(data);
+    } catch(e) {
+      showErr('사진 처리 실패: ' + e.message);
+    }
+  }
+
+  function showPhotoPreview(data) {
+    const kb = (data.length / 1024).toFixed(1);
+    $('photoPreview').src = data;
+    $('photoPreview').style.display = 'block';
+    $('photoPlaceholder').style.display = 'none';
+    $('photoInfo').style.display = 'block';
+    $('photoInfo').textContent = '약 ' + kb + 'KB · 1:1 정사각형';
+    $('btnRemovePhoto').style.display = 'block';
+    $('photoArea').classList.add('has-photo');
+  }
+
+  function clearPhoto() {
+    curPhoto = null;
+    $('photoInputCamera').value = '';
+    $('photoInputGallery').value = '';
+    $('photoPreview').style.display = 'none';
+    $('photoPlaceholder').style.display = 'block';
+    $('photoInfo').style.display = 'none';
+    $('btnRemovePhoto').style.display = 'none';
+    $('photoArea').classList.remove('has-photo');
+  }
+
+  // ============ Render ============
+  function render() {
+    renderList();
+    renderSummary();
+    renderHistory();
+  }
+
+  function renderSummary() {
+    $('sumTotal').textContent = items.length;
+    const low = items.filter(i => i.stock < i.min_stock && i.min_stock > 0);
+    $('sumLow').textContent = low.length;
+    const tot = items.reduce((s, i) => s + (i.stock * (i.price || 0)), 0);
+    $('sumValue').textContent = Math.round(tot / 10000).toLocaleString();
+
+    const bar = $('alertBar');
+    if (low.length > 0) {
+      bar.classList.add('show');
+      bar.innerHTML = '⚠️ <b>재고 부족 ' + low.length + '건</b>: ' +
+        low.slice(0, 3).map(i => escapeHtml(i.name)).join(', ') +
+        (low.length > 3 ? ' 외 ' + (low.length - 3) + '건' : '');
+    } else {
+      bar.classList.remove('show');
+    }
+  }
+
+  function renderList() {
+    const q = $('searchInput').value.toLowerCase();
+    const cat = $('filterCat').value;
+    const filtered = items.filter(i => {
+      const mq = !q ||
+        (i.name || '').toLowerCase().includes(q) ||
+        (i.spec || '').toLowerCase().includes(q) ||
+        (i.location || '').toLowerCase().includes(q);
+      const mc = !cat || i.category === cat;
+      const ml = !locFilter || (i.location || '').toLowerCase() === locFilter.toLowerCase();
+      return mq && mc && ml;
+    });
+
+    // 위치 필터 카운트 표시
+    if (locFilter) {
+      $('locFilterCount').textContent = '(' + filtered.length + '건)';
+    }
+
+    // 위치 → 분류 → 품명 → 규격 순 자동정렬
+    filtered.sort((a, b) => {
+      const la = (a.location || '').localeCompare(b.location || '', 'ko');
+      if (la !== 0) return la;
+      const ca = (a.category || '').localeCompare(b.category || '', 'ko');
+      if (ca !== 0) return ca;
+      const na = (a.name || '').localeCompare(b.name || '', 'ko');
+      if (na !== 0) return na;
+      return (a.spec || '').localeCompare(b.spec || '', 'ko');
+    });
+
+    const list = $('itemList');
+    if (filtered.length === 0) {
+      if (locFilter) {
+        list.innerHTML = '<div class="empty-state">📭 위치 <b>' + escapeHtml(locFilter) + '</b>에 등록된 품목이 없습니다.</div>';
+      } else {
+        list.innerHTML = '<div class="empty-state">📭 등록된 품목이 없습니다.<br>+ 버튼으로 추가하세요.</div>';
+      }
+      return;
+    }
+
+    list.innerHTML = filtered.map(i => {
+      const isLow = i.min_stock > 0 && i.stock < i.min_stock;
+      const meta = [];
+      if (i.spec) meta.push('<span>' + escapeHtml(i.spec) + '</span>');
+      if (i.location) meta.push('<span>📍 ' + escapeHtml(i.location) + '</span>');
+      if (i.vendor) meta.push('<span>🏢 ' + escapeHtml(i.vendor) + '</span>');
+      const thumb = i.photo ? '<img src="' + i.photo + '" alt="">' : '📷';
+      return '<div class="item-card ' + (isLow ? 'low-stock' : '') + '" data-id="' + i.id + '">' +
+        '<div class="item-thumb" data-act="open">' + thumb + '</div>' +
+        '<div class="item-body" data-act="open">' +
+          '<div class="top">' +
+            '<div class="item-name">' + escapeHtml(i.name) +
+              (isLow ? ' <span class="low-badge">⚠️ 부족</span>' : '') +
+            '</div>' +
+            '<div class="item-cat">' + escapeHtml(i.category || '') + '</div>' +
+          '</div>' +
+          '<div class="item-meta">' + meta.join('') + '</div>' +
+          '<div class="item-stock">' +
+            '<div>' +
+              '<span class="stock-num ' + (isLow ? 'low' : '') + '">' + i.stock + '</span>' +
+              '<span class="stock-unit">' + escapeHtml(i.unit || 'EA') + '</span>' +
+              (i.min_stock > 0 ? '<span style="font-size:11px;color:#999;margin-left:6px">/ 안전 ' + i.min_stock + '</span>' : '') +
+            '</div>' +
+            '<span class="tap-hint">탭하여 입출고</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="item-actions">' +
+          '<button class="btn-edit" data-act="edit" data-id="' + i.id + '" type="button" title="수정">✏️</button>' +
+          '<button class="btn-del" data-act="del" data-id="' + i.id + '" type="button" title="삭제">🗑</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // 입출고는 카드의 thumb/body 클릭 시
+    list.querySelectorAll('[data-act="open"]').forEach(zone => {
+      tap(zone, () => {
+        const card = zone.closest('.item-card');
+        if (!card) return;
+        const id = card.dataset.id;
+        const item = items.find(x => String(x.id) === String(id));
+        if (item) openDetail(item);
+      });
+    });
+
+    // 수정 / 삭제 버튼
+    list.querySelectorAll('.item-actions button').forEach(btn => {
+      tap(btn, e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const id = btn.dataset.id;
+        const act = btn.dataset.act;
+        const item = items.find(x => String(x.id) === String(id));
+        if (!item) return;
+        if (act === 'edit') openEdit(item);
+        else if (act === 'del') quickDeleteItem(item);
+      });
+    });
+  }
+
+  // 일자 필터 상태
+  let historyDateRange = 'all'; // all/today/week/month/custom
+  let historyDateFrom = '';
+  let historyDateTo = '';
+
+  function getDateRangeMs() {
+    const now = new Date();
+    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    if (historyDateRange === 'today') {
+      return { from: today0, to: today0 + 86400000 };
+    } else if (historyDateRange === 'week') {
+      // 이번주 일요일 00:00 ~ 다음주 일요일 00:00
+      const dow = now.getDay();
+      const sun = today0 - dow * 86400000;
+      return { from: sun, to: sun + 7 * 86400000 };
+    } else if (historyDateRange === 'month') {
+      const m0 = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const m1 = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+      return { from: m0, to: m1 };
+    } else if (historyDateRange === 'custom') {
+      let from = 0, to = Number.MAX_SAFE_INTEGER;
+      if (historyDateFrom) from = new Date(historyDateFrom + 'T00:00:00').getTime();
+      if (historyDateTo) to = new Date(historyDateTo + 'T00:00:00').getTime() + 86400000;
+      return { from, to };
+    }
+    return { from: 0, to: Number.MAX_SAFE_INTEGER };
+  }
+
+  function renderHistory() {
+    const q = $('historySearch').value.toLowerCase();
+    const range = getDateRangeMs();
+    const showDeleted = $('showDeletedHist') && $('showDeletedHist').checked;
+    const filtered = hist.filter(h => {
+      const matchQ = !q || (h.item_name || '').toLowerCase().includes(q);
+      const t = new Date(h.created_at).getTime();
+      const matchD = t >= range.from && t < range.to;
+      const isDel = isDeletedHist(h);
+      const matchDel = showDeleted || !isDel;
+      return matchQ && matchD && matchDel;
+    });
+    const delCount = hist.filter(h => isDeletedHist(h)).length;
+    const countTxt = '총 ' + filtered.length + '건' + (delCount > 0 ? ' (삭제됨 ' + delCount + '건)' : '');
+    $('historyCount').textContent = countTxt;
+    const list = $('historyList');
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-state">이력이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = filtered.slice(0, 200).map(h => {
+      const time = new Date(h.created_at).toLocaleString('ko-KR', {
+        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+      const isCancelled = !!h.cancelled || (h.memo && h.memo.indexOf('[취소됨]') === 0);
+      const isDeleted = isDeletedHist(h);
+      const typeCls = (isCancelled || isDeleted) ? (h.type + '-cancel') : h.type;
+      const typeLabel = h.type === 'in' ? '입고' : '출고';
+      const stateCls = isDeleted ? ' deleted' : (isCancelled ? ' cancelled' : '');
+      return '<div class="history-item' + stateCls + '" data-id="' + h.id + '">' +
+        '<div class="row1">' +
+          '<div class="info">' +
+            '<span class="history-type ' + typeCls + '">' + typeLabel + '</span>' +
+            '<b>' + escapeHtml(h.item_name) + '</b> ' +
+            '<span style="color:#1a3a5c;font-weight:600">' + (h.type === 'in' ? '+' : '-') + h.qty + '</span>' +
+            (isDeleted ? '<span class="badge-deleted">삭제됨</span>' : '') +
+            (isCancelled && !isDeleted ? '<span class="badge-cancel">취소됨</span>' : '') +
+            (h.memo ? '<div style="color:#666;font-size:12px;margin-top:2px;word-break:break-all">' + escapeHtml(h.memo) + '</div>' : '') +
+          '</div>' +
+          '<span class="time">' + time + '</span>' +
+        '</div>' +
+        '<div class="row2">' +
+          (isDeleted
+            ? '<button class="h-restore" data-act="restore" data-id="' + h.id + '" type="button">↩️ 복원</button>' +
+              '<button class="h-purge" data-act="purge" data-id="' + h.id + '" type="button">🗑️ 영구삭제</button>'
+            : (isCancelled ? '' : '<button class="h-edit" data-act="edit" data-id="' + h.id + '" type="button">✏️ 메모 수정</button>') +
+              (isCancelled ? '' : '<button class="h-cancel" data-act="cancel" data-id="' + h.id + '" type="button">↩️ 취소</button>') +
+              '<button class="h-del" data-act="del" data-id="' + h.id + '" type="button">🗑️ 삭제</button>'
+          ) +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // 액션 버튼
+    list.querySelectorAll('.h-edit').forEach(btn => {
+      tap(btn, e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const h = hist.find(x => String(x.id) === String(btn.dataset.id));
+        if (h) editHistoryMemo(h);
+      });
+    });
+    list.querySelectorAll('.h-cancel').forEach(btn => {
+      tap(btn, e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const h = hist.find(x => String(x.id) === String(btn.dataset.id));
+        if (h) cancelHistory(h);
+      });
+    });
+    list.querySelectorAll('.h-del').forEach(btn => {
+      tap(btn, e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const h = hist.find(x => String(x.id) === String(btn.dataset.id));
+        if (h) deleteHistory(h);
+      });
+    });
+    list.querySelectorAll('.h-restore').forEach(btn => {
+      tap(btn, e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const h = hist.find(x => String(x.id) === String(btn.dataset.id));
+        if (h) restoreHistory(h);
+      });
+    });
+    list.querySelectorAll('.h-purge').forEach(btn => {
+      tap(btn, e => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const h = hist.find(x => String(x.id) === String(btn.dataset.id));
+        if (h) purgeHistory(h);
+      });
+    });
+  }
+
+  // 메모만 수정 (수량/타입은 잠금)
+  async function editHistoryMemo(h) {
+    const newMemo = prompt('메모 수정 (수량/타입은 변경할 수 없습니다):', h.memo || '');
+    if (newMemo === null) return; // 취소
+    try {
+      if (sb) {
+        const r = await sb.from(T_HIST).update({ memo: newMemo }).eq('id', h.id);
+        if (r.error) throw r.error;
+      } else {
+        const idx = hist.findIndex(x => x.id === h.id);
+        if (idx >= 0) hist[idx].memo = newMemo;
+        saveLocal();
+      }
+      await loadData();
+    } catch(e) {
+      showErr('수정 실패: ' + e.message);
+    }
+  }
+
+  // 이력 취소: 재고 자동 보정 + 취소 표시 + 취소 이력 추가
+  async function cancelHistory(h) {
+    const item = items.find(x => String(x.id) === String(h.item_id));
+    if (!item) {
+      alert('해당 품목을 찾을 수 없습니다. 이미 삭제된 품목일 수 있습니다.');
+      return;
+    }
+    const reverseType = h.type === 'in' ? 'out' : 'in';
+    const reverseLabel = reverseType === 'in' ? '+' + h.qty + ' 증가' : '-' + h.qty + ' 차감';
+    const currentStock = item.stock;
+    if (!confirm(
+      '[이력 취소] 재고가 원상복귀됩니다\n\n' +
+      '품목: ' + h.item_name + '\n' +
+      '원본: ' + (h.type === 'in' ? '입고' : '출고') + ' ' + h.qty + '\n' +
+      '현재 재고: ' + currentStock + ' → 복귀 후: ' + newStock + '\n\n' +
+      '※ 이력은 "취소됨" 표시로 보존됩니다.'
+    )) return;
+
+    const newStock = h.type === 'in' ? item.stock - h.qty : item.stock + h.qty;
+    if (newStock < 0) {
+      if (!confirm('재고가 음수가 됩니다 (' + newStock + '). 계속하시겠습니까?')) return;
+    }
+
+    try {
+      if (sb) {
+        // 1. 품목 재고 업데이트
+        const r1 = await sb.from(T_ITEMS)
+          .update({ stock: newStock, updated_at: new Date().toISOString() })
+          .eq('id', item.id);
+        if (r1.error) throw r1.error;
+        // 2. 원본 이력에 cancelled 플래그 (실패시 memo로 fallback)
+        let cancelOk = false;
+        try {
+          const r2 = await sb.from(T_HIST).update({ cancelled: true }).eq('id', h.id);
+          if (!r2.error) cancelOk = true;
+        } catch(e) {}
+        if (!cancelOk) {
+          // cancelled 컬럼 없으면 memo에 [취소됨] 추가
+          await sb.from(T_HIST).update({ memo: '[취소됨] ' + (h.memo || '') }).eq('id', h.id);
+        }
+        // 3. 취소 이력 추가
+        const user = getCurrentUser();
+        const cancelMemo = '[취소처리]' + (user ? ' [' + user + ']' : '') + ' 원본 ID:' + h.id;
+        const r3 = await sb.from(T_HIST).insert({
+          item_id: item.id,
+          item_name: item.name,
+          type: reverseType,
+          qty: h.qty,
+          memo: cancelMemo
+        });
+        if (r3.error) throw r3.error;
+      } else {
+        const ii = items.findIndex(x => x.id === item.id);
+        if (ii >= 0) items[ii].stock = newStock;
+        const hi = hist.findIndex(x => x.id === h.id);
+        if (hi >= 0) hist[hi].cancelled = true;
+        const user = getCurrentUser();
+        hist.unshift({
+          id: Date.now(),
+          item_id: item.id,
+          item_name: item.name,
+          type: reverseType,
+          qty: h.qty,
+          memo: '[취소처리]' + (user ? ' [' + user + ']' : '') + ' 원본 ID:' + h.id,
+          created_at: new Date().toISOString()
+        });
+        saveLocal();
+      }
+      await loadData();
+    } catch(e) {
+      showErr('취소 처리 실패: ' + e.message);
+    }
+  }
+
+  // 이력 삭제 (소프트 삭제: deleted 플래그만 표시, 복원 가능)
+  async function deleteHistory(h) {
+    const isCancelled = !!h.cancelled || (h.memo && h.memo.indexOf('[취소됨]') === 0);
+    const typeLabel = h.type === 'in' ? '입고' : '출고';
+    const msg = isCancelled
+      ? '[이력 삭제]\n\n품목: ' + h.item_name + '\n구분: ' + typeLabel + ' ' + h.qty + '\n\n※ 취소된 이력입니다. 재고 변동 없이 삭제 표시합니다.\n[삭제된 이력 보기]에서 복원할 수 있습니다.'
+      : '[이력 삭제]\n\n품목: ' + h.item_name + '\n구분: ' + typeLabel + ' ' + h.qty + '\n\n⚠️ 재고 보정 없이 이력만 삭제 표시됩니다.\n재고를 원상복귀하려면 먼저 [↩️ 취소]를 사용하세요.\n\n[삭제된 이력 보기]에서 복원할 수 있습니다.';
+    if (!confirm(msg)) return;
+    const user = getCurrentUser();
+    const deletedAt = new Date().toISOString();
+    try {
+      if (sb) {
+        // deleted 컬럼 시도 → 실패 시 memo prefix fallback
+        const r = await sb.from(T_HIST).update({ deleted: true }).eq('id', h.id);
+        if (r.error) {
+          await sb.from(T_HIST).update({
+            memo: '[삭제됨' + (user ? ' ' + user : '') + ' ' + deletedAt + '] ' + (h.memo || '')
+          }).eq('id', h.id);
+        }
+      } else {
+        const idx = hist.findIndex(x => x.id === h.id);
+        if (idx >= 0) {
+          hist[idx].deleted = true;
+          hist[idx].deleted_at = deletedAt;
+          hist[idx].deleted_by = user || '';
+        }
+        saveLocal();
+      }
+      await loadData();
+    } catch(e) {
+      showErr('삭제 실패: ' + e.message);
+    }
+  }
+
+  // 이력 복원
+  async function restoreHistory(h) {
+    if (!confirm('[이력 복원]\n\n품목: ' + h.item_name + '\n\n삭제 표시를 해제하고 이력을 복원합니다.')) return;
+    try {
+      if (sb) {
+        const r = await sb.from(T_HIST).update({ deleted: false }).eq('id', h.id);
+        if (r.error) {
+          // memo prefix fallback 복원
+          const memo = (h.memo || '').replace(/^\[삭제됨[^\]]*\]\s*/, '');
+          await sb.from(T_HIST).update({ memo: memo }).eq('id', h.id);
+        }
+      } else {
+        const idx = hist.findIndex(x => x.id === h.id);
+        if (idx >= 0) {
+          hist[idx].deleted = false;
+          delete hist[idx].deleted_at;
+          delete hist[idx].deleted_by;
+        }
+        saveLocal();
+      }
+      await loadData();
+    } catch(e) {
+      showErr('복원 실패: ' + e.message);
+    }
+  }
+
+  // 이력 영구삭제 (DB에서 완전 제거 - 복원 불가)
+  async function purgeHistory(h) {
+    if (!confirm('⚠️ [영구 삭제]\n\n품목: ' + h.item_name + '\n\nDB에서 완전히 제거됩니다.\n복원할 수 없습니다. 계속하시겠습니까?')) return;
+    try {
+      if (sb) {
+        const r = await sb.from(T_HIST).delete().eq('id', h.id);
+        if (r.error) throw r.error;
+      } else {
+        const idx = hist.findIndex(x => x.id === h.id);
+        if (idx >= 0) hist.splice(idx, 1);
+        saveLocal();
+      }
+      await loadData();
+    } catch(e) {
+      showErr('영구삭제 실패: ' + e.message);
+    }
+  }
+
+  // 삭제 상태 판단 (DB 컬럼 또는 memo prefix)
+  function isDeletedHist(h) {
+    return !!h.deleted || (h.memo && h.memo.indexOf('[삭제됨') === 0);
+  }
+
+  // ============ Detail Modal ============
+  function openDetail(item) {
+    curDetail = item;
+    const isLow = item.min_stock > 0 && item.stock < item.min_stock;
+
+    $('dName').textContent = item.name;
+
+    const photo = $('dPhoto');
+    if (item.photo) {
+      photo.src = item.photo;
+      photo.style.display = 'block';
+    } else {
+      photo.style.display = 'none';
+    }
+
+    const parts = [];
+    if (item.category) parts.push(item.category);
+    if (item.spec) parts.push('규격: ' + item.spec);
+    if (item.location) parts.push('📍 ' + item.location);
+    if (item.vendor) parts.push('🏢 ' + item.vendor);
+    if (item.price) parts.push('단가: ' + Number(item.price).toLocaleString() + '원');
+    if (item.memo) parts.push(item.memo);
+    $('dMeta').innerHTML = parts.map(escapeHtml).join('<br>');
+
+    const stockEl = $('dStock');
+    stockEl.textContent = item.stock + ' ' + (item.unit || 'EA') +
+      (item.min_stock > 0 ? ' / 안전 ' + item.min_stock : '');
+    stockEl.className = 'stock-big' + (isLow ? ' low' : '');
+
+    openModal('modalDetail');
+  }
+
+  // ============ Item Modal ============
+  function openItemModal(item) {
+    $('itemTitle').textContent = item ? '품목 수정' : '품목 추가';
+    $('btnDelete').style.display = item ? 'block' : 'none';
+    $('editId').value = item ? item.id : '';
+    $('fName').value = item ? item.name || '' : '';
+    // 분류 - 기존 값이 categories에 없으면 자동 추가
+    const catVal = item ? (item.category || (categories[0] || '기타')) : (categories[0] || '기타');
+    if (item && item.category) ensureCategory(item.category);
+    $('fCategory').value = catVal;
+    // 단위는 select - 기존 값이 옵션에 없으면 동적으로 추가
+    const unitVal = item ? (item.unit || 'EA') : 'EA';
+    const fUnit = $('fUnit');
+    if (![...fUnit.options].some(o => o.value === unitVal)) {
+      const opt = document.createElement('option');
+      opt.value = unitVal; opt.textContent = unitVal;
+      fUnit.appendChild(opt);
+    }
+    fUnit.value = unitVal;
+    $('fSpec').value = item ? item.spec || '' : '';
+    $('fStock').value = item ? (item.stock != null ? item.stock : '') : '';
+    $('fMinStock').value = item ? (item.min_stock != null ? item.min_stock : '') : '';
+    $('fPrice').value = item ? (item.price != null ? item.price : '') : '';
+    $('fLocation').value = item ? item.location || '' : '';
+    $('fVendor').value = item ? item.vendor || '' : '';
+    $('fMemo').value = item ? item.memo || '' : '';
+
+    if (item && item.photo) {
+      curPhoto = item.photo;
+      showPhotoPreview(item.photo);
+    } else {
+      clearPhoto();
+    }
+    openModal('modalItem');
+  }
+
+  async function saveItem() {
+    const id = $('editId').value;
+    const name = $('fName').value.trim();
+    if (!name) { alert('품명을 입력하세요'); return; }
+
+    const data = {
+      name: name,
+      category: $('fCategory').value,
+      unit: $('fUnit').value || 'EA',
+      spec: $('fSpec').value,
+      stock: parseInt($('fStock').value) || 0,
+      min_stock: parseInt($('fMinStock').value) || 0,
+      price: parseInt($('fPrice').value) || 0,
+      location: $('fLocation').value,
+      vendor: $('fVendor').value,
+      memo: $('fMemo').value,
+      photo: curPhoto || null
+    };
+
+    try {
+      if (sb) {
+        if (id) {
+          data.updated_at = new Date().toISOString();
+          const r = await sb.from(T_ITEMS).update(data).eq('id', id);
+          if (r.error) throw r.error;
+        } else {
+          const r = await sb.from(T_ITEMS).insert(data);
+          if (r.error) throw r.error;
+        }
+      } else {
+        if (id) {
+          const idx = items.findIndex(x => String(x.id) === String(id));
+          if (idx >= 0) items[idx] = Object.assign({}, items[idx], data);
+        } else {
+          data.id = Date.now();
+          data.created_at = new Date().toISOString();
+          items.push(data);
+        }
+        saveLocal();
+      }
+      closeModal('modalItem');
+      await loadData();
+    } catch(e) {
+      showErr('저장 실패: ' + e.message);
+    }
+  }
+
+  async function deleteItem() {
+    const id = $('editId').value;
+    if (!id) return;
+    if (!confirm('정말 삭제하시겠습니까?\n(관련 입출고 이력도 함께 삭제됩니다)')) return;
+    try {
+      if (sb) {
+        // 이력 먼저 삭제 → 그 다음 품목 삭제
+        const rh = await sb.from(T_HIST).delete().eq('item_id', id);
+        if (rh.error) throw rh.error;
+        const r = await sb.from(T_ITEMS).delete().eq('id', id);
+        if (r.error) throw r.error;
+      } else {
+        items = items.filter(x => String(x.id) !== String(id));
+        hist = hist.filter(h => String(h.item_id) !== String(id));
+        saveLocal();
+      }
+      closeModal('modalItem');
+      await loadData();
+    } catch(e) {
+      showErr('삭제 실패: ' + e.message);
+    }
+  }
+
+  // 카드에서 직접 편집 모달 열기
+  function openEdit(item) {
+    openItemModal(item);
+  }
+
+  // 카드에서 직접 삭제
+  async function quickDeleteItem(item) {
+    if (!confirm('"' + item.name + '"\n\n정말 삭제하시겠습니까?\n(관련 입출고 이력도 함께 삭제됩니다)')) return;
+    try {
+      if (sb) {
+        // 이력 먼저 삭제 → 그 다음 품목 삭제
+        const rh = await sb.from(T_HIST).delete().eq('item_id', item.id);
+        if (rh.error) throw rh.error;
+        const r = await sb.from(T_ITEMS).delete().eq('id', item.id);
+        if (r.error) throw r.error;
+      } else {
+        items = items.filter(x => String(x.id) !== String(item.id));
+        hist = hist.filter(h => String(h.item_id) !== String(item.id));
+        saveLocal();
+      }
+      await loadData();
+    } catch(e) {
+      showErr('삭제 실패: ' + e.message);
+    }
+  }
+
+  // ============ Stock Modal ============
+  // 메인 화면에 등록된 사용자 정보
+  function getCurrentUser() {
+    const dept = localStorage.getItem('msmUser_dept') || '';
+    const name = localStorage.getItem('msmUser_name') || '';
+    if (!dept && !name) return '';
+    if (dept && name) return name + '/' + dept;
+    return name || dept;
+  }
+
+  function openStock(item, type) {
+    curStockItem = item;
+    curStockType = type;
+    $('stockTitle').textContent = type === 'in' ? '📥 입고' : '📤 출고';
+    $('stockInfo').innerHTML =
+      '<b>' + escapeHtml(item.name) + '</b>' +
+      (item.spec ? ' / ' + escapeHtml(item.spec) : '') + '<br>' +
+      '<span style="font-size:12px;color:#666">현재고: ' + item.stock + ' ' + (item.unit || 'EA') + '</span>';
+    $('stockQty').value = 1;
+    $('stockMemo').value = '';
+
+    // 사용자 정보가 있으면 안내
+    const user = getCurrentUser();
+    const memoInp = $('stockMemo');
+    if (user) {
+      memoInp.placeholder = '[' + user + '] 자동 추가됨. 추가 메모 입력';
+    } else {
+      memoInp.placeholder = '예: 홍길동, 1호기 교체용';
+    }
+
+    openModal('modalStock');
+  }
+
+  function adjustQty(d) {
+    const inp = $('stockQty');
+    const v = (parseInt(inp.value) || 0) + d;
+    inp.value = Math.max(1, v);
+  }
+
+  async function confirmStock() {
+    const qty = parseInt($('stockQty').value);
+    let memo = $('stockMemo').value.trim();
+    if (!qty || qty < 1) { alert('수량을 확인하세요'); return; }
+
+    // 사용자 정보 prefix 자동 추가
+    const user = getCurrentUser();
+    if (user) {
+      memo = '[' + user + ']' + (memo ? ' ' + memo : '');
+    }
+
+    const newStock = curStockType === 'in'
+      ? curStockItem.stock + qty
+      : curStockItem.stock - qty;
+
+    if (newStock < 0) {
+      if (!confirm('재고가 음수가 됩니다. 계속하시겠습니까?')) return;
+    }
+
+    try {
+      if (sb) {
+        const r1 = await sb.from(T_ITEMS)
+          .update({ stock: newStock, updated_at: new Date().toISOString() })
+          .eq('id', curStockItem.id);
+        if (r1.error) throw r1.error;
+        const r2 = await sb.from(T_HIST).insert({
+          item_id: curStockItem.id,
+          item_name: curStockItem.name,
+          type: curStockType,
+          qty: qty,
+          memo: memo
+        });
+        if (r2.error) throw r2.error;
+      } else {
+        const idx = items.findIndex(x => x.id === curStockItem.id);
+        if (idx >= 0) items[idx].stock = newStock;
+        hist.unshift({
+          id: Date.now(),
+          item_id: curStockItem.id,
+          item_name: curStockItem.name,
+          type: curStockType,
+          qty: qty,
+          memo: memo,
+          created_at: new Date().toISOString()
+        });
+        saveLocal();
+      }
+      closeModal('modalStock');
+      await loadData();
+    } catch(e) {
+      showErr('처리 실패: ' + e.message);
+    }
+  }
+
+  // ============ Settings ============
+  function openSettings() {
+    $('newCategoryInput').value = '';
+    renderCategoryList();
+    openModal('modalSettings');
+  }
+
+  // ============ CSV ============
+  // 분류 선택 모달 → 콜백
+  let exportFilterCallback = null;
+  function openExportFilter(titleText, callback) {
+    exportFilterCallback = callback;
+    $('exportFilterTitle').textContent = titleText;
+    const wrap = $('exportFilterList');
+    // 현재 분류 + 데이터에 실제 존재하는 분류(미등록 분류 포함) 모두 모음
+    const set = new Set(categories);
+    items.forEach(i => { if (i.category) set.add(i.category); });
+    const list = Array.from(set);
+    if (list.length === 0) {
+      wrap.innerHTML = '<div style="padding:10px;color:#888;text-align:center">분류가 없습니다.</div>';
+    } else {
+      wrap.innerHTML = list.map(c => {
+        const safe = escapeHtml(c);
+        return '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer;font-size:14px">' +
+               '<input type="checkbox" class="exp-cat-chk" value="' + safe + '" checked style="width:18px;height:18px">' +
+               '<span>' + safe + '</span></label>';
+      }).join('');
+    }
+    openModal('modalExportFilter');
+  }
+  function getCheckedExportCats() {
+    return Array.from(document.querySelectorAll('#exportFilterList .exp-cat-chk:checked'))
+      .map(cb => cb.value);
+  }
+  function setupExportFilterEvents() {
+    $('btnExportFilterAll').onclick = () => {
+      document.querySelectorAll('#exportFilterList .exp-cat-chk').forEach(cb => cb.checked = true);
+    };
+    $('btnExportFilterNone').onclick = () => {
+      document.querySelectorAll('#exportFilterList .exp-cat-chk').forEach(cb => cb.checked = false);
+    };
+    $('btnExportFilterCancel').onclick = () => {
+      exportFilterCallback = null;
+      closeModal('modalExportFilter');
+    };
+    $('btnExportFilterOk').onclick = () => {
+      const cats = getCheckedExportCats();
+      if (cats.length === 0) {
+        showErr('1개 이상의 분류를 선택하세요.');
+        return;
+      }
+      const cb = exportFilterCallback;
+      exportFilterCallback = null;
+      closeModal('modalExportFilter');
+      if (cb) cb(cats);
+    };
+  }
+
+  function exportCSV(type) {
+    if (typeof XLSX === 'undefined') {
+      showErr('Excel 라이브러리 로드 실패. 인터넷 연결을 확인하세요.');
+      return;
+    }
+    const title = type === 'items' ? '📦 재고목록 - 분류선택' : '📋 입출고이력 - 분류선택';
+    openExportFilter(title, function(selectedCats) {
+      doExport(type, selectedCats);
+    });
+  }
+
+  function doExport(type, selectedCats) {
+    const catSet = new Set(selectedCats);
+    const today = new Date().toISOString().slice(0, 10);
+    const wb = XLSX.utils.book_new();
+    let ws, fname, sheetName;
+
+    if (type === 'items') {
+      const filteredItems = items.filter(i => catSet.has(i.category || ''));
+      const headers = ['품명','분류','규격','단위','현재고','안전재고','단가','위치','거래처','비고'];
+      const rows = filteredItems.map(i => [
+        i.name || '', i.category || '', i.spec || '', i.unit || '',
+        Number(i.stock) || 0, Number(i.min_stock) || 0,
+        Number(i.price) || 0, i.location || '', i.vendor || '', i.memo || ''
+      ]);
+      ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = [
+        {wch:22},{wch:12},{wch:14},{wch:8},{wch:8},{wch:8},
+        {wch:10},{wch:10},{wch:14},{wch:24}
+      ];
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+      ws['!autofilter'] = { ref: 'A1:J' + (rows.length + 1) };
+      sheetName = '재고목록';
+      fname = '재고목록_' + today + '.xlsx';
+    } else {
+      // 입출고이력: item_id로 items의 분류 매핑
+      const itemCatMap = {};
+      items.forEach(i => { itemCatMap[String(i.id)] = i.category || ''; });
+      const filteredHist = hist.filter(h => {
+        const cat = itemCatMap[String(h.item_id)] || '';
+        return catSet.has(cat);
+      });
+      const headers = ['일시','품명','분류','구분','수량','상태','메모'];
+      const rows = filteredHist.map(h => {
+        const isDel = isDeletedHist(h);
+        const isCancel = !!h.cancelled || (h.memo && h.memo.indexOf('[취소됨]') === 0);
+        const state = isDel ? '삭제됨' : (isCancel ? '취소됨' : '정상');
+        return [
+          new Date(h.created_at).toLocaleString('ko-KR'),
+          h.item_name || '',
+          itemCatMap[String(h.item_id)] || '',
+          h.type === 'in' ? '입고' : '출고',
+          Number(h.qty) || 0,
+          state,
+          h.memo || ''
+        ];
+      });
+      ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      ws['!cols'] = [{wch:20},{wch:22},{wch:12},{wch:8},{wch:8},{wch:8},{wch:30}];
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+      ws['!autofilter'] = { ref: 'A1:G' + (rows.length + 1) };
+      sheetName = '입출고이력';
+      fname = '입출고이력_' + today + '.xlsx';
+    }
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    try {
+      XLSX.writeFile(wb, fname);
+    } catch(e) {
+      showErr('Excel 저장 실패: ' + e.message);
+    }
+  }
+
+  // ============ CSV Upload ============
+  // 간단 CSV 파서 (따옴표 처리 포함)
+  function parseCSV(text) {
+    // BOM 제거
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const rows = [];
+    let cur = [];
+    let field = '';
+    let inQuote = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuote) {
+        if (c === '"') {
+          if (text[i+1] === '"') { field += '"'; i++; }
+          else inQuote = false;
+        } else field += c;
+      } else {
+        if (c === '"') inQuote = true;
+        else if (c === ',') { cur.push(field); field = ''; }
+        else if (c === '\n' || c === '\r') {
+          if (c === '\r' && text[i+1] === '\n') i++;
+          cur.push(field); field = '';
+          if (cur.length > 1 || cur[0] !== '') rows.push(cur);
+          cur = [];
+        } else field += c;
+      }
+    }
+    if (field !== '' || cur.length > 0) {
+      cur.push(field);
+      if (cur.length > 1 || cur[0] !== '') rows.push(cur);
+    }
+    return rows;
+  }
+
+  function downloadTemplate() {
+    const headers = '품명,분류,규격,단위,현재고,안전재고,단가,위치,거래처,비고';
+    const sample = '"펀치다이","금형부품","M10x50","EA","5","3","15000","A-01","동광공구",""';
+    const csv = '\uFEFF' + headers + '\n' + sample + '\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '재고_업로드양식.csv';
+    a.click();
+  }
+
+  async function uploadCSV(file) {
+    if (!file) return;
+    const result = $('uploadResult');
+    result.style.display = 'block';
+    result.style.background = '#fff3cd';
+    result.style.color = '#856404';
+    result.textContent = '⏳ 처리 중...';
+
+    try {
+      const text = await file.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) {
+        throw new Error('데이터가 없습니다 (헤더 + 최소 1행 필요)');
+      }
+
+      const header = rows[0].map(h => h.trim());
+      const expected = ['품명','분류','규격','단위','현재고','안전재고','단가','위치','거래처','비고'];
+      // 헤더 매핑
+      const idx = {};
+      expected.forEach(h => { idx[h] = header.indexOf(h); });
+      if (idx['품명'] < 0) {
+        throw new Error('"품명" 컬럼을 찾을 수 없습니다. 양식을 확인하세요.');
+      }
+
+      const dataRows = rows.slice(1).filter(r => (r[idx['품명']] || '').trim() !== '');
+      if (dataRows.length === 0) {
+        throw new Error('업로드할 데이터 행이 없습니다.');
+      }
+
+      // 기존 품목 이름->id 맵
+      const nameMap = {};
+      items.forEach(i => { nameMap[i.name] = i; });
+
+      let added = 0, updated = 0, failed = 0;
+      const errors = [];
+
+      for (let r = 0; r < dataRows.length; r++) {
+        const row = dataRows[r];
+        const get = key => idx[key] >= 0 ? (row[idx[key]] || '').trim() : '';
+        const name = get('품명');
+        if (!name) { failed++; continue; }
+
+        const data = {
+          name: name,
+          category: get('분류') || '기타',
+          spec: get('규격'),
+          unit: get('단위') || 'EA',
+          stock: parseInt(get('현재고')) || 0,
+          min_stock: parseInt(get('안전재고')) || 0,
+          price: parseInt(get('단가')) || 0,
+          location: get('위치'),
+          vendor: get('거래처'),
+          memo: get('비고')
+        };
+
+        // 새 분류면 자동 추가
+        if (data.category) ensureCategory(data.category);
+
+        try {
+          const existing = nameMap[name];
+          if (sb) {
+            if (existing) {
+              data.updated_at = new Date().toISOString();
+              const rr = await sb.from(T_ITEMS).update(data).eq('id', existing.id);
+              if (rr.error) throw rr.error;
+              updated++;
+            } else {
+              const rr = await sb.from(T_ITEMS).insert(data);
+              if (rr.error) throw rr.error;
+              added++;
+            }
+          } else {
+            if (existing) {
+              const ix = items.findIndex(x => x.id === existing.id);
+              if (ix >= 0) items[ix] = Object.assign({}, items[ix], data);
+              updated++;
+            } else {
+              data.id = Date.now() + r;
+              data.created_at = new Date().toISOString();
+              items.push(data);
+              added++;
+            }
+          }
+        } catch(e) {
+          failed++;
+          if (errors.length < 3) errors.push(name + ': ' + e.message);
+        }
+      }
+
+      if (!sb) saveLocal();
+      await loadData();
+
+      result.style.background = '#d4edda';
+      result.style.color = '#155724';
+      let msg = '✅ 완료! 추가 ' + added + '건, 수정 ' + updated + '건';
+      if (failed > 0) {
+        msg += ', 실패 ' + failed + '건';
+        if (errors.length > 0) msg += '\n' + errors.join('\n');
+      }
+      result.style.whiteSpace = 'pre-line';
+      result.textContent = msg;
+    } catch(e) {
+      result.style.background = '#f8d7da';
+      result.style.color = '#721c24';
+      result.textContent = '❌ 실패: ' + e.message;
+    }
+    $('csvInput').value = '';
+  }
+
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === name);
+    });
+    ['list', 'history', 'export'].forEach(p => {
+      $('page-' + p).style.display = p === name ? 'block' : 'none';
+    });
+    $('btnAdd').style.display = name === 'list' ? 'block' : 'none';
+  }
+
+  // ============ Init ============
+  document.addEventListener('DOMContentLoaded', () => {
+    // URL 파라미터: ?loc=A01 → 해당 위치 품목만 표시
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const locParam = params.get('loc');
+      if (locParam) {
+        locFilter = locParam.trim();
+        $('locFilterName').textContent = locFilter;
+        $('locFilterBar').style.display = 'flex';
+      }
+    } catch(e) {}
+
+    // 전체보기 버튼
+    tap('btnLocClear', () => {
+      locFilter = '';
+      $('locFilterBar').style.display = 'none';
+      // URL에서 loc 제거
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete('loc');
+        window.history.replaceState({}, '', u);
+      } catch(e) {}
+      renderList();
+    });
+
+    // 탭
+    document.querySelectorAll('.tab').forEach(t => {
+      tap(t, () => switchTab(t.dataset.tab));
+    });
+
+    // 검색
+    $('searchInput').addEventListener('input', renderList);
+    $('filterCat').addEventListener('change', renderList);
+
+    // 이력 자동완성
+    const hInp = $('historySearch');
+    const hAC = $('histAC');
+    let acIdx = -1;
+
+    function getHistNames() {
+      const map = {};
+      items.forEach(i => { if (i.name) map[i.name] = true; });
+      hist.forEach(h => { if (h.item_name) map[h.item_name] = true; });
+      return Object.keys(map).sort((a, b) => a.localeCompare(b, 'ko'));
+    }
+
+    function showAC(q) {
+      if (!q) { hAC.style.display = 'none'; return; }
+      const matches = getHistNames().filter(n => n.toLowerCase().includes(q.toLowerCase()));
+      if (matches.length === 0) { hAC.style.display = 'none'; return; }
+      hAC.innerHTML = '';
+      matches.slice(0, 20).forEach((name) => {
+        const div = document.createElement('div');
+        div.className = 'hist-ac-item';
+        const ql = q.toLowerCase();
+        const nl = name.toLowerCase();
+        const idx = nl.indexOf(ql);
+        div.innerHTML = escapeHtml(name.slice(0, idx)) +
+          '<mark>' + escapeHtml(name.slice(idx, idx + q.length)) + '</mark>' +
+          escapeHtml(name.slice(idx + q.length));
+        div.addEventListener('mousedown', e => { e.preventDefault(); });
+        div.addEventListener('click', () => {
+          hInp.value = name;
+          hAC.style.display = 'none';
+          acIdx = -1;
+          renderHistory();
+        });
+        hAC.appendChild(div);
+      });
+      acIdx = -1;
+      hAC.style.display = 'block';
+    }
+
+    hInp.addEventListener('input', () => { showAC(hInp.value); });
+    hInp.addEventListener('keydown', e => {
+      const its = hAC.querySelectorAll('.hist-ac-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acIdx = Math.min(acIdx + 1, its.length - 1);
+        its.forEach((el, i) => el.classList.toggle('active', i === acIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acIdx = Math.max(acIdx - 1, -1);
+        its.forEach((el, i) => el.classList.toggle('active', i === acIdx));
+      } else if (e.key === 'Enter') {
+        if (acIdx >= 0 && its[acIdx]) {
+          hInp.value = its[acIdx].textContent;
+          hAC.style.display = 'none'; acIdx = -1;
+        }
+        renderHistory();
+      } else if (e.key === 'Escape') {
+        hAC.style.display = 'none'; acIdx = -1;
+      }
+    });
+    hInp.addEventListener('blur', () => {
+      setTimeout(() => { hAC.style.display = 'none'; acIdx = -1; }, 150);
+    });
+    tap($('btnHistSearch'), () => {
+      hAC.style.display = 'none';
+      renderHistory();
+    });
+
+    // 삭제된 이력 보기 토글
+    if ($('showDeletedHist')) {
+      $('showDeletedHist').addEventListener('change', renderHistory);
+    }
+
+    // 이력 일자 빠른선택
+    document.querySelectorAll('.date-quick').forEach(b => {
+      tap(b, () => {
+        document.querySelectorAll('.date-quick').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        historyDateRange = b.dataset.range;
+        $('dateRangeBar').style.display = historyDateRange === 'custom' ? 'block' : 'none';
+        renderHistory();
+      });
+    });
+    $('dateFrom').addEventListener('change', () => {
+      historyDateFrom = $('dateFrom').value;
+      renderHistory();
+    });
+    $('dateTo').addEventListener('change', () => {
+      historyDateTo = $('dateTo').value;
+      renderHistory();
+    });
+
+    // 헤더/FAB
+    tap('btnSettings', openSettings);
+    tap('btnAdd', () => openItemModal(null));
+
+    // 상세
+    tap('btnDetailClose', () => closeModal('modalDetail'));
+    tap('btnDoIn', () => {
+      closeModal('modalDetail');
+      openStock(curDetail, 'in');
+    });
+    tap('btnDoOut', () => {
+      closeModal('modalDetail');
+      openStock(curDetail, 'out');
+    });
+    tap('btnDoEdit', () => {
+      closeModal('modalDetail');
+      openItemModal(curDetail);
+    });
+
+    // 품목 모달
+    tap('btnItemCancel', () => closeModal('modalItem'));
+    tap('btnItemSave', saveItem);
+    tap('btnDelete', deleteItem);
+
+    // 사진 - 카메라/갤러리 분리
+    tap('btnTakePhoto', () => $('photoInputCamera').click());
+    tap('btnChoosePhoto', () => $('photoInputGallery').click());
+    tap('btnRemovePhoto', clearPhoto);
+    $('photoInputCamera').addEventListener('change', e => {
+      onPhotoSelect(e.target.files[0]);
+    });
+    $('photoInputGallery').addEventListener('change', e => {
+      onPhotoSelect(e.target.files[0]);
+    });
+
+    // 수량
+    tap('btnStockCancel', () => closeModal('modalStock'));
+    tap('btnStockOk', confirmStock);
+    tap('qtyMinus', () => adjustQty(-1));
+    tap('qtyPlus', () => adjustQty(1));
+
+    // 설정
+    tap('btnSettingsClose', () => closeModal('modalSettings'));
+    tap('btnAddCategory', addCategory);
+    $('newCategoryInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addCategory();
+      }
+    });
+
+    // 내보내기
+    tap('btnExportItems', () => exportCSV('items'));
+    tap('btnExportHistory', () => exportCSV('history'));
+    setupExportFilterEvents();
+
+    // CSV 업로드
+    tap('btnDownloadTemplate', downloadTemplate);
+    tap('btnUploadCSV', () => $('csvInput').click());
+    $('csvInput').addEventListener('change', e => {
+      uploadCSV(e.target.files[0]);
+    });
+
+    // 모달 배경
+    document.querySelectorAll('.modal-bg').forEach(bg => {
+      bg.addEventListener('click', e => {
+        if (e.target === bg) bg.classList.remove('show');
+      });
+    });
+
+    initSupabase();
+    loadCategories();
+    fillCategorySelects();
+    renderCategoryList();
+    loadData();
+  });
+})();
+</script>
+</body>
+</html>
