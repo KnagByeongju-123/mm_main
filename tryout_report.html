@@ -429,7 +429,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.3</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.4</span></h1>
 </div>
 
 <div class="user-bar">
@@ -505,7 +505,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
 
     <div class="card">
-      <h2>📷 사진 첨부 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(자동 20KB 이하로 압축)</span></h2>
+      <h2>📷 사진 첨부 <span style="font-size:11px;color:var(--text-sub);font-weight:500">(자동 30KB 이하로 압축)</span></h2>
 
       <div class="photo-btn-row">
         <label for="photoCam" class="photo-btn cam">
@@ -736,7 +736,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v2.3 · msm</div>
+  <div class="footer">Tryout 작업일지 v2.4 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -750,7 +750,9 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v2.3 (현재)\n' +
+    'v2.4 (현재)\n' +
+    '• 사진 자동 압축 한도: 20KB → 30KB (화질 향상)\n\n' +
+    'v2.3\n' +
     '• 🛠 개선활동 시작 버튼 추가 (목록 카드)\n' +
     '• 일지 정보 자동 연계 → improvement_report.html로 이동\n\n' +
     'v2.2\n' +
@@ -792,7 +794,7 @@ const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL = 'tryout_logs';
 const TBL_MOLD = 'mm_mold_master';   // 금형마스터 테이블
-const PHOTO_MAX_BYTES = 20 * 1024;  // 20 KB
+const PHOTO_MAX_BYTES = 30 * 1024;  // 30 KB
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const session = window.__msmSession;

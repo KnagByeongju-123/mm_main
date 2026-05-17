@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+<title>개선활동 보고서 출력 v1.1</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:     #334155;
+  --border-hi:  #475569;
+  --text:       #e2e8f0;
+  --text-mid:   #cbd5e1;
+  --text-sub:   #94a3b8;
+  --text-dim:   #64748b;
+  --ice:        #7dd3fc;
+  --orange:     #fdba74;
+  --green:      #4ade80;
+  --rose:       #fca5a5;
+  --purple:     #c4b5fd;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh; padding-bottom: 40px;
+}
+
+/* 헤더 */
+.app-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 20;
+}
+.back-btn {
+  background: rgba(253,186,116,0.1);
+  border: 1px solid rgba(253,186,116,0.3);
+  color: var(--orange);
+  padding: 6px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 600; text-decoration: none;
+}
+.app-header h1 {
+  font-size: 18px; font-weight: 700; color: var(--orange); flex: 1;
+}
+.ver { font-size: 11px; color: var(--text-sub); margin-left: 6px; cursor: pointer; font-weight: 500; }
+
+/* 설정 패널 */
+.config-panel {
+  background: var(--bg-card);
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.config-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px; flex-wrap: wrap;
+}
+.config-row label { font-size: 12px; color: var(--text-sub); font-weight: 600; min-width: 70px; }
+.config-row input {
+  flex: 1; min-width: 150px;
+  padding: 8px 10px; background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 5px;
+  font-size: 13px; font-family: inherit;
+}
+.btn-row {
+  display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+}
+.btn-action {
+  flex: 1; min-width: 100px; padding: 10px 14px;
+  border: none; border-radius: 6px; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.btn-print { background: var(--orange); color: #1a1a1a; }
+.btn-back { background: var(--bg-card-hi); color: var(--text); border: 1px solid var(--border-hi); }
+
+.preview-wrap {
+  background: var(--bg-dark); padding: 14px;
+  overflow-x: auto;
+}
+.preview-hint {
+  text-align: center; font-size: 12px; color: var(--text-sub); margin-bottom: 10px;
+}
+
+/* 보고서 본체 — 인쇄 시 그대로 출력 */
+.report-page {
+  background: white; color: #222;
+  width: 210mm; min-height: 297mm;
+  max-width: none;
+  margin: 0 auto;
+  padding: 18mm 16mm;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+  font-size: 11pt; line-height: 1.5;
+}
+
+/* 결재란 - 상단 우측 50% */
+.approval {
+  width: 50%; margin: 0 0 14px auto;
+  border-collapse: collapse;
+  border: 1.5px solid #000;
+}
+.approval th, .approval td {
+  border: 1px solid #000;
+  text-align: center; vertical-align: middle;
+}
+.approval th {
+  background: #f0f0f0; font-size: 9pt;
+  padding: 4px 0; color: #000; font-weight: 700;
+  height: 18pt;
+}
+.approval td {
+  height: 50pt; min-width: 60px;
+  font-size: 9pt; color: #888;
+}
+
+/* 보고서 헤더 */
+.r-head {
+  border-bottom: 3px double #000;
+  padding-bottom: 10px; margin-bottom: 14px;
+  text-align: center; clear: both;
+}
+.r-head .company {
+  font-size: 11pt; color: #555; margin-bottom: 4px; letter-spacing: 1px;
+}
+.r-head .title {
+  font-size: 22pt; font-weight: 800; color: #000;
+  margin-bottom: 6px; letter-spacing: 4pt;
+}
+.r-head .meta {
+  display: flex; gap: 14px; font-size: 9pt; color: #666;
+  justify-content: center;
+}
+.r-head .meta span { color: #222; font-weight: 600; }
+
+/* 정보 박스 */
+.info-table {
+  width: 100%; border-collapse: collapse;
+  margin-bottom: 14px; font-size: 10pt;
+}
+.info-table th, .info-table td {
+  border: 1px solid #888; padding: 6pt 8pt; text-align: left;
+}
+.info-table th {
+  background: #f0f0f0; width: 90pt; font-weight: 600;
+}
+
+/* 섹션 헤더 */
+.r-section {
+  background: #1a3a5c; color: white;
+  font-size: 12pt; font-weight: 700;
+  padding: 6px 12px; margin: 18px 0 8px 0;
+  border-radius: 4px;
+}
+
+/* 내용 박스 */
+.content-box {
+  border: 1px solid #888;
+  padding: 10pt 12pt;
+  margin-bottom: 10px;
+  font-size: 10pt; line-height: 1.6;
+  min-height: 30pt;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 분류 라벨 */
+.cat-tag {
+  display: inline-block;
+  background: #fff3cd; color: #664d03;
+  padding: 2px 10px; border-radius: 10px;
+  font-size: 9pt; font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* 효과 박스 (개선 후) */
+.effect-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 10px;
+}
+.effect-box {
+  border: 1px solid #888; padding: 8pt 10pt;
+  background: #f8f9fa;
+}
+.effect-box .lbl {
+  font-size: 10pt; font-weight: 700; color: #1a3a5c;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 3px;
+}
+.effect-box .val {
+  font-size: 10pt; white-space: pre-wrap;
+  word-break: keep-all; min-height: 30pt;
+}
+.effect-box.quant { background: #e7f3ff; }
+.effect-box.quant .lbl { color: #084298; }
+
+/* IATF */
+.iatf-box {
+  border: 1px solid #888; padding: 8pt 12pt;
+  background: #f5f0fb;
+  display: flex; gap: 24px;
+  font-size: 10pt; margin-bottom: 10px;
+}
+.iatf-box .it {
+  display: flex; align-items: center; gap: 6px;
+}
+.iatf-box .check {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 1.5px solid #444;
+  text-align: center;
+  line-height: 12px;
+  font-weight: 700;
+}
+.iatf-box .check.on { background: #6f42c1; color: white; }
+
+/* 비교 사진 영역 */
+.photo-compare {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-bottom: 14px;
+}
+.photo-col {
+  border: 1px solid #888;
+}
+.photo-col .col-head {
+  background: #1a3a5c; color: white;
+  padding: 5px 10px; font-size: 10pt; font-weight: 700;
+  text-align: center;
+}
+.photo-col.before .col-head { background: #842029; }
+.photo-col.after .col-head { background: #0a5e3a; }
+.photo-col .col-body {
+  padding: 8px;
+}
+.photo-col .col-body .photos-grid {
+  display: grid; grid-template-columns: 1fr; gap: 6px;
+}
+.photo-col .col-body .photos-grid.cnt2 { grid-template-columns: 1fr 1fr; }
+.photo-col .col-body .photos-grid.cnt3 { grid-template-columns: 1fr 1fr 1fr; }
+.photo-col img {
+  width: 100%; height: auto; max-height: 60mm;
+  object-fit: contain; border: 1px solid #ccc;
+  background: white;
+}
+.photo-col .no-photo {
+  text-align: center; color: #888; padding: 30px 10px;
+  font-size: 10pt;
+}
+
+/* 푸터 (좌/중/우 3칸) */
+.r-foot {
+  margin-top: 20px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 9pt; color: #444;
+  border-top: 1px solid #999;
+  padding-top: 8px;
+}
+.r-foot .pf-left { text-align: left; flex: 1; }
+.r-foot .pf-center { text-align: center; flex: 1; }
+.r-foot .pf-right { text-align: right; flex: 1; }
+
+/* 인쇄 */
+@page { size: A4 portrait; margin: 10mm; }
+@media print {
+  body { background: white !important; }
+  .app-header, .config-panel, .preview-hint, .toast { display: none !important; }
+  .preview-wrap { background: white !important; padding: 0 !important; overflow: visible !important; }
+  .report-page {
+    max-width: 100% !important; min-height: auto !important;
+    margin: 0 !important; padding: 0 !important;
+    box-shadow: none !important;
+  }
+  .r-section, .approval th, .info-table th,
+  .photo-col .col-head, .iatf-box, .effect-box,
+  .effect-box.quant, .cat-tag {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .r-head, .approval, .info-table, .iatf-box {
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .photo-compare {
+    page-break-inside: avoid; break-inside: avoid;
+  }
+}
+
+.toast {
+  position: fixed; bottom: 30px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85); color: white;
+  padding: 10px 16px; border-radius: 20px;
+  font-size: 13px; z-index: 100;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+.loading {
+  text-align: center; padding: 60px 20px;
+  color: var(--text-sub); font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<!-- 인증 가드 -->
+<script>
+(function(){
+  'use strict';
+  var s;
+  try{ s = JSON.parse(localStorage.getItem('mm_user_session')||'null'); }catch(e){ s=null; }
+  if(!s || !s.exp || s.exp <= Date.now()){
+    try{ localStorage.removeItem('mm_user_session'); }catch(e){}
+    location.replace('index.html');
+    document.documentElement.style.display = 'none';
+    throw new Error('Unauthorized');
+  }
+  window.__msmSession = s;
+})();
+</script>
+
+<div class="app-header no-print">
+  <a href="improvement_report.html" class="back-btn">‹ 개선활동</a>
+  <h1>📄 개선활동 보고서 출력 <span class="ver" onclick="showVer()">v1.1</span></h1>
+</div>
+
+<div class="config-panel no-print">
+  <div class="config-row">
+    <label>비고</label>
+    <input type="text" id="memo" placeholder="추가 비고 (선택)" autocomplete="off">
+  </div>
+  <div style="border-top:1px solid var(--border);margin:8px 0;padding-top:8px">
+    <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin-bottom:6px">📄 바닥글 (PDF 하단)</div>
+    <div class="config-row">
+      <label>좌측</label>
+      <input type="text" id="footLeft" placeholder="예: 문서번호" autocomplete="off">
+    </div>
+    <div class="config-row">
+      <label>중앙</label>
+      <input type="text" id="footCenter" placeholder="예: 회사명" autocomplete="off">
+    </div>
+    <div class="config-row">
+      <label>우측</label>
+      <input type="text" id="footRight" placeholder="예: A4 (210×297)" autocomplete="off">
+    </div>
+    <div class="config-row" style="margin-bottom:0">
+      <button type="button" onclick="clearFooter()" style="background:transparent;border:1px solid var(--border-hi);color:var(--text-sub);padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">🗑 바닥글 초기화</button>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-action btn-back" onclick="goBack()">‹ 돌아가기</button>
+    <button class="btn-action btn-print" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+  </div>
+</div>
+
+<div class="preview-wrap">
+  <div class="preview-hint no-print">📱 모바일: 핀치 줌 + 좌우 스크롤 / 💻 PC: A4 그대로 표시 / 🖨 인쇄 시 양식 그대로</div>
+  <div class="report-page" id="reportPage">
+    <div class="loading">📄 보고서 준비 중...</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showVer(){
+  alert(
+    '📄 개선활동 보고서 출력 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.1 (현재)\n' +
+    '• 회사명 입력 필드 삭제 (불필요)\n' +
+    '• PDF 바닥글 3칸 (좌/중/우) 직접 입력 가능\n' +
+    '• 바닥글 localStorage 자동 저장/복원\n' +
+    '• 바닥글 초기화 버튼\n\n' +
+    'v1.0\n' +
+    '• 개선활동 1건을 A4 양식으로 출력\n' +
+    '• 결재란 상단 우측 50% 배치\n' +
+    '• 개선 전/후 사진 좌우 비교 레이아웃\n' +
+    '• 정성/정량 효과 박스 분리\n' +
+    '• IATF 16949 연계 정보 표시\n' +
+    '• @page A4 명시 + 핀치 줌 가능'
+  );
+}
+
+(function(){
+'use strict';
+
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL = 'improvement_logs';
+const TBL_TRYOUT = 'tryout_logs';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+window.goBack = function(){
+  history.length > 1 ? history.back() : location.href = 'improvement_report.html';
+};
+
+/* localStorage 자동 저장/복원 */
+function loadConfig(){
+  try{
+    const c = JSON.parse(localStorage.getItem('improvement_pdf_config') || '{}');
+    if(c.footLeft !== undefined) $('footLeft').value = c.footLeft;
+    if(c.footCenter !== undefined) $('footCenter').value = c.footCenter;
+    if(c.footRight !== undefined) $('footRight').value = c.footRight;
+  }catch(e){}
+}
+function saveConfig(){
+  const c = {
+    footLeft: $('footLeft').value,
+    footCenter: $('footCenter').value,
+    footRight: $('footRight').value
+  };
+  try{ localStorage.setItem('improvement_pdf_config', JSON.stringify(c)); }catch(e){}
+}
+
+window.clearFooter = function(){
+  if(!confirm('바닥글 좌/중/우 모두 지울까요?')) return;
+  $('footLeft').value = '';
+  $('footCenter').value = '';
+  $('footRight').value = '';
+  saveConfig();
+  generateReport();
+  toast('🗑 바닥글 초기화 완료');
+};
+
+/* 보고서 생성 */
+async function generateReport(){
+  const id = sessionStorage.getItem('improvement_pdf_id');
+  if(!id){
+    $('reportPage').innerHTML = '<div class="loading">⚠️ 개선활동 ID가 없습니다.<br>목록에서 📄 PDF 버튼을 눌러 진입하세요.</div>';
+    return;
+  }
+
+  try{
+    const { data: log, error } = await sb.from(TBL).select('*').eq('id', id).single();
+    if(error) throw error;
+    if(!log){ throw new Error('데이터를 찾을 수 없습니다'); }
+
+    // 원본 일지도 함께 조회 (있으면)
+    let source = null;
+    if(log.source_log_id){
+      try{
+        const r = await sb.from(TBL_TRYOUT).select('*').eq('id', log.source_log_id).single();
+        if(!r.error) source = r.data;
+      }catch(e){}
+    }
+
+    renderReport(log, source);
+  }catch(err){
+    $('reportPage').innerHTML = '<div class="loading">❌ 로딩 실패: ' + escapeHtml(err.message || err) + '</div>';
+  }
+}
+
+function renderReport(log, source){
+  const memo = $('memo').value.trim();
+  const footLeft = $('footLeft').value.trim();
+  const footCenter = $('footCenter').value.trim();
+  const footRight = $('footRight').value.trim();
+
+  // 문서번호 자동 생성
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mi = String(now.getMinutes()).padStart(2,'0');
+  const docNo = 'IMP-' + yyyy + mm + dd + '-' + hh + mi;
+  const dateStr = yyyy + '-' + mm + '-' + dd;
+
+  let html = '';
+
+  // 결재란 (상단 우측)
+  html += '<table class="approval">';
+  html += '<tr><th>작성</th><th>검토</th><th>확인</th><th>승인</th></tr>';
+  html += '<tr><td></td><td></td><td></td><td></td></tr>';
+  html += '</table>';
+
+  // 헤더
+  html += '<div class="r-head">';
+  html += '<div class="title">개선활동 보고서</div>';
+  html += '<div class="meta">';
+  html += '<div>문서번호 <span>' + escapeHtml(docNo) + '</span></div>';
+  html += '<div>작성일 <span>' + dateStr + '</span></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // 기본 정보 테이블
+  html += '<table class="info-table">';
+  html += '<tr><th>실시일</th><td>' + escapeHtml(log.improve_date || '-') + '</td>';
+  html += '<th>금형재번</th><td>' + escapeHtml(log.mold_no || '-') + '</td></tr>';
+  html += '<tr><th>차수</th><td>' + escapeHtml(log.stage || '-') + '</td>';
+  html += '<th>상태</th><td>' + escapeHtml(log.status || '-') + '</td></tr>';
+  html += '<tr><th>작성자</th><td>' + escapeHtml(log.author || '-') + '</td>';
+  html += '<th>부서</th><td>' + escapeHtml(log.dept || '-') + '</td></tr>';
+  if(source){
+    html += '<tr><th>원본 일지</th><td colspan="3">';
+    html += escapeHtml(source.log_date || '') + ' · ';
+    html += escapeHtml(source.mold_no || '') + ' · ';
+    html += escapeHtml(source.stage || '') + ' · ';
+    html += escapeHtml(source.author || '');
+    html += '</td></tr>';
+  }
+  if(memo){
+    html += '<tr><th>비고</th><td colspan="3">' + escapeHtml(memo) + '</td></tr>';
+  }
+  html += '</table>';
+
+  // 1. 문제 현황
+  html += '<div class="r-section">1. 문제 현황 (개선 전)</div>';
+  if(log.problem_category){
+    html += '<div class="cat-tag">' + escapeHtml(log.problem_category) + '</div>';
+  }
+  html += '<div class="content-box">' + escapeHtml(log.problem_desc || '문제 상세 없음') + '</div>';
+
+  // 2. 개선 활동
+  html += '<div class="r-section">2. 개선 활동</div>';
+  html += '<div class="content-box">' + escapeHtml(log.improvement_action || '개선 내용 없음') + '</div>';
+
+  // 3. 개선 전/후 사진 비교
+  html += '<div class="r-section">3. 개선 전/후 사진 비교</div>';
+  html += '<div class="photo-compare">';
+
+  // Before
+  html += '<div class="photo-col before">';
+  html += '<div class="col-head">📷 개선 전 (BEFORE)</div>';
+  html += '<div class="col-body">';
+  if(log.before_photos && log.before_photos.length){
+    const cnt = log.before_photos.length;
+    const gridCls = cnt === 1 ? '' : (cnt === 2 ? 'cnt2' : 'cnt3');
+    html += '<div class="photos-grid ' + gridCls + '">';
+    log.before_photos.forEach(p => {
+      html += '<img src="' + p + '">';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="no-photo">📷 사진 없음</div>';
+  }
+  html += '</div></div>';
+
+  // After
+  html += '<div class="photo-col after">';
+  html += '<div class="col-head">✅ 개선 후 (AFTER)</div>';
+  html += '<div class="col-body">';
+  if(log.after_photos && log.after_photos.length){
+    const cnt = log.after_photos.length;
+    const gridCls = cnt === 1 ? '' : (cnt === 2 ? 'cnt2' : 'cnt3');
+    html += '<div class="photos-grid ' + gridCls + '">';
+    log.after_photos.forEach(p => {
+      html += '<img src="' + p + '">';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="no-photo">📷 사진 없음</div>';
+  }
+  html += '</div></div>';
+
+  html += '</div>';
+
+  // 4. 개선 효과
+  html += '<div class="r-section">4. 개선 효과</div>';
+  html += '<div class="effect-grid">';
+  html += '<div class="effect-box">';
+  html += '<div class="lbl">정성적 효과</div>';
+  html += '<div class="val">' + escapeHtml(log.effect_qualitative || '-') + '</div>';
+  html += '</div>';
+  html += '<div class="effect-box quant">';
+  html += '<div class="lbl">정량적 효과 (수치)</div>';
+  html += '<div class="val">' + escapeHtml(log.effect_quantitative || '-') + '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  // 5. IATF 16949 연계
+  html += '<div class="r-section">5. IATF 16949 연계</div>';
+  html += '<div class="iatf-box">';
+  html += '<div class="it">';
+  html += '<span class="check' + (log.fmea_update ? ' on' : '') + '">' + (log.fmea_update ? '✓' : '') + '</span>';
+  html += '<span>FMEA 반영 완료</span>';
+  html += '</div>';
+  html += '<div class="it">';
+  html += '<span class="check' + (log.cp_update ? ' on' : '') + '">' + (log.cp_update ? '✓' : '') + '</span>';
+  html += '<span>관리계획서 반영 완료</span>';
+  html += '</div>';
+  html += '</div>';
+
+  // 추가 비고
+  if(log.memo){
+    html += '<div class="r-section">6. 비고</div>';
+    html += '<div class="content-box">' + escapeHtml(log.memo) + '</div>';
+  }
+
+  // 푸터 (좌/중/우 3칸)
+  if(footLeft || footCenter || footRight){
+    html += '<div class="r-foot">';
+    html += '<div class="pf-left">' + escapeHtml(footLeft) + '</div>';
+    html += '<div class="pf-center">' + escapeHtml(footCenter) + '</div>';
+    html += '<div class="pf-right">' + escapeHtml(footRight) + '</div>';
+    html += '</div>';
+  }
+
+  $('reportPage').innerHTML = html;
+}
+
+/* 입력 이벤트 - 비고/바닥글 변경 시 즉시 미리보기 갱신 */
+function setupInputs(){
+  $('memo').addEventListener('input', () => generateReport());
+  ['footLeft','footCenter','footRight'].forEach(id => {
+    $(id).addEventListener('input', () => { saveConfig(); generateReport(); });
+  });
+}
+
+/* 초기화 */
+document.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  setupInputs();
+  generateReport();
+});
+
+})();
+</script>
+
+</body>
+</html>

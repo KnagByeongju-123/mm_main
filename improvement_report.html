@@ -325,7 +325,7 @@ input[type="file"] { display: none; }
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 일지로</a>
-  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.0</span></h1>
+  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.1</span></h1>
 </div>
 
 <div class="user-bar">
@@ -517,7 +517,7 @@ input[type="file"] { display: none; }
 
 </div>
 
-<div class="footer">개선활동 보고 v1.0 · msm</div>
+<div class="footer">개선활동 보고 v1.1 · msm</div>
 
 <div class="toast" id="toast"></div>
 
@@ -526,7 +526,9 @@ function showVer(){
   alert(
     '🛠 개선활동 보고 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.0 (현재)\n' +
+    'v1.1 (현재)\n' +
+    '• 사진 자동 압축 한도: 20KB → 30KB (화질 향상)\n\n' +
+    'v1.0\n' +
     '• 작업일지에서 개선활동 시작 가능\n' +
     '• 개선 전/후 사진 각 최대 3장\n' +
     '• 문제 분류 / 정성적·정량적 효과\n' +
@@ -542,7 +544,7 @@ function showVer(){
 const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL = 'improvement_logs';
-const PHOTO_MAX_BYTES = 20 * 1024;
+const PHOTO_MAX_BYTES = 30 * 1024;
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const session = window.__msmSession;
