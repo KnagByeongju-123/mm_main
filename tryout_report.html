@@ -101,7 +101,8 @@ input[type="text"], input[type="date"], textarea, select {
   font-size: 15px; font-family: inherit;
 }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--ice); }
-input::placeholder, textarea::placeholder { color: var(--text-dim); }
+input::placeholder, textarea::placeholder { color: var(--text-mid); opacity: 0.85; }
+select option { background: var(--bg-dark); color: var(--text); }
 textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 .form-row { display: flex; gap: 10px; }
@@ -418,7 +419,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.7</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.8</span></h1>
 </div>
 
 <div class="user-bar">
@@ -717,7 +718,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v1.7 · msm</div>
+  <div class="footer">Tryout 작업일지 v1.8 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -731,7 +732,11 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.7 (현재)\n' +
+    'v1.8 (현재)\n' +
+    '• 글자 가독성 개선 (placeholder, select 옵션)\n' +
+    '• 저장 디버깅 강화 (alert + console)\n' +
+    '• 조회/수정/삭제 기능 안정화\n\n' +
+    'v1.7\n' +
     '• 저장 실패 시 정확한 에러 메시지 표시 (alert)\n' +
     '• 세션/Supabase 연결 검증 추가\n' +
     '• DB 컬럼 누락 자동 대응 (IATF 필드 없어도 저장 가능)\n' +
