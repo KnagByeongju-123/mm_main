@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>개선활동 보고서 출력 v1.1</title>
+<title>개선활동 보고서 출력 v1.2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -73,6 +73,90 @@ body {
 }
 .btn-print { background: var(--orange); color: #1a1a1a; }
 .btn-back { background: var(--bg-card-hi); color: var(--text); border: 1px solid var(--border-hi); }
+
+/* 설정 버튼 */
+.btn-settings {
+  background: rgba(196,181,253,0.1);
+  border: 1px solid rgba(196,181,253,0.3);
+  color: var(--purple);
+  width: 38px; height: 38px; border-radius: 50%;
+  font-size: 18px; cursor: pointer; padding: 0;
+}
+
+/* 모달 */
+.modal-bg {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 50;
+  align-items: flex-start; justify-content: center;
+  padding: 40px 14px;
+  overflow-y: auto;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%; max-width: 500px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.modal h2 {
+  font-size: 16px; color: var(--purple);
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-section {
+  background: rgba(148,163,184,0.08);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.modal-section h3 {
+  font-size: 13px; color: var(--ice);
+  margin-bottom: 4px;
+}
+.modal-section .hint {
+  font-size: 11px; color: var(--text-sub);
+  margin-bottom: 10px; line-height: 1.4;
+}
+.modal-section input[type="text"] {
+  width: 100%; padding: 9px 10px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 5px;
+  font-size: 13px; font-family: inherit;
+}
+.modal-section input[type="text"]:focus {
+  outline: none; border-color: var(--orange);
+}
+.form-mini {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.form-mini label {
+  font-size: 12px; color: var(--text-sub); font-weight: 600;
+  min-width: 40px;
+}
+.form-mini input { flex: 1; }
+.btn-clear {
+  background: transparent;
+  border: 1px solid var(--rose);
+  color: var(--rose);
+  padding: 7px 12px; border-radius: 5px;
+  font-size: 11px; font-weight: 600;
+  cursor: pointer; margin-top: 4px;
+  width: 100%; font-family: inherit;
+}
+.modal-buttons {
+  display: flex; gap: 8px; margin-top: 6px;
+}
+.modal-buttons button {
+  flex: 1; padding: 11px;
+  border: none; border-radius: 6px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
 
 .preview-wrap {
   background: var(--bg-dark); padding: 14px;
@@ -322,35 +406,50 @@ body {
 
 <div class="app-header no-print">
   <a href="improvement_report.html" class="back-btn">‹ 개선활동</a>
-  <h1>📄 개선활동 보고서 출력 <span class="ver" onclick="showVer()">v1.1</span></h1>
+  <h1>📄 개선활동 보고서 출력 <span class="ver" onclick="showVer()">v1.2</span></h1>
+  <button class="btn-settings" onclick="openSettings()" type="button" title="설정">⚙️</button>
 </div>
 
 <div class="config-panel no-print">
-  <div class="config-row">
-    <label>비고</label>
-    <input type="text" id="memo" placeholder="추가 비고 (선택)" autocomplete="off">
-  </div>
-  <div style="border-top:1px solid var(--border);margin:8px 0;padding-top:8px">
-    <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin-bottom:6px">📄 바닥글 (PDF 하단)</div>
-    <div class="config-row">
-      <label>좌측</label>
-      <input type="text" id="footLeft" placeholder="예: 문서번호" autocomplete="off">
-    </div>
-    <div class="config-row">
-      <label>중앙</label>
-      <input type="text" id="footCenter" placeholder="예: 회사명" autocomplete="off">
-    </div>
-    <div class="config-row">
-      <label>우측</label>
-      <input type="text" id="footRight" placeholder="예: A4 (210×297)" autocomplete="off">
-    </div>
-    <div class="config-row" style="margin-bottom:0">
-      <button type="button" onclick="clearFooter()" style="background:transparent;border:1px solid var(--border-hi);color:var(--text-sub);padding:6px 12px;border-radius:5px;font-size:11px;cursor:pointer">🗑 바닥글 초기화</button>
-    </div>
-  </div>
-  <div class="btn-row">
+  <div class="btn-row" style="margin:0">
     <button class="btn-action btn-back" onclick="goBack()">‹ 돌아가기</button>
     <button class="btn-action btn-print" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+  </div>
+</div>
+
+<!-- 설정 모달 -->
+<div class="modal-bg" id="modalSettings" onclick="closeSettingsBg(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>⚙️ 설정</h2>
+
+    <div class="modal-section">
+      <h3>📝 이번 보고서 비고</h3>
+      <p class="hint">이번 출력에만 적용됩니다 (저장 안 됨).</p>
+      <input type="text" id="memo" placeholder="추가 비고 (선택)" autocomplete="off">
+    </div>
+
+    <div class="modal-section">
+      <h3>📌 PDF 하단 푸터</h3>
+      <p class="hint">한 번 입력하면 다음 PDF에도 자동 적용됩니다.</p>
+      <div class="form-mini">
+        <label>좌측</label>
+        <input type="text" id="footLeft" placeholder="예: 문서번호" autocomplete="off">
+      </div>
+      <div class="form-mini">
+        <label>중앙</label>
+        <input type="text" id="footCenter" placeholder="예: 회사명" autocomplete="off">
+      </div>
+      <div class="form-mini">
+        <label>우측</label>
+        <input type="text" id="footRight" placeholder="예: A4 (210×297)" autocomplete="off">
+      </div>
+      <button type="button" onclick="clearFooter()" class="btn-clear">🗑 푸터 정보 지우기</button>
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-action btn-back" onclick="closeSettings()">닫기</button>
+      <button class="btn-action btn-print" onclick="saveSettings()">💾 저장 및 적용</button>
+    </div>
   </div>
 </div>
 
@@ -368,7 +467,11 @@ function showVer(){
   alert(
     '📄 개선활동 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.1 (현재)\n' +
+    'v1.2 (현재)\n' +
+    '• ⚙️ 설정 버튼 + 모달 추가 (헤더 우측)\n' +
+    '• 비고/바닥글을 모달 안에서 관리 (화면 깔끔)\n' +
+    '• 메인 화면은 [돌아가기] / [인쇄] 버튼만 표시\n\n' +
+    'v1.1\n' +
     '• 회사명 입력 필드 삭제 (불필요)\n' +
     '• PDF 바닥글 3칸 (좌/중/우) 직접 입력 가능\n' +
     '• 바닥글 localStorage 자동 저장/복원\n' +
@@ -617,18 +720,26 @@ function renderReport(log, source){
   $('reportPage').innerHTML = html;
 }
 
-/* 입력 이벤트 - 비고/바닥글 변경 시 즉시 미리보기 갱신 */
-function setupInputs(){
-  $('memo').addEventListener('input', () => generateReport());
-  ['footLeft','footCenter','footRight'].forEach(id => {
-    $(id).addEventListener('input', () => { saveConfig(); generateReport(); });
-  });
-}
+/* 설정 모달 */
+window.openSettings = function(){
+  $('modalSettings').classList.add('show');
+};
+window.closeSettings = function(){
+  $('modalSettings').classList.remove('show');
+};
+window.closeSettingsBg = function(e){
+  if(e.target.id === 'modalSettings') closeSettings();
+};
+window.saveSettings = function(){
+  saveConfig();
+  generateReport();
+  closeSettings();
+  toast('✓ 설정 저장 및 적용 완료');
+};
 
 /* 초기화 */
 document.addEventListener('DOMContentLoaded', () => {
   loadConfig();
-  setupInputs();
   generateReport();
 });
 
