@@ -311,6 +311,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
   color: var(--text-mid); cursor: pointer; font-family: inherit;
 }
 .log-item .footer-row button.del { color: var(--rose); border-color: rgba(252,165,165,0.3); }
+.log-item .footer-row button.imp { color: var(--orange); border-color: rgba(253,186,116,0.4); }
 
 .iatf-tag {
   font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
@@ -428,7 +429,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.2</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.3</span></h1>
 </div>
 
 <div class="user-bar">
@@ -735,7 +736,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v2.2 · msm</div>
+  <div class="footer">Tryout 작업일지 v2.3 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -749,7 +750,10 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v2.2 (현재)\n' +
+    'v2.3 (현재)\n' +
+    '• 🛠 개선활동 시작 버튼 추가 (목록 카드)\n' +
+    '• 일지 정보 자동 연계 → improvement_report.html로 이동\n\n' +
+    'v2.2\n' +
     '• 디버깅 alert 제거 (저장 정상화)\n' +
     '• "새로고침" → "조회" 버튼명 변경\n\n' +
     'v2.1\n' +
@@ -1212,6 +1216,7 @@ function renderList(){
       photoHtml +
       '<div class="footer-row">' +
         '<button onclick="editLog(' + l.id + ')">✏️ 수정</button>' +
+        '<button onclick="startImprovement(' + l.id + ')" class="imp">🛠 개선활동</button>' +
         '<button onclick="deleteLog(' + l.id + ')" class="del">🗑 삭제</button>' +
       '</div>' +
     '</div>';
@@ -1287,6 +1292,33 @@ window.deleteLog = async function(id){
   } catch(err){
     alert('삭제 실패: ' + (err.message || err));
   }
+};
+
+/* 개선활동 시작 - 원본 일지 정보 전달 후 improvement_report.html로 이동 */
+window.startImprovement = function(id){
+  const l = allLogs.find(x => x.id === id);
+  if(!l){ alert('일지를 찾을 수 없습니다'); return; }
+
+  // 원본 일지 정보를 sessionStorage에 저장
+  const sourceData = {
+    source_log_id: l.id,
+    source_date: l.log_date,
+    mold_no: l.mold_no,
+    stage: l.stage,
+    status: l.status,
+    work_done: l.work_done,
+    issues: l.issues,
+    failure_category: l.failure_category,
+    measurement_target: l.measurement_target,
+    author: l.author,
+    dept: l.dept,
+    photos: l.photos  // 원본 사진들 (참고용)
+  };
+  sessionStorage.setItem('improvement_source', JSON.stringify(sourceData));
+  toast('🛠 개선활동 페이지로 이동합니다...');
+  setTimeout(() => {
+    location.href = 'improvement_report.html';
+  }, 500);
 };
 
 /* ============ 통계 ============ */
