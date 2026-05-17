@@ -325,7 +325,7 @@ input[type="file"] { display: none; }
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 일지로</a>
-  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.1</span></h1>
+  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.2</span></h1>
 </div>
 
 <div class="user-bar">
@@ -356,14 +356,33 @@ input[type="file"] { display: none; }
           <input type="date" id="improveDate">
         </div>
         <div class="form-group">
-          <label>금형재번<span class="req">*</span></label>
-          <input type="text" id="moldNo" placeholder="예: 1G11" autocomplete="off">
+          <label>개선 유형<span class="req">*</span></label>
+          <select id="targetType" onchange="onTargetTypeChange()">
+            <option value="금형">금형</option>
+            <option value="공정">공정</option>
+            <option value="안전">안전</option>
+            <option value="품질시스템">품질시스템</option>
+            <option value="설비">설비</option>
+            <option value="환경">환경</option>
+            <option value="기타">기타</option>
+          </select>
         </div>
       </div>
 
       <div class="form-row">
-        <div class="form-group">
-          <label>차수</label>
+        <div class="form-group" id="moldField">
+          <label>금형재번<span class="opt">(금형일 때)</span></label>
+          <input type="text" id="moldNo" placeholder="예: 1G11" autocomplete="off">
+        </div>
+        <div class="form-group" id="targetField" style="display:none">
+          <label>개선 대상</label>
+          <input type="text" id="targetName" placeholder="예: 사출 1호기 / 전수검사 공정" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" id="stageField">
+          <label>차수<span class="opt">(금형일 때)</span></label>
           <select id="stage">
             <option value="">선택</option>
             <option value="1차">1차</option>
@@ -517,7 +536,7 @@ input[type="file"] { display: none; }
 
 </div>
 
-<div class="footer">개선활동 보고 v1.1 · msm</div>
+<div class="footer">개선활동 보고 v1.2 · msm</div>
 
 <div class="toast" id="toast"></div>
 
@@ -526,7 +545,12 @@ function showVer(){
   alert(
     '🛠 개선활동 보고 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.1 (현재)\n' +
+    'v1.2 (현재)\n' +
+    '• 개선 유형 선택 추가 (금형/공정/안전/품질시스템/설비/환경/기타)\n' +
+    '• 작업일지 연계 없이도 독립 개선활동 등록 가능\n' +
+    '• 금형 외 케이스는 개선 대상 입력\n' +
+    '• 금형재번 필수 입력 → 선택 입력으로 변경\n\n' +
+    'v1.1\n' +
     '• 사진 자동 압축 한도: 20KB → 30KB (화질 향상)\n\n' +
     'v1.0\n' +
     '• 작업일지에서 개선활동 시작 가능\n' +
@@ -613,7 +637,9 @@ function loadSourceData(){
       '<span>작성자</span><span>' + escapeHtml(sourceData.author || '-') + '</span>';
     box.style.display = '';
 
-    // 자동 입력
+    // 자동 입력 (원본 일지는 금형 케이스)
+    $('targetType').value = '금형';
+    onTargetTypeChange();
     if(sourceData.mold_no) $('moldNo').value = sourceData.mold_no;
     if(sourceData.stage) $('stage').value = sourceData.stage;
     if(sourceData.failure_category) $('problemCategory').value = sourceData.failure_category;
@@ -723,12 +749,23 @@ function renderPhotos(kind){
 }
 
 /* ============ 저장 ============ */
+/* 개선 유형 변경 시 필드 토글 */
+window.onTargetTypeChange = function(){
+  const t = $('targetType').value;
+  const isMold = (t === '금형');
+  $('moldField').style.display = isMold ? '' : 'none';
+  $('stageField').style.display = isMold ? '' : 'none';
+  $('targetField').style.display = isMold ? 'none' : '';
+};
+
 window.saveImprovement = async function(){
   if(!session){ alert('세션 없음. 다시 로그인하세요.'); return; }
   if(!sb){ alert('Supabase 연결 안 됨'); return; }
 
   const improveDate = $('improveDate').value;
+  const targetType = $('targetType').value;
   const moldNo = $('moldNo').value.trim();
+  const targetName = $('targetName').value.trim();
   const stage = $('stage').value;
   const status = $('status').value;
   const problemCategory = $('problemCategory').value;
@@ -739,9 +776,18 @@ window.saveImprovement = async function(){
   const memo = $('memo').value.trim();
 
   if(!improveDate){ toast('실시일을 입력하세요'); return; }
-  if(!moldNo){ toast('금형재번을 입력하세요'); return; }
+  if(!targetType){ toast('개선 유형을 선택하세요'); return; }
   if(!problemDesc){ toast('문제 상세를 입력하세요'); return; }
   if(!improvementAction){ toast('개선 내용을 입력하세요'); return; }
+
+  // mold_no 필드에 금형 또는 대상명 저장
+  // (DB 컬럼 추가 없이 호환 유지)
+  let savedMoldNo = '';
+  if(targetType === '금형'){
+    savedMoldNo = moldNo;
+  } else {
+    savedMoldNo = targetName ? ('[' + targetType + '] ' + targetName) : ('[' + targetType + ']');
+  }
 
   const author = session.role === 'admin' ? '관리자' : (session.name || '');
   const dept = session.dept || '';
@@ -749,8 +795,8 @@ window.saveImprovement = async function(){
   const payload = {
     source_log_id: sourceData ? sourceData.source_log_id : null,
     improve_date: improveDate,
-    mold_no: moldNo,
-    stage: stage || null,
+    mold_no: savedMoldNo || null,
+    stage: (targetType === '금형' ? stage : null) || null,
     status: status,
     problem_category: problemCategory || null,
     problem_desc: problemDesc,
@@ -820,7 +866,9 @@ window.resetForm = function(){
   editingId = null;
   $('btnSave').innerHTML = '💾 저장';
   setDefaultDate();
+  $('targetType').value = '금형';
   $('moldNo').value = '';
+  $('targetName').value = '';
   $('stage').value = '';
   $('status').value = '진행중';
   $('problemCategory').value = '';
@@ -835,6 +883,7 @@ window.resetForm = function(){
   afterPhotos = [];
   renderPhotos('before');
   renderPhotos('after');
+  onTargetTypeChange();
 };
 
 /* ============ 목록 ============ */
@@ -902,7 +951,7 @@ function renderList(){
     return '<div class="log-item">' +
       '<div class="head-row">' +
         '<span class="date">' + escapeHtml(l.improve_date||'') + '</span>' +
-        '<span class="mold">📦 ' + escapeHtml(l.mold_no||'') + '</span>' +
+        '<span class="mold">' + ((l.mold_no||'').startsWith('[') ? '🛠 ' : '📦 ') + escapeHtml(l.mold_no||'') + '</span>' +
         (l.stage ? '<span class="stage-tag">' + escapeHtml(l.stage) + '</span>' : '') +
         '<span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span>' +
       '</div>' +
@@ -925,7 +974,25 @@ window.editLog = function(id){
   $('btnSave').innerHTML = '✏️ 수정 저장';
 
   $('improveDate').value = l.improve_date || '';
-  $('moldNo').value = l.mold_no || '';
+
+  // mold_no 형식 분석 - [유형] 이름 형식이면 분리
+  const moldStr = l.mold_no || '';
+  const m = moldStr.match(/^\[([^\]]+)\]\s*(.*)$/);
+  if(m){
+    // 비-금형 (예: "[공정] 사출 1호기")
+    const types = ['공정','안전','품질시스템','설비','환경','기타'];
+    const t = types.includes(m[1]) ? m[1] : '기타';
+    $('targetType').value = t;
+    $('moldNo').value = '';
+    $('targetName').value = m[2] || '';
+  } else {
+    // 금형 (기존 데이터 또는 [...] 형식 아님)
+    $('targetType').value = '금형';
+    $('moldNo').value = moldStr;
+    $('targetName').value = '';
+  }
+  onTargetTypeChange();
+
   $('stage').value = l.stage || '';
   $('status').value = l.status || '진행중';
   $('problemCategory').value = l.problem_category || '';
@@ -1026,7 +1093,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupPhotoInput();
   setupTabs();
   setupSearch();
-  loadSourceData();  // 원본 일지 정보 자동 연계
+  onTargetTypeChange();  // 초기 필드 토글 (금형 기본)
+  loadSourceData();      // 원본 일지 정보 자동 연계 (있으면 금형으로 설정됨)
 });
 
 })();
