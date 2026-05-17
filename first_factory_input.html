@@ -341,7 +341,7 @@ header h1 .ver {
 .photo-buttons { display: flex; gap: 6px; margin-top: 8px; }
 .photo-buttons button {
   flex: 1; padding: 8px; border: 1px solid var(--border-hi); background: var(--bg-card);
-  border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit;
+  color: var(--text); border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit;
 }
 .photo-buttons button.remove { color: #dc3545; border-color: var(--rose); }
 input[type="file"] { display: none; }
@@ -1302,7 +1302,7 @@ function showVerInput(){
     $('sumTotal').textContent = items.length;
     const low = items.filter(i => i.stock < i.min_stock && i.min_stock > 0);
     $('sumLow').textContent = low.length;
-    const tot = items.reduce((s, i) => s + (i.stock * (i.price || 0)), 0);
+    const tot = items.reduce((s, i) => s + ((Number(i.stock) || 0) * (Number(i.price) || 0)), 0);
     $('sumValue').textContent = Math.round(tot / 10000).toLocaleString();
 
     const bar = $('alertBar');
@@ -1374,7 +1374,7 @@ function showVerInput(){
           '<div class="item-meta">' + meta.join('') + '</div>' +
           '<div class="item-stock">' +
             '<div>' +
-              '<span class="stock-num ' + (isLow ? 'low' : '') + '">' + i.stock + '</span>' +
+              '<span class="stock-num ' + (isLow ? 'low' : '') + '">' + (i.stock != null ? i.stock : 0) + '</span>' +
               '<span class="stock-unit">' + escapeHtml(i.unit || 'EA') + '</span>' +
               (i.min_stock > 0 ? '<span style="font-size:11px;color:#999;margin-left:6px">/ 안전 ' + i.min_stock + '</span>' : '') +
             '</div>' +
@@ -1733,7 +1733,7 @@ function showVerInput(){
     $('dMeta').innerHTML = parts.map(escapeHtml).join('<br>');
 
     const stockEl = $('dStock');
-    stockEl.textContent = item.stock + ' ' + (item.unit || 'EA') +
+    stockEl.textContent = (item.stock != null ? item.stock : 0) + ' ' + (item.unit || 'EA') +
       (item.min_stock > 0 ? ' / 안전 ' + item.min_stock : '');
     stockEl.className = 'stock-big' + (isLow ? ' low' : '');
 
