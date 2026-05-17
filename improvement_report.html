@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🛠 개선활동 보고</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:     #334155;
+  --border-hi:  #475569;
+  --text:       #e2e8f0;
+  --text-mid:   #cbd5e1;
+  --text-sub:   #94a3b8;
+  --text-dim:   #64748b;
+  --ice:        #7dd3fc;
+  --orange:     #fdba74;
+  --green:      #4ade80;
+  --rose:       #fca5a5;
+  --purple:     #c4b5fd;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh; padding-bottom: 40px;
+}
+
+/* 헤더 */
+.app-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg-card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 20;
+}
+.back-btn {
+  background: rgba(253,186,116,0.1);
+  border: 1px solid rgba(253,186,116,0.3);
+  color: var(--orange);
+  padding: 6px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 600; text-decoration: none;
+}
+.app-header h1 {
+  font-size: 18px; font-weight: 700; color: var(--orange); flex: 1;
+}
+.ver { font-size: 11px; color: var(--text-sub); margin-left: 6px; cursor: pointer; font-weight: 500; }
+
+.user-bar {
+  text-align: center; padding: 10px;
+  background: var(--bg-dark); border-bottom: 1px solid var(--border);
+}
+.user-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(253,186,116,0.08); border: 1px solid rgba(253,186,116,0.3);
+  color: var(--orange); padding: 5px 12px; border-radius: 14px;
+  font-size: 12px; font-weight: 500;
+}
+.user-badge.admin {
+  background: rgba(253,186,116,0.15);
+}
+
+/* 탭 */
+.tabs {
+  display: flex; background: var(--bg-card); border-bottom: 1px solid var(--border);
+  position: sticky; top: 60px; z-index: 10;
+}
+.tab {
+  flex: 1; padding: 14px 8px; text-align: center;
+  font-size: 14px; font-weight: 600; color: var(--text-sub);
+  cursor: pointer; border-bottom: 3px solid transparent;
+}
+.tab.active { color: var(--orange); border-bottom-color: var(--orange); background: var(--bg-card-hi); }
+
+.container { max-width: 720px; margin: 0 auto; padding: 14px; }
+
+/* 카드 */
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.card h2 {
+  font-size: 14px; color: var(--orange); margin-bottom: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+
+/* 원본 일지 연계 박스 */
+.source-link-box {
+  background: rgba(125,211,252,0.05);
+  border: 1px solid rgba(125,211,252,0.3);
+  border-left: 4px solid var(--ice);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+.source-link-box .lbl {
+  color: var(--ice); font-weight: 700;
+  display: block; margin-bottom: 6px;
+}
+.source-link-box .info {
+  display: grid; grid-template-columns: auto 1fr;
+  gap: 4px 12px; font-size: 12px;
+}
+.source-link-box .info span:nth-child(odd) {
+  color: var(--text-sub); font-weight: 600;
+}
+.source-link-box .info span:nth-child(even) {
+  color: var(--text);
+}
+
+/* 폼 */
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--text-mid); margin-bottom: 6px;
+}
+.form-group label .req { color: var(--rose); margin-left: 2px; }
+.form-group label .opt { color: var(--text-dim); font-size: 11px; font-weight: 400; margin-left: 4px; }
+
+input[type="text"], input[type="date"], textarea, select {
+  width: 100%; padding: 11px 12px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi); border-radius: 6px;
+  font-size: 15px; font-family: inherit;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--orange); }
+input::placeholder, textarea::placeholder { color: var(--text-mid); opacity: 0.85; }
+select option { background: var(--bg-dark); color: var(--text); }
+textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+.form-row { display: flex; gap: 10px; }
+.form-row .form-group { flex: 1; }
+
+/* 상태 칩 */
+.chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  padding: 8px 14px; border-radius: 20px;
+  border: 1px solid var(--border-hi);
+  background: var(--bg-dark); color: var(--text-mid);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.chip.active {
+  background: rgba(253,186,116,0.15);
+  border-color: var(--orange); color: var(--orange);
+}
+
+/* 사진 영역 */
+.photo-section {
+  margin-bottom: 14px;
+}
+.photo-section .photo-title {
+  font-size: 13px; font-weight: 700; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.photo-section .photo-title.before { color: var(--rose); }
+.photo-section .photo-title.after { color: var(--green); }
+.photo-section .photo-count { font-size: 11px; color: var(--text-sub); font-weight: 400; }
+
+.photo-btns { display: flex; gap: 8px; margin-bottom: 8px; }
+.photo-btn {
+  flex: 1; padding: 14px; border-radius: 8px;
+  border: 1px dashed var(--border-hi);
+  background: var(--bg-card-hi); color: var(--text);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.photo-btn.cam { border-color: rgba(74,222,128,0.4); color: var(--green); }
+.photo-btn.gal { border-color: rgba(125,211,252,0.4); color: var(--ice); }
+.photo-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.photos-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-top: 8px;
+}
+.photo-item {
+  position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.photo-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-item .x-btn {
+  position: absolute; top: 4px; right: 4px;
+  background: rgba(0,0,0,0.7); color: white;
+  border: none; width: 22px; height: 22px; border-radius: 50%;
+  font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+input[type="file"] { display: none; }
+
+/* IATF 체크박스 */
+.iatf-section {
+  background: rgba(196,181,253,0.05);
+  border: 1px solid rgba(196,181,253,0.3);
+  padding: 12px; border-radius: 8px;
+  margin-bottom: 14px;
+}
+.iatf-section .title {
+  font-size: 13px; color: var(--purple); font-weight: 700;
+  margin-bottom: 8px;
+}
+.iatf-check { display: flex; gap: 16px; flex-wrap: wrap; }
+.iatf-check label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-mid); cursor: pointer;
+}
+.iatf-check input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--purple);
+}
+
+/* 버튼 */
+.btn-row { display: flex; gap: 10px; margin-top: 16px; }
+.btn {
+  flex: 1; padding: 14px; border-radius: 8px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  border: none; font-family: inherit;
+}
+.btn-primary { background: var(--orange); color: #1a1a1a; }
+.btn-secondary { background: var(--bg-card-hi); color: var(--text); border: 1px solid var(--border-hi); }
+.btn-danger { background: var(--rose); color: #1a1a1a; }
+
+/* 목록 카드 */
+.log-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; margin-bottom: 10px;
+}
+.log-item .head-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  align-items: center; margin-bottom: 8px;
+}
+.log-item .date { font-size: 12px; color: var(--text-sub); }
+.log-item .mold {
+  font-weight: 700; color: var(--orange); font-size: 13px;
+}
+.log-item .stage-tag {
+  background: rgba(125,211,252,0.15); color: var(--ice);
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 600;
+}
+.log-item .status-tag {
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 700;
+}
+.log-item .status-tag.진행중 { background: rgba(125,211,252,0.15); color: var(--ice); }
+.log-item .status-tag.완료   { background: rgba(74,222,128,0.15);  color: var(--green); }
+.log-item .status-tag.검증중 { background: rgba(253,186,116,0.15); color: var(--orange); }
+
+.log-item .body {
+  font-size: 13px; color: var(--text-mid); line-height: 1.5;
+  background: var(--bg-card-hi); padding: 8px;
+  border-radius: 6px; margin-bottom: 8px;
+}
+.log-item .body .sec { margin-bottom: 4px; }
+.log-item .body .lbl { color: var(--text-sub); font-weight: 600; margin-right: 6px; }
+.log-item .footer-row { display: flex; gap: 6px; margin-top: 8px; }
+.log-item .footer-row button {
+  flex: 1; padding: 8px; font-size: 12px; font-weight: 600;
+  border-radius: 6px; border: 1px solid var(--border-hi);
+  background: var(--bg-card-hi); color: var(--text); cursor: pointer;
+}
+.log-item .footer-row button.del { color: var(--rose); border-color: rgba(252,165,165,0.3); }
+.log-item .footer-row button.pdf { color: var(--purple); border-color: rgba(196,181,253,0.4); }
+
+.photos-mini {
+  display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;
+}
+.photos-mini img {
+  width: 50px; height: 50px; object-fit: cover;
+  border-radius: 4px; border: 1px solid var(--border);
+}
+
+.empty {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-sub); font-size: 14px;
+}
+
+/* 목록 액션 툴바 */
+.list-toolbar {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin: 12px 0; padding: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.list-toolbar button {
+  flex: 1; min-width: 100px; padding: 10px 8px;
+  font-size: 12px; font-weight: 600;
+  border-radius: 6px; cursor: pointer;
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border: 1px solid var(--border-hi);
+}
+
+/* 토스트 */
+.toast {
+  position: fixed; bottom: 30px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85); color: white;
+  padding: 10px 16px; border-radius: 20px;
+  font-size: 13px; z-index: 100;
+  opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+.footer { text-align: center; padding: 20px; color: var(--text-dim); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<!-- 인증 가드 -->
+<script>
+(function(){
+  'use strict';
+  var s;
+  try{ s = JSON.parse(localStorage.getItem('mm_user_session')||'null'); }catch(e){ s=null; }
+  if(!s || !s.exp || s.exp <= Date.now()){
+    try{ localStorage.removeItem('mm_user_session'); }catch(e){}
+    location.replace('index.html');
+    document.documentElement.style.display = 'none';
+    throw new Error('Unauthorized');
+  }
+  window.__msmSession = s;
+})();
+</script>
+
+<div class="app-header">
+  <a href="tryout_report.html" class="back-btn">‹ 일지로</a>
+  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.0</span></h1>
+</div>
+
+<div class="user-bar">
+  <span class="user-badge" id="userBadge">로딩 중...</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="write">✏️ 작성</div>
+  <div class="tab" data-tab="list">📋 목록</div>
+</div>
+
+<div class="container">
+
+  <!-- ============ 작성 탭 ============ -->
+  <div id="page-write">
+
+    <!-- 원본 일지 연계 (sessionStorage에서 받음) -->
+    <div id="sourceLinkBox" class="source-link-box" style="display:none">
+      <span class="lbl">🔗 원본 작업일지 연계</span>
+      <div class="info" id="sourceLinkInfo"></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 기본 정보</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>실시일<span class="req">*</span></label>
+          <input type="date" id="improveDate">
+        </div>
+        <div class="form-group">
+          <label>금형재번<span class="req">*</span></label>
+          <input type="text" id="moldNo" placeholder="예: 1G11" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>차수</label>
+          <select id="stage">
+            <option value="">선택</option>
+            <option value="1차">1차</option>
+            <option value="2차">2차</option>
+            <option value="3차">3차</option>
+            <option value="양산전">양산전</option>
+            <option value="양산">양산</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>상태<span class="req">*</span></label>
+          <select id="status">
+            <option value="진행중">진행중</option>
+            <option value="검증중">검증중</option>
+            <option value="완료">완료</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚠️ 문제 현황 (개선 전)</h2>
+      <div class="form-group">
+        <label>문제 분류</label>
+        <select id="problemCategory">
+          <option value="">선택</option>
+          <option value="치수 불량">치수 불량</option>
+          <option value="표면 불량">표면 불량</option>
+          <option value="조립 불량">조립 불량</option>
+          <option value="기능 불량">기능 불량</option>
+          <option value="외관 불량">외관 불량</option>
+          <option value="안전 문제">안전 문제</option>
+          <option value="생산성 저하">생산성 저하</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>문제 상세<span class="req">*</span></label>
+        <textarea id="problemDesc" placeholder="예: 게이트 부위 버 발생 다수 / 측정값 사양 초과"></textarea>
+      </div>
+
+      <!-- 개선 전 사진 -->
+      <div class="photo-section">
+        <div class="photo-title before">
+          📷 개선 전 사진 <span class="photo-count" id="beforeCount">(0/3)</span>
+        </div>
+        <div class="photo-btns">
+          <button class="photo-btn cam" id="btnBeforeCam" type="button">📸 촬영</button>
+          <button class="photo-btn gal" id="btnBeforeGal" type="button">🖼 갤러리</button>
+        </div>
+        <input type="file" id="beforeCamInput" accept="image/*" capture="environment">
+        <input type="file" id="beforeGalInput" accept="image/*">
+        <div class="photos-row" id="beforePhotos"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🛠 개선 활동</h2>
+      <div class="form-group">
+        <label>개선 내용<span class="req">*</span></label>
+        <textarea id="improvementAction" placeholder="예: 게이트 위치 1mm 후퇴, 사출 압력 80→75bar 조정"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>✅ 개선 후</h2>
+
+      <!-- 개선 후 사진 -->
+      <div class="photo-section">
+        <div class="photo-title after">
+          📷 개선 후 사진 <span class="photo-count" id="afterCount">(0/3)</span>
+        </div>
+        <div class="photo-btns">
+          <button class="photo-btn cam" id="btnAfterCam" type="button">📸 촬영</button>
+          <button class="photo-btn gal" id="btnAfterGal" type="button">🖼 갤러리</button>
+        </div>
+        <input type="file" id="afterCamInput" accept="image/*" capture="environment">
+        <input type="file" id="afterGalInput" accept="image/*">
+        <div class="photos-row" id="afterPhotos"></div>
+      </div>
+
+      <div class="form-group">
+        <label>정성적 효과<span class="opt">(서술)</span></label>
+        <textarea id="effectQualitative" placeholder="예: 외관 품질 향상, 작업자 만족도 개선"></textarea>
+      </div>
+      <div class="form-group">
+        <label>정량적 효과<span class="opt">(수치)</span></label>
+        <textarea id="effectQuantitative" placeholder="예: 불량률 5% → 0.5% (90% 감소) / 사이클 12s → 10s"></textarea>
+      </div>
+    </div>
+
+    <div class="iatf-section">
+      <div class="title">📐 IATF 16949 연계</div>
+      <div class="iatf-check">
+        <label><input type="checkbox" id="fmeaUpdate"> FMEA 반영 완료</label>
+        <label><input type="checkbox" id="cpUpdate"> 관리계획서 반영 완료</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label>비고<span class="opt">(선택)</span></label>
+        <textarea id="memo" placeholder="추가 메모"></textarea>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" type="button" onclick="resetForm()">🗑 초기화</button>
+      <button class="btn btn-primary" id="btnSave" type="button" onclick="saveImprovement()">💾 저장</button>
+    </div>
+  </div>
+
+  <!-- ============ 목록 탭 ============ -->
+  <div id="page-list" style="display:none">
+
+    <div class="card">
+      <h2>🔍 조회</h2>
+      <div class="form-group">
+        <input type="text" id="searchKw" placeholder="🔍 금형재번/문제/개선내용 검색" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>기간</label>
+          <input type="date" id="filterFrom">
+        </div>
+        <div class="form-group">
+          <label>~</label>
+          <input type="date" id="filterTo">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>상태</label>
+        <select id="filterStatus">
+          <option value="">전체</option>
+          <option value="진행중">진행중</option>
+          <option value="검증중">검증중</option>
+          <option value="완료">완료</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="list-toolbar">
+      <button type="button" onclick="goToWrite()">✏️ 새 개선활동</button>
+      <button type="button" onclick="loadList()">🔍 조회</button>
+      <button type="button" onclick="exportCsv()">📥 CSV 내보내기</button>
+    </div>
+
+    <div id="logList"></div>
+  </div>
+
+</div>
+
+<div class="footer">개선활동 보고 v1.0 · msm</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function showVer(){
+  alert(
+    '🛠 개선활동 보고 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.0 (현재)\n' +
+    '• 작업일지에서 개선활동 시작 가능\n' +
+    '• 개선 전/후 사진 각 최대 3장\n' +
+    '• 문제 분류 / 정성적·정량적 효과\n' +
+    '• IATF 16949 연계 (FMEA / CP 반영 체크)\n' +
+    '• 목록 조회 / 수정 / 삭제 / CSV 내보내기\n' +
+    '• PDF 보고서 출력 (improvement_pdf.html 연동 예정)'
+  );
+}
+
+(function(){
+'use strict';
+
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL = 'improvement_logs';
+const PHOTO_MAX_BYTES = 20 * 1024;
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const session = window.__msmSession;
+
+const $ = id => document.getElementById(id);
+
+let beforePhotos = [];
+let afterPhotos = [];
+let editingId = null;
+let allLogs = [];
+let sourceData = null;
+
+/* ============ 토스트 ============ */
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* ============ 사용자 표시 ============ */
+function setUserBadge(){
+  const badge = $('userBadge');
+  if(!session){ badge.textContent = '게스트'; return; }
+  if(session.role === 'admin'){
+    badge.classList.add('admin');
+    badge.textContent = '👤 관리자';
+  } else {
+    let txt = '👤 ' + (session.name || '-');
+    if(session.dept) txt += ' · ' + session.dept;
+    badge.textContent = txt;
+  }
+}
+
+/* ============ 기본 날짜 ============ */
+function setDefaultDate(){
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  $('improveDate').value = yyyy + '-' + mm + '-' + dd;
+}
+
+/* ============ 원본 일지 연계 ============ */
+function loadSourceData(){
+  try{
+    const raw = sessionStorage.getItem('improvement_source');
+    if(!raw) return;
+    sourceData = JSON.parse(raw);
+
+    // 박스에 표시
+    const box = $('sourceLinkBox');
+    const info = $('sourceLinkInfo');
+    info.innerHTML =
+      '<span>원본 일자</span><span>' + escapeHtml(sourceData.source_date || '-') + '</span>' +
+      '<span>금형재번</span><span>' + escapeHtml(sourceData.mold_no || '-') + '</span>' +
+      '<span>차수</span><span>' + escapeHtml(sourceData.stage || '-') + '</span>' +
+      '<span>상태</span><span>' + escapeHtml(sourceData.status || '-') + '</span>' +
+      '<span>이슈</span><span>' + escapeHtml(sourceData.issues || '-') + '</span>' +
+      '<span>작성자</span><span>' + escapeHtml(sourceData.author || '-') + '</span>';
+    box.style.display = '';
+
+    // 자동 입력
+    if(sourceData.mold_no) $('moldNo').value = sourceData.mold_no;
+    if(sourceData.stage) $('stage').value = sourceData.stage;
+    if(sourceData.failure_category) $('problemCategory').value = sourceData.failure_category;
+    if(sourceData.issues) $('problemDesc').value = sourceData.issues;
+
+    toast('🔗 원본 일지 정보가 자동 연계되었습니다');
+  }catch(e){
+    console.error('Source data load failed:', e);
+  }
+}
+
+/* ============ 사진 압축 ============ */
+async function compressImage(file, maxBytes){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        const maxDim = 1024;
+        if(w > maxDim || h > maxDim){
+          if(w > h){ h = h * maxDim / w; w = maxDim; }
+          else { w = w * maxDim / h; h = maxDim; }
+        }
+        let quality = 0.85;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img, 0,0,w,h);
+
+        const tryCompress = () => {
+          const data = canvas.toDataURL('image/jpeg', quality);
+          const bytes = Math.round(data.length * 3 / 4);
+          if(bytes <= maxBytes || quality < 0.2){
+            resolve({ data: data, bytes: bytes });
+          } else {
+            quality -= 0.1;
+            setTimeout(tryCompress, 0);
+          }
+        };
+        tryCompress();
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ============ 사진 추가/제거 ============ */
+function setupPhotoInput(){
+  // 개선 전
+  $('btnBeforeCam').addEventListener('click', () => $('beforeCamInput').click());
+  $('btnBeforeGal').addEventListener('click', () => $('beforeGalInput').click());
+  $('beforeCamInput').addEventListener('change', e => addPhoto(e, 'before'));
+  $('beforeGalInput').addEventListener('change', e => addPhoto(e, 'before'));
+  // 개선 후
+  $('btnAfterCam').addEventListener('click', () => $('afterCamInput').click());
+  $('btnAfterGal').addEventListener('click', () => $('afterGalInput').click());
+  $('afterCamInput').addEventListener('change', e => addPhoto(e, 'after'));
+  $('afterGalInput').addEventListener('change', e => addPhoto(e, 'after'));
+}
+
+async function addPhoto(e, kind){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+
+  const arr = kind === 'before' ? beforePhotos : afterPhotos;
+  if(arr.length >= 3){
+    alert(kind === 'before' ? '개선 전' : '개선 후' + ' 사진은 최대 3장입니다');
+    return;
+  }
+
+  try{
+    toast('🔄 사진 압축 중...');
+    const result = await compressImage(file, PHOTO_MAX_BYTES);
+    arr.push(result);
+    renderPhotos(kind);
+    toast('✓ 사진 추가 (' + Math.round(result.bytes/1024) + 'KB)');
+  }catch(err){
+    alert('사진 처리 실패: ' + err.message);
+  }
+}
+
+function removePhoto(kind, idx){
+  if(kind === 'before') beforePhotos.splice(idx, 1);
+  else afterPhotos.splice(idx, 1);
+  renderPhotos(kind);
+}
+window.removePhoto = removePhoto;
+
+function renderPhotos(kind){
+  const arr = kind === 'before' ? beforePhotos : afterPhotos;
+  const el = kind === 'before' ? $('beforePhotos') : $('afterPhotos');
+  const cnt = kind === 'before' ? $('beforeCount') : $('afterCount');
+  cnt.textContent = '(' + arr.length + '/3)';
+  el.innerHTML = arr.map((p, i) =>
+    '<div class="photo-item">' +
+      '<img src="' + p.data + '">' +
+      '<button class="x-btn" onclick="removePhoto(\'' + kind + '\',' + i + ')" type="button">×</button>' +
+    '</div>'
+  ).join('');
+}
+
+/* ============ 저장 ============ */
+window.saveImprovement = async function(){
+  if(!session){ alert('세션 없음. 다시 로그인하세요.'); return; }
+  if(!sb){ alert('Supabase 연결 안 됨'); return; }
+
+  const improveDate = $('improveDate').value;
+  const moldNo = $('moldNo').value.trim();
+  const stage = $('stage').value;
+  const status = $('status').value;
+  const problemCategory = $('problemCategory').value;
+  const problemDesc = $('problemDesc').value.trim();
+  const improvementAction = $('improvementAction').value.trim();
+  const effectQualitative = $('effectQualitative').value.trim();
+  const effectQuantitative = $('effectQuantitative').value.trim();
+  const memo = $('memo').value.trim();
+
+  if(!improveDate){ toast('실시일을 입력하세요'); return; }
+  if(!moldNo){ toast('금형재번을 입력하세요'); return; }
+  if(!problemDesc){ toast('문제 상세를 입력하세요'); return; }
+  if(!improvementAction){ toast('개선 내용을 입력하세요'); return; }
+
+  const author = session.role === 'admin' ? '관리자' : (session.name || '');
+  const dept = session.dept || '';
+
+  const payload = {
+    source_log_id: sourceData ? sourceData.source_log_id : null,
+    improve_date: improveDate,
+    mold_no: moldNo,
+    stage: stage || null,
+    status: status,
+    problem_category: problemCategory || null,
+    problem_desc: problemDesc,
+    before_photos: beforePhotos.length ? beforePhotos.map(p => p.data) : null,
+    improvement_action: improvementAction,
+    after_photos: afterPhotos.length ? afterPhotos.map(p => p.data) : null,
+    effect_qualitative: effectQualitative || null,
+    effect_quantitative: effectQuantitative || null,
+    fmea_update: $('fmeaUpdate').checked,
+    cp_update: $('cpUpdate').checked,
+    author: author,
+    dept: dept,
+    memo: memo || null
+  };
+
+  // 컬럼 누락 자동 대응
+  const tryUpsert = async (data, mode, depth) => {
+    if(depth > 10) return { error: { message: '컬럼 누락 과다' } };
+    let r;
+    if(mode === 'update'){
+      r = await sb.from(TBL).update(data).eq('id', editingId);
+    } else {
+      r = await sb.from(TBL).insert(data);
+    }
+    if(r.error && r.error.message){
+      const m = r.error.message.match(/Could not find the '([^']+)' column/);
+      if(m){
+        const newData = Object.assign({}, data);
+        delete newData[m[1]];
+        return await tryUpsert(newData, mode, depth + 1);
+      }
+    }
+    return r;
+  };
+
+  try{
+    toast(editingId ? '수정 중...' : '저장 중...');
+    let r;
+    if(editingId){
+      r = await tryUpsert(payload, 'update', 0);
+    } else {
+      r = await tryUpsert(payload, 'insert', 0);
+    }
+    if(r.error) throw r.error;
+
+    if(editingId){
+      toast('✓ 수정 완료');
+      editingId = null;
+      $('btnSave').innerHTML = '💾 저장';
+    } else {
+      toast('✓ 저장 완료');
+    }
+
+    // sessionStorage 정리 (저장 후엔 연계 정보 제거)
+    sessionStorage.removeItem('improvement_source');
+    sourceData = null;
+    $('sourceLinkBox').style.display = 'none';
+
+    resetForm();
+    await loadList();
+  }catch(err){
+    alert((editingId?'수정':'저장') + ' 실패: ' + (err.message || err));
+  }
+};
+
+window.resetForm = function(){
+  editingId = null;
+  $('btnSave').innerHTML = '💾 저장';
+  setDefaultDate();
+  $('moldNo').value = '';
+  $('stage').value = '';
+  $('status').value = '진행중';
+  $('problemCategory').value = '';
+  $('problemDesc').value = '';
+  $('improvementAction').value = '';
+  $('effectQualitative').value = '';
+  $('effectQuantitative').value = '';
+  $('fmeaUpdate').checked = false;
+  $('cpUpdate').checked = false;
+  $('memo').value = '';
+  beforePhotos = [];
+  afterPhotos = [];
+  renderPhotos('before');
+  renderPhotos('after');
+};
+
+/* ============ 목록 ============ */
+window.loadList = async function(){
+  toast('🔍 조회 중...');
+  try{
+    const { data, error } = await sb.from(TBL)
+      .select('*')
+      .order('improve_date', { ascending: false })
+      .limit(500);
+    if(error) throw error;
+    allLogs = data || [];
+    renderList();
+    toast('✓ 조회 완료 (' + allLogs.length + '건)');
+  }catch(err){
+    $('logList').innerHTML = '<div class="empty">로딩 실패: ' + escapeHtml(err.message || err) + '</div>';
+  }
+};
+
+function renderList(){
+  const kw = $('searchKw').value.trim().toLowerCase();
+  const st = $('filterStatus').value;
+  const from = $('filterFrom').value;
+  const to = $('filterTo').value;
+
+  const filtered = allLogs.filter(l => {
+    if(st && l.status !== st) return false;
+    if(from && (l.improve_date||'') < from) return false;
+    if(to && (l.improve_date||'') > to) return false;
+    if(kw){
+      const blob = ((l.mold_no||'') + ' ' + (l.problem_desc||'') + ' ' +
+        (l.improvement_action||'') + ' ' + (l.author||'')).toLowerCase();
+      if(!blob.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  window.__filteredLogs = filtered;
+
+  const el = $('logList');
+  if(!filtered.length){
+    if(!allLogs.length){
+      el.innerHTML = '<div class="empty">📭 저장된 개선활동이 없습니다<br><br>작업일지 목록에서 🛠 개선활동 버튼을 눌러 시작하세요</div>';
+    } else {
+      el.innerHTML = '<div class="empty">🔍 검색 결과 없음 (전체 ' + allLogs.length + '건 중 0건)</div>';
+    }
+    return;
+  }
+
+  el.innerHTML = filtered.map(l => {
+    let body = '';
+    if(l.problem_category) body += '<div class="sec"><span class="lbl">분류:</span>' + escapeHtml(l.problem_category) + '</div>';
+    if(l.problem_desc) body += '<div class="sec"><span class="lbl">문제:</span>' + escapeHtml(l.problem_desc) + '</div>';
+    if(l.improvement_action) body += '<div class="sec"><span class="lbl">개선:</span>' + escapeHtml(l.improvement_action) + '</div>';
+    if(l.effect_quantitative) body += '<div class="sec"><span class="lbl">효과:</span>' + escapeHtml(l.effect_quantitative) + '</div>';
+
+    let photosHtml = '';
+    if((l.before_photos && l.before_photos.length) || (l.after_photos && l.after_photos.length)){
+      photosHtml = '<div class="photos-mini">';
+      if(l.before_photos) l.before_photos.forEach(p => photosHtml += '<img src="'+p+'" title="개선전">');
+      if(l.after_photos) l.after_photos.forEach(p => photosHtml += '<img src="'+p+'" title="개선후">');
+      photosHtml += '</div>';
+    }
+
+    return '<div class="log-item">' +
+      '<div class="head-row">' +
+        '<span class="date">' + escapeHtml(l.improve_date||'') + '</span>' +
+        '<span class="mold">📦 ' + escapeHtml(l.mold_no||'') + '</span>' +
+        (l.stage ? '<span class="stage-tag">' + escapeHtml(l.stage) + '</span>' : '') +
+        '<span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span>' +
+      '</div>' +
+      '<div class="body">' + (body || '<span style="color:var(--text-dim)">내용 없음</span>') + '</div>' +
+      photosHtml +
+      '<div class="footer-row">' +
+        '<button onclick="editLog(' + l.id + ')">✏️ 수정</button>' +
+        '<button onclick="openPdf(' + l.id + ')" class="pdf">📄 PDF</button>' +
+        '<button onclick="deleteLog(' + l.id + ')" class="del">🗑 삭제</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.editLog = function(id){
+  const l = allLogs.find(x => x.id === id);
+  if(!l) return;
+
+  editingId = id;
+  $('btnSave').innerHTML = '✏️ 수정 저장';
+
+  $('improveDate').value = l.improve_date || '';
+  $('moldNo').value = l.mold_no || '';
+  $('stage').value = l.stage || '';
+  $('status').value = l.status || '진행중';
+  $('problemCategory').value = l.problem_category || '';
+  $('problemDesc').value = l.problem_desc || '';
+  $('improvementAction').value = l.improvement_action || '';
+  $('effectQualitative').value = l.effect_qualitative || '';
+  $('effectQuantitative').value = l.effect_quantitative || '';
+  $('fmeaUpdate').checked = !!l.fmea_update;
+  $('cpUpdate').checked = !!l.cp_update;
+  $('memo').value = l.memo || '';
+
+  beforePhotos = (l.before_photos || []).map(d => ({ data: d, bytes: 0 }));
+  afterPhotos = (l.after_photos || []).map(d => ({ data: d, bytes: 0 }));
+  renderPhotos('before');
+  renderPhotos('after');
+
+  // 작성 탭으로
+  goToWrite();
+  toast('✏️ 수정 모드');
+};
+
+window.deleteLog = async function(id){
+  if(!confirm('이 개선활동을 삭제할까요?')) return;
+  try{
+    const { error } = await sb.from(TBL).delete().eq('id', id);
+    if(error) throw error;
+    toast('✓ 삭제됨');
+    await loadList();
+  }catch(err){
+    alert('삭제 실패: ' + (err.message || err));
+  }
+};
+
+window.openPdf = function(id){
+  sessionStorage.setItem('improvement_pdf_id', String(id));
+  location.href = 'improvement_pdf.html';
+};
+
+window.goToWrite = function(){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="write"]').classList.add('active');
+  $('page-write').style.display = '';
+  $('page-list').style.display = 'none';
+  window.scrollTo({top: 0, behavior: 'smooth'});
+};
+
+window.exportCsv = function(){
+  const data = window.__filteredLogs || allLogs;
+  if(!data.length){ alert('내보낼 데이터가 없습니다'); return; }
+  const headers = ['실시일','금형재번','차수','상태','분류','문제','개선내용','정성효과','정량효과','FMEA','CP','작성자'];
+  const rows = data.map(l => [
+    l.improve_date||'', l.mold_no||'', l.stage||'', l.status||'',
+    l.problem_category||'', (l.problem_desc||'').replace(/\n/g,' '),
+    (l.improvement_action||'').replace(/\n/g,' '),
+    (l.effect_qualitative||'').replace(/\n/g,' '),
+    (l.effect_quantitative||'').replace(/\n/g,' '),
+    l.fmea_update ? 'Y' : '', l.cp_update ? 'Y' : '', l.author||''
+  ]);
+  const csv = [headers, ...rows].map(r =>
+    r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')
+  ).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'improvement_logs_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV 내보내기 완료 (' + data.length + '건)');
+};
+
+/* ============ 탭 전환 ============ */
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      const tab = t.dataset.tab;
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      $('page-write').style.display = tab === 'write' ? '' : 'none';
+      $('page-list').style.display = tab === 'list' ? '' : 'none';
+      if(tab === 'list') loadList();
+    });
+  });
+}
+
+/* ============ 검색 이벤트 ============ */
+function setupSearch(){
+  $('searchKw').addEventListener('input', renderList);
+  $('filterStatus').addEventListener('change', renderList);
+  $('filterFrom').addEventListener('change', renderList);
+  $('filterTo').addEventListener('change', renderList);
+}
+
+/* ============ 초기화 ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  setUserBadge();
+  setDefaultDate();
+  setupPhotoInput();
+  setupTabs();
+  setupSearch();
+  loadSourceData();  // 원본 일지 정보 자동 연계
+});
+
+})();
+</script>
+
+</body>
+</html>
