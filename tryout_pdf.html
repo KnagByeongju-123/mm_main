@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tryout 보고서 출력 v1.6</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+<title>Tryout 보고서 출력 v1.7</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,34 +92,42 @@ body {
 
 /* 보고서 헤더 */
 .r-head {
-  border-bottom: 3px solid #1a3a5c; padding-bottom: 10px; margin-bottom: 14px;
+  border-bottom: 3px double #000;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  text-align: center;
+  clear: both;
 }
 .r-head .company {
   font-size: 11pt; color: #555; margin-bottom: 4px; letter-spacing: 1px;
 }
 .r-head .title {
-  font-size: 22pt; font-weight: 800; color: #1a3a5c; margin-bottom: 6px;
+  font-size: 22pt; font-weight: 800; color: #000;
+  margin-bottom: 6px; letter-spacing: 4pt;
 }
 .r-head .meta {
   display: flex; gap: 14px; font-size: 9pt; color: #666;
+  justify-content: center;
 }
 .r-head .meta span { color: #222; font-weight: 600; }
 
-/* 결재란 */
+/* 결재란 - 상단 우측 배치 */
 .approval {
-  width: 100%; border-collapse: collapse; margin-bottom: 14px;
-  border: 1.5px solid #1a3a5c;
+  width: 50%; margin: 0 0 14px auto;
+  border-collapse: collapse;
+  border: 1.5px solid #000;
 }
 .approval th, .approval td {
-  border: 1px solid #1a3a5c;
+  border: 1px solid #000;
   text-align: center; vertical-align: middle;
 }
 .approval th {
-  background: #f0f4f8; font-size: 9pt;
-  padding: 4px 0; color: #1a3a5c; font-weight: 700;
+  background: #f0f0f0; font-size: 9pt;
+  padding: 4px 0; color: #000; font-weight: 700;
+  height: 18pt;
 }
 .approval td {
-  height: 50px; min-width: 60px;
+  height: 50pt; min-width: 60px;
   font-size: 9pt; color: #888;
 }
 
@@ -293,7 +301,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.6</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.7</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -346,7 +354,7 @@ body {
 </div>
 
 <div class="preview-wrap">
-  <div class="preview-hint no-print">↓ 미리보기 (A4 사이즈) - 모바일에서는 좌우 스크롤하여 확인하세요. 인쇄 시 양식 그대로 출력됩니다.</div>
+  <div class="preview-hint no-print">📱 모바일: 핀치 줌(두 손가락 확대/축소) + 좌우 스크롤 / 💻 PC: A4 그대로 표시 / 🖨 인쇄 시 양식 그대로 출력</div>
   <div class="report-page" id="reportBody">
     <div style="text-align:center;padding:40px;color:#999">데이터 로딩 중...</div>
   </div>
@@ -359,7 +367,12 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.6 (현재)\n' +
+    'v1.7 (현재)\n' +
+    '• 결재란을 보고서 최상단 우측에 배치 (50% 너비)\n' +
+    '• 제목을 가운데 정렬 + 자간 넓혀서 강조\n' +
+    '• 미리보기 핀치 줌(확대/축소) 가능\n' +
+    '• 모바일에서 PDF 전체 확인 용이\n\n' +
+    'v1.6\n' +
     '• @page A4 명시적 선언 (인쇄 시 정확한 A4)\n' +
     '• 테이블 컬럼 비율 재조정 (작업/이슈 영역 47%로 확대)\n' +
     '• 한글 단어 줄바꿈 자동 처리 (글자 세로 떨어짐 방지)\n' +
@@ -519,6 +532,12 @@ function render(){
 
   let html = '';
 
+  // 결재란 (최상단 우측)
+  html += '<table class="approval">';
+  html += '<tr><th>작성</th><th>검토</th><th>확인</th><th>승인</th></tr>';
+  html += '<tr><td></td><td></td><td></td><td></td></tr>';
+  html += '</table>';
+
   // 헤더
   html += '<div class="r-head">';
   if(company) html += '<div class="company">' + escapeHtml(company) + '</div>';
@@ -528,12 +547,6 @@ function render(){
   html += '<div>작성일 <span>' + dateStr + '</span></div>';
   html += '</div>';
   html += '</div>';
-
-  // 결재란
-  html += '<table class="approval">';
-  html += '<tr><th>작성</th><th>검토</th><th>확인</th><th>승인</th></tr>';
-  html += '<tr><td></td><td></td><td></td><td></td></tr>';
-  html += '</table>';
 
   // 정보 박스
   html += '<div class="info-box">';
