@@ -1002,16 +1002,22 @@ function openModal(src){
 
 /* ============ 저장 ============ */
 async function saveLog(){
+  console.log('[saveLog] 시작');
   const date = $('logDate').value;
   const moldNo = $('moldNo').value.trim();
   const workDone = $('workDone').value.trim();
   const issues = $('issues').value.trim();
   const nextPlan = $('nextPlan').value.trim();
 
-  if(!date){ toast('날짜를 입력하세요'); return; }
-  if(!moldNo){ toast('금형재번을 입력하세요'); return; }
-  if(!currentStage){ toast('차수를 선택하세요'); return; }
-  if(!currentStatus){ toast('상태를 선택하세요'); return; }
+  console.log('[saveLog] 입력값:', { date, moldNo, currentStage, currentStatus });
+
+  if(!date){ alert('날짜를 입력하세요'); return; }
+  if(!moldNo){ alert('금형재번을 입력하세요'); return; }
+  if(!currentStage){ alert('차수를 선택하세요'); return; }
+  if(!currentStatus){ alert('상태를 선택하세요'); return; }
+
+  if(!session){ alert('세션이 없습니다. 다시 로그인하세요.'); return; }
+  if(!sb){ alert('Supabase 연결 안 됨'); return; }
 
   const author = session.role === 'admin' ? '관리자' : (session.name || '');
   const dept = session.dept || '';
@@ -1034,23 +1040,61 @@ async function saveLog(){
     measurement_target: $('measurementTarget').value.trim() || null
   };
 
+  console.log('[saveLog] payload:', payload);
+
+  // 컬럼 누락 자동 대응
+  const tryUpsert = async (data, mode) => {
+    let r;
+    if(mode === 'update'){
+      r = await sb.from(TBL).update(data).eq('id', editingId);
+    } else {
+      r = await sb.from(TBL).insert(data);
+    }
+    if(r.error && r.error.message){
+      const m = r.error.message.match(/Could not find the '([^']+)' column/);
+      if(m){
+        console.warn('[saveLog] 컬럼 없음, 제거 후 재시도:', m[1]);
+        const newData = Object.assign({}, data);
+        delete newData[m[1]];
+        if(mode === 'update'){
+          r = await sb.from(TBL).update(newData).eq('id', editingId);
+        } else {
+          r = await sb.from(TBL).insert(newData);
+        }
+        // 또 다른 컬럼이 없을 수도 있으니 재귀적으로 처리
+        if(r.error && r.error.message){
+          const m2 = r.error.message.match(/Could not find the '([^']+)' column/);
+          if(m2){
+            return await tryUpsert(newData, mode);
+          }
+        }
+      }
+    }
+    return r;
+  };
+
   try {
     toast(editingId ? '수정 중...' : '저장 중...');
+    console.log('[saveLog] DB 요청 시작');
+    let r;
     if(editingId){
-      const { error } = await sb.from(TBL).update(payload).eq('id', editingId);
-      if(error) throw error;
+      r = await tryUpsert(payload, 'update');
+      if(r.error) throw r.error;
       toast('✓ 수정 완료');
       editingId = null;
       updateSaveBtnLabel();
     } else {
-      const { error } = await sb.from(TBL).insert(payload);
-      if(error) throw error;
+      r = await tryUpsert(payload, 'insert');
+      if(r.error) throw r.error;
       toast('✓ 저장 완료');
     }
+    console.log('[saveLog] DB 응답:', r);
     resetForm();
     await loadList();
     await loadStat();
+    console.log('[saveLog] 완료');
   } catch(err) {
+    console.error('[saveLog] 실패:', err);
     alert((editingId?'수정':'저장') + ' 실패: ' + (err.message || err));
   }
 }
