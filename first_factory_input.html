@@ -181,7 +181,7 @@ header h1 .ver {
   font-family: inherit;
 }
 .btn-primary { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; }
-.btn-secondary { background: #e9ecef; color: var(--text); }
+.btn-secondary { background: #e9ecef; color: #1e293b; }
 .btn-danger { background: #dc3545; color: white; }
 
 .password-wrap { position: relative; }
@@ -1797,12 +1797,39 @@ function showVerInput(){
 
     try {
       if (sb) {
+        // min_stock 컬럼 자동 대응 함수
+        const tryInsertOrUpdate = async (payload, mode) => {
+          let r;
+          if (mode === 'update') {
+            r = await sb.from(T_ITEMS).update(payload).eq('id', id);
+          } else {
+            r = await sb.from(T_ITEMS).insert(payload);
+          }
+          // 컬럼 없음 에러 발생 시 해당 키 제거하고 재시도
+          if (r.error && r.error.message) {
+            const msg = r.error.message;
+            const missingCol = msg.match(/Could not find the '([^']+)' column/);
+            if (missingCol) {
+              const colName = missingCol[1];
+              console.warn('컬럼 없음, 제거 후 재시도:', colName);
+              const newPayload = Object.assign({}, payload);
+              delete newPayload[colName];
+              if (mode === 'update') {
+                r = await sb.from(T_ITEMS).update(newPayload).eq('id', id);
+              } else {
+                r = await sb.from(T_ITEMS).insert(newPayload);
+              }
+            }
+          }
+          return r;
+        };
+
         if (id) {
           data.updated_at = new Date().toISOString();
-          const r = await sb.from(T_ITEMS).update(data).eq('id', id);
+          const r = await tryInsertOrUpdate(data, 'update');
           if (r.error) throw r.error;
         } else {
-          const r = await sb.from(T_ITEMS).insert(data);
+          const r = await tryInsertOrUpdate(data, 'insert');
           if (r.error) throw r.error;
         }
       } else {
