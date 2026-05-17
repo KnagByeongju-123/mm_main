@@ -99,6 +99,7 @@ html, body {
 .acc.c-hq:hover, .acc.c-hq:focus-within { background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.4); }
 .acc.c-f1:hover, .acc.c-f1:focus-within { background: rgba(94,234,212,0.08); border-color: rgba(94,234,212,0.4); }
 .acc.c-f2:hover, .acc.c-f2:focus-within { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.4); }
+.acc.c-imp:hover, .acc.c-imp:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
 .acc.c-master:hover, .acc.c-master:focus-within { background: rgba(253,186,116,0.08); border-color: rgba(253,186,116,0.4); }
 
 .acc[open] {
@@ -108,6 +109,7 @@ html, body {
 .acc.c-hq[open] { box-shadow: 0 4px 20px rgba(125,211,252,0.22); border-color: rgba(125,211,252,0.55); }
 .acc.c-f1[open] { box-shadow: 0 4px 20px rgba(94,234,212,0.22); border-color: rgba(94,234,212,0.55); }
 .acc.c-f2[open] { box-shadow: 0 4px 20px rgba(147,197,253,0.22); border-color: rgba(147,197,253,0.55); }
+.acc.c-imp[open] { box-shadow: 0 4px 20px rgba(196,181,253,0.22); border-color: rgba(196,181,253,0.55); }
 .acc.c-master[open] { box-shadow: 0 4px 20px rgba(253,186,116,0.22); border-color: rgba(253,186,116,0.55); }
 
 .acc summary {
@@ -132,6 +134,7 @@ html, body {
 .acc.c-hq[open] .icon     { box-shadow: 0 0 16px rgba(125,211,252,0.4); }
 .acc.c-f1[open] .icon     { box-shadow: 0 0 16px rgba(94,234,212,0.4); }
 .acc.c-f2[open] .icon     { box-shadow: 0 0 16px rgba(147,197,253,0.4); }
+.acc.c-imp[open] .icon    { box-shadow: 0 0 16px rgba(196,181,253,0.4); }
 .acc.c-master[open] .icon { box-shadow: 0 0 16px rgba(253,186,116,0.4); }
 
 .acc .title {
@@ -141,6 +144,7 @@ html, body {
 .acc.c-hq[open] .title     { color: #bae6fd; }
 .acc.c-f1[open] .title     { color: #99f6e4; }
 .acc.c-f2[open] .title     { color: #bfdbfe; }
+.acc.c-imp[open] .title    { color: #ddd6fe; }
 .acc.c-master[open] .title { color: #fed7aa; }
 
 .acc .count {
@@ -162,6 +166,7 @@ html, body {
 .acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
 .acc.c-f1 .icon     { background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.3)); color: #5eead4; }
 .acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
+.acc.c-imp .icon    { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
 
 .acc-body {
@@ -334,6 +339,19 @@ body.locked { overflow: hidden; }
       </a>
     </div>
   </details>
+  <details class="acc c-imp">
+    <summary><div class="icon">🛠</div><div class="title" data-i18n="improvement">개선활동</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="improvement_report.html">
+        <div class="s-icon">📈</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_improvement">개선활동 보고</div>
+          <div class="s-desc" data-i18n="menu_improvement_desc">문제 발생 시 개선 전/후 비교 및 효과 기록</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
   <details class="acc c-master">
     <summary><div class="icon">⚙️</div><div class="title" data-i18n="master">마스터</div><div class="count">2</div><div class="arrow">›</div></summary>
     <div class="acc-body">
@@ -405,6 +423,7 @@ const I18N = {
     hq: '본사',
     f1: '1공장',
     tryout: 'Tryout',
+    improvement: '개선활동',
     master: '마스터',
     menu_mold_hq: '금형부품 재고관리',
     menu_mold_hq_desc: '소모품 입출고 / 재고 조회',
@@ -412,6 +431,8 @@ const I18N = {
     menu_mold_f1_desc: '프레스부품 입출고 / 재고 조회',
     menu_tryout: 'Tryout 보고서',
     menu_tryout_desc: '개발 단계 시작품 테스트 결과 작성',
+    menu_improvement: '개선활동 보고',
+    menu_improvement_desc: '문제 발생 시 개선 전/후 비교 및 효과 기록',
     menu_security: '보안 마스터',
     menu_security_desc: 'PIN 관리 / 로그인 위치 / 차단 / 알림',
     menu_mold_master: '금형마스터',
@@ -443,6 +464,7 @@ const I18N = {
     hq: 'Zentrale',
     f1: 'Werk 1',
     tryout: 'Tryout',
+    improvement: 'Verbesserung',
     master: 'Master',
     menu_mold_hq: 'Lagerverwaltung (Formteile)',
     menu_mold_hq_desc: 'Wareneingang/-ausgang / Bestand',
@@ -450,6 +472,8 @@ const I18N = {
     menu_mold_f1_desc: 'Pressteile-Ein-/Ausgang / Bestand',
     menu_tryout: 'Tryout-Bericht',
     menu_tryout_desc: 'Testergebnisse für Prototypen in der Entwicklungsphase',
+    menu_improvement: 'Verbesserungsbericht',
+    menu_improvement_desc: 'Vorher/Nachher-Vergleich und Wirksamkeit',
     menu_security: 'Sicherheits-Master',
     menu_security_desc: 'PIN-Verwaltung / Login-Standorte / Sperren / Benachrichtigungen',
     menu_mold_master: 'Formen-Master',
@@ -481,6 +505,7 @@ const I18N = {
     hq: 'Бас кеңсе',
     f1: '1-зауыт',
     tryout: 'Tryout',
+    improvement: 'Жақсарту',
     master: 'Мастер',
     menu_mold_hq: 'Қойма басқару (қалып бөлшектері)',
     menu_mold_hq_desc: 'Кіріс/шығыс / қалдықты қарау',
@@ -488,6 +513,8 @@ const I18N = {
     menu_mold_f1_desc: 'Баспасөз бөлшектерінің кірісі/шығысы / қалдықты қарау',
     menu_tryout: 'Tryout есебі',
     menu_tryout_desc: 'Әзірлеу кезеңіндегі өнімді сынау нәтижелерін жазу',
+    menu_improvement: 'Жақсарту есебі',
+    menu_improvement_desc: 'Алдын/Соңын салыстыру және нәтижелілік',
     menu_security: 'Қауіпсіздік шебері',
     menu_security_desc: 'PIN кодын басқару / Кіру орны / Бұғаттау / Хабарламалар',
     menu_mold_master: 'Қалып шебері',

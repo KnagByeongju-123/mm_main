@@ -325,7 +325,7 @@ input[type="file"] { display: none; }
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 일지로</a>
-  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.2</span></h1>
+  <h1>🛠 개선활동 보고 <span class="ver" onclick="showVer()">v1.3</span></h1>
 </div>
 
 <div class="user-bar">
@@ -334,7 +334,9 @@ input[type="file"] { display: none; }
 
 <div class="tabs">
   <div class="tab active" data-tab="write">✏️ 작성</div>
-  <div class="tab" data-tab="list">📋 목록</div>
+  <div class="tab" data-tab="list">📋 조회</div>
+  <div class="tab" data-tab="pdf">📄 출력</div>
+  <div class="tab" data-tab="settings">⚙️ 설정</div>
 </div>
 
 <div class="container">
@@ -534,9 +536,89 @@ input[type="file"] { display: none; }
     <div id="logList"></div>
   </div>
 
+  <!-- ============ 출력 탭 ============ -->
+  <div id="page-pdf" style="display:none">
+    <div class="card">
+      <h2>📄 PDF 출력</h2>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:10px">
+        출력할 개선활동을 선택하세요. 각 항목별로 A4 보고서가 생성됩니다.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>기간 시작</label>
+          <input type="date" id="pdfFrom">
+        </div>
+        <div class="form-group">
+          <label>기간 종료</label>
+          <input type="date" id="pdfTo">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>상태</label>
+          <select id="pdfStatus">
+            <option value="">전체</option>
+            <option value="진행중">진행중</option>
+            <option value="검증중">검증중</option>
+            <option value="완료">완료</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>대상 검색</label>
+          <input type="text" id="pdfKw" placeholder="금형재번/대상명">
+        </div>
+      </div>
+
+      <div class="list-toolbar">
+        <button type="button" onclick="loadPdfPreview()">🔍 조회</button>
+        <button type="button" onclick="resetPdfFilter()">🗑 초기화</button>
+        <button type="button" onclick="useListFilter()">📋 목록 필터 사용</button>
+      </div>
+    </div>
+
+    <div id="pdfPreview"></div>
+  </div>
+
+  <!-- ============ 설정 탭 ============ -->
+  <div id="page-settings" style="display:none">
+    <div class="card">
+      <h2>⚙️ PDF 바닥글 설정</h2>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:14px">
+        PDF 출력 시 페이지 하단 좌/중/우에 표시됩니다.<br>
+        한 번 입력하면 다음 PDF에도 자동 적용됩니다.
+      </p>
+      <div class="form-group">
+        <label>좌측</label>
+        <input type="text" id="footLeft" placeholder="예: MSM-개선-2026-001">
+      </div>
+      <div class="form-group">
+        <label>중앙</label>
+        <input type="text" id="footCenter" placeholder="예: (주)태진다이텍">
+      </div>
+      <div class="form-group">
+        <label>우측</label>
+        <input type="text" id="footRight" placeholder="예: A4 (210×297)">
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button type="button" class="btn btn-secondary" onclick="clearFooter()">🗑 푸터 정보 지우기</button>
+        <button type="button" class="btn btn-primary" onclick="saveFooterConfig()">💾 저장</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 데이터 관리</h2>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:10px">
+        전체 데이터 백업/내보내기
+      </p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary" onclick="exportCsv()">📥 전체 CSV 내보내기</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<div class="footer">개선활동 보고 v1.2 · msm</div>
+<div class="footer">개선활동 보고 v1.3 · msm</div>
 
 <div class="toast" id="toast"></div>
 
@@ -545,7 +627,12 @@ function showVer(){
   alert(
     '🛠 개선활동 보고 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.2 (현재)\n' +
+    'v1.3 (현재)\n' +
+    '• 탭 구조 4탭으로 확장 (작성/조회/출력/설정)\n' +
+    '• 출력 탭: 기간/상태/키워드 필터 + 미리보기\n' +
+    '• 설정 탭: PDF 바닥글 좌/중/우 관리 (localStorage)\n' +
+    '• 목록 필터 → 출력 필터 가져오기 버튼\n\n' +
+    'v1.2\n' +
     '• 개선 유형 선택 추가 (금형/공정/안전/품질시스템/설비/환경/기타)\n' +
     '• 작업일지 연계 없이도 독립 개선활동 등록 가능\n' +
     '• 금형 외 케이스는 개선 대상 입력\n' +
@@ -1036,7 +1123,110 @@ window.goToWrite = function(){
   document.querySelector('[data-tab="write"]').classList.add('active');
   $('page-write').style.display = '';
   $('page-list').style.display = 'none';
+  $('page-pdf').style.display = 'none';
+  $('page-settings').style.display = 'none';
   window.scrollTo({top: 0, behavior: 'smooth'});
+};
+
+/* ============ 출력 탭 (PDF) ============ */
+window.loadPdfPreview = async function(){
+  if(!allLogs.length) await loadList();
+  renderPdfPreview();
+};
+
+window.resetPdfFilter = function(){
+  $('pdfFrom').value = '';
+  $('pdfTo').value = '';
+  $('pdfStatus').value = '';
+  $('pdfKw').value = '';
+  renderPdfPreview();
+};
+
+window.useListFilter = function(){
+  $('pdfFrom').value = $('filterFrom').value;
+  $('pdfTo').value = $('filterTo').value;
+  $('pdfStatus').value = $('filterStatus').value;
+  $('pdfKw').value = $('searchKw').value;
+  renderPdfPreview();
+  toast('📋 목록 필터를 가져왔습니다');
+};
+
+function renderPdfPreview(){
+  const from = $('pdfFrom').value;
+  const to = $('pdfTo').value;
+  const st = $('pdfStatus').value;
+  const kw = $('pdfKw').value.trim().toLowerCase();
+
+  const filtered = allLogs.filter(l => {
+    if(st && l.status !== st) return false;
+    if(from && (l.improve_date||'') < from) return false;
+    if(to && (l.improve_date||'') > to) return false;
+    if(kw){
+      const blob = ((l.mold_no||'') + ' ' + (l.problem_desc||'') + ' ' +
+        (l.improvement_action||'')).toLowerCase();
+      if(!blob.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  const el = $('pdfPreview');
+  if(!filtered.length){
+    el.innerHTML = '<div class="empty">📭 출력할 개선활동이 없습니다</div>';
+    return;
+  }
+
+  el.innerHTML = '<div class="card"><h2>📄 출력 대상 (' + filtered.length + '건)</h2>' +
+    filtered.map(l => {
+      const icon = (l.mold_no||'').startsWith('[') ? '🛠' : '📦';
+      return '<div class="log-item" style="margin-bottom:8px">' +
+        '<div class="head-row">' +
+          '<span class="date">' + escapeHtml(l.improve_date||'') + '</span>' +
+          '<span class="mold">' + icon + ' ' + escapeHtml(l.mold_no||'') + '</span>' +
+          (l.stage ? '<span class="stage-tag">' + escapeHtml(l.stage) + '</span>' : '') +
+          '<span class="status-tag ' + escapeHtml(l.status||'') + '">' + escapeHtml(l.status||'') + '</span>' +
+        '</div>' +
+        '<div class="body" style="margin-bottom:6px">' +
+          '<div class="sec"><span class="lbl">문제:</span>' + escapeHtml((l.problem_desc||'').slice(0,80)) + '</div>' +
+        '</div>' +
+        '<div class="footer-row">' +
+          '<button onclick="openPdf(' + l.id + ')" class="pdf">📄 PDF 출력</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+}
+
+/* ============ 설정 탭 (바닥글) ============ */
+const FOOTER_LS = 'improvement_pdf_config';
+
+window.loadFooterConfig = function(){
+  try{
+    const c = JSON.parse(localStorage.getItem(FOOTER_LS) || '{}');
+    if(c.footLeft !== undefined) $('footLeft').value = c.footLeft;
+    if(c.footCenter !== undefined) $('footCenter').value = c.footCenter;
+    if(c.footRight !== undefined) $('footRight').value = c.footRight;
+  }catch(e){}
+};
+
+window.saveFooterConfig = function(){
+  const c = {
+    footLeft: $('footLeft').value,
+    footCenter: $('footCenter').value,
+    footRight: $('footRight').value
+  };
+  try{
+    localStorage.setItem(FOOTER_LS, JSON.stringify(c));
+    toast('✓ 바닥글 설정 저장 완료');
+  }catch(e){
+    alert('저장 실패: ' + e.message);
+  }
+};
+
+window.clearFooter = function(){
+  if(!confirm('바닥글 좌/중/우 모두 지울까요?')) return;
+  $('footLeft').value = '';
+  $('footCenter').value = '';
+  $('footRight').value = '';
+  saveFooterConfig();
 };
 
 window.exportCsv = function(){
@@ -1071,9 +1261,13 @@ function setupTabs(){
       const tab = t.dataset.tab;
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
-      $('page-write').style.display = tab === 'write' ? '' : 'none';
-      $('page-list').style.display = tab === 'list' ? '' : 'none';
+      $('page-write').style.display    = tab === 'write'    ? '' : 'none';
+      $('page-list').style.display     = tab === 'list'     ? '' : 'none';
+      $('page-pdf').style.display      = tab === 'pdf'      ? '' : 'none';
+      $('page-settings').style.display = tab === 'settings' ? '' : 'none';
       if(tab === 'list') loadList();
+      if(tab === 'pdf') loadPdfPreview();
+      if(tab === 'settings') loadFooterConfig();
     });
   });
 }
