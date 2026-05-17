@@ -230,6 +230,15 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
 }
+.list-toolbar {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin: 12px 0;
+  padding: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.list-toolbar .btn-mini { flex: 1; min-width: 100px; padding: 10px 8px; }
 .btn-mini {
   padding: 7px 12px; font-size: 12px; font-weight: 600;
   border-radius: 6px; cursor: pointer; font-family: inherit;
@@ -419,7 +428,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.0</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.2</span></h1>
 </div>
 
 <div class="user-bar">
@@ -617,6 +626,14 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
         <span class="filter-count" id="filterCount">0건</span>
       </div>
     </div>
+
+    <!-- 목록 액션 툴바 (항상 표시) -->
+    <div class="list-toolbar">
+      <button class="btn-mini" type="button" onclick="goToWrite()">✏️ 새 일지 작성</button>
+      <button class="btn-mini" type="button" onclick="refreshList()">🔍 조회</button>
+      <button class="btn-mini" type="button" onclick="exportListCsv()">📥 CSV 내보내기</button>
+    </div>
+
     <div id="logList"></div>
   </div>
 
@@ -718,7 +735,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v2.0 · msm</div>
+  <div class="footer">Tryout 작업일지 v2.2 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -732,47 +749,35 @@ function showVer(){
   alert(
     '🧪 Tryout 작업일지 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.8 (현재)\n' +
-    '• 글자 가독성 개선 (placeholder, select 옵션)\n' +
-    '• 저장 디버깅 강화 (alert + console)\n' +
-    '• 조회/수정/삭제 기능 안정화\n\n' +
+    'v2.2 (현재)\n' +
+    '• 디버깅 alert 제거 (저장 정상화)\n' +
+    '• "새로고침" → "조회" 버튼명 변경\n\n' +
+    'v2.1\n' +
+    '• 목록 탭 상단 액션 툴바 추가\n' +
+    '  - 새 일지 작성 / 조회 / CSV 내보내기\n' +
+    '• 빈 상태 안내 개선 (첫 일지 작성 / 필터 초기화)\n\n' +
+    'v2.0\n' +
+    '• 저장 버튼 작동 수정 (window.saveLog 전역 등록)\n' +
+    '• 강력 디버깅 alert 추가 (이후 v2.2에서 제거)\n\n' +
+    'v1.8\n' +
+    '• 글자 가독성 개선 (placeholder, select 옵션)\n\n' +
     'v1.7\n' +
-    '• 저장 실패 시 정확한 에러 메시지 표시 (alert)\n' +
-    '• 세션/Supabase 연결 검증 추가\n' +
-    '• DB 컬럼 누락 자동 대응 (IATF 필드 없어도 저장 가능)\n' +
-    '• 콘솔 로그 추가 (디버깅 용이)\n\n' +
+    '• 저장 실패 시 정확한 에러 메시지 표시\n' +
+    '• DB 컬럼 누락 자동 대응\n\n' +
     'v1.6\n' +
-    '• 📄 보고서 탭 신규 추가 (4번째 탭)\n' +
-    '• 보고서용 필터 + 출력 대상 미리보기\n' +
-    '• "📋 목록 탭 필터 사용" 버튼으로 필터 복사\n\n' +
+    '• 📄 보고서 탭 신규 추가\n\n' +
     'v1.5\n' +
-    '• 수정 기능: 목록에서 ✏️ 수정 클릭 → 작성 폼에 자동 로드\n' +
-    '• 필터 강화: 기간(시작~종료) / 차수 / 금형재번\n' +
-    '• 필터 결과 카운트 표시\n' +
-    '• 📄 보고서 PDF 출력 버튼 → tryout_pdf.html 연동\n\n' +
+    '• 수정 기능 + 필터 강화\n\n' +
     'v1.4\n' +
-    '• 사진 첨부: 카메라 촬영 / 갤러리 선택 버튼 분리\n' +
-    '• 압축 한도 10KB → 20KB 완화 (화질 향상)\n\n' +
+    '• 사진 첨부: 카메라/갤러리 버튼 분리\n\n' +
     'v1.3\n' +
-    '• 라벨 통일: 금형번호 → 금형재번\n' +
-    '  (금형마스터 컬럼명과 일치)\n\n' +
+    '• 라벨 통일: 금형번호 → 금형재번\n\n' +
     'v1.2\n' +
-    '• IATF 16949 연계 필드 추가:\n' +
-    '  - FMEA 검토 필요 체크\n' +
-    '  - 관리계획서 반영 체크\n' +
-    '  - 이슈 분류 (치수/표면/조립 등)\n' +
-    '  - 측정 항목/측정값\n' +
-    '• 목록에 IATF 태그 표시 + 필터링\n' +
-    '• 통계에 FMEA/CP 후보 카운트 + 이슈 분류 통계\n\n' +
+    '• IATF 16949 연계 필드 추가\n\n' +
     'v1.1\n' +
-    '• 금형재번을 금형마스터(mm_mold_master)에서 자동완성\n' +
-    '• 선택 시 고객사/기종/재질/규격 자동 표시\n\n' +
+    '• 금형재번 자동완성\n\n' +
     'v1.0\n' +
-    '• 금형조립자 일별 작업일지\n' +
-    '• 작성/목록/통계 3개 탭\n' +
-    '• 사진 자동 10KB 이하 압축\n' +
-    '• Supabase tryout_logs 테이블 연동\n' +
-    '• 인증가드 + 위치추적'
+    '• 초기 출시'
   );
 }
 
@@ -1012,12 +1017,8 @@ function openModal(src){
 
 /* ============ 저장 ============ */
 window.saveLog = async function(){
-  alert('[디버그] 저장 버튼 클릭됨 - 저장 시작');
-  console.log('[saveLog] 시작');
-
-  // 기본 검증
-  if(!session){ alert('❌ 세션 없음. 다시 로그인하세요.'); return; }
-  if(!sb){ alert('❌ Supabase 연결 안 됨'); return; }
+  if(!session){ alert('세션 없음. 다시 로그인하세요.'); return; }
+  if(!sb){ alert('Supabase 연결 안 됨'); return; }
 
   const date = $('logDate').value;
   const moldNo = $('moldNo').value.trim();
@@ -1025,12 +1026,10 @@ window.saveLog = async function(){
   const issues = $('issues').value.trim();
   const nextPlan = $('nextPlan').value.trim();
 
-  console.log('[saveLog] 입력값:', { date, moldNo, currentStage, currentStatus, photoCount: photos.length });
-
-  if(!date){ alert('❌ 날짜를 입력하세요'); return; }
-  if(!moldNo){ alert('❌ 금형재번을 입력하세요'); return; }
-  if(!currentStage){ alert('❌ 차수를 선택하세요 (1차, 2차, 3차, 양산전, 기타 중 하나)'); return; }
-  if(!currentStatus){ alert('❌ 상태를 선택하세요 (진행중, 완료, 보류, 문제발생 중 하나)'); return; }
+  if(!date){ toast('날짜를 입력하세요'); return; }
+  if(!moldNo){ toast('금형재번을 입력하세요'); return; }
+  if(!currentStage){ toast('차수를 선택하세요'); return; }
+  if(!currentStatus){ toast('상태를 선택하세요'); return; }
 
   const author = session.role === 'admin' ? '관리자' : (session.name || '');
   const dept = session.dept || '';
@@ -1053,9 +1052,6 @@ window.saveLog = async function(){
     measurement_target: $('measurementTarget').value.trim() || null
   };
 
-  console.log('[saveLog] payload:', payload);
-  alert('[디버그] 검증 통과, DB 저장 시도\n금형재번: ' + moldNo + '\n차수: ' + currentStage + '\n상태: ' + currentStatus);
-
   // 컬럼 누락 자동 대응 (재귀)
   const tryUpsert = async (data, mode, depth) => {
     if(depth > 10){
@@ -1070,10 +1066,8 @@ window.saveLog = async function(){
     if(r.error && r.error.message){
       const m = r.error.message.match(/Could not find the '([^']+)' column/);
       if(m){
-        const colName = m[1];
-        console.warn('[saveLog] 컬럼 없음, 제거 후 재시도:', colName);
         const newData = Object.assign({}, data);
-        delete newData[colName];
+        delete newData[m[1]];
         return await tryUpsert(newData, mode, depth + 1);
       }
     }
@@ -1082,30 +1076,26 @@ window.saveLog = async function(){
 
   try {
     toast(editingId ? '수정 중...' : '저장 중...');
-    console.log('[saveLog] DB 요청 시작');
     let r;
     if(editingId){
       r = await tryUpsert(payload, 'update', 0);
     } else {
       r = await tryUpsert(payload, 'insert', 0);
     }
-    console.log('[saveLog] DB 응답:', r);
     if(r.error) throw r.error;
 
     if(editingId){
-      alert('✅ 수정 완료');
+      toast('✓ 수정 완료');
       editingId = null;
       updateSaveBtnLabel();
     } else {
-      alert('✅ 저장 완료');
+      toast('✓ 저장 완료');
     }
     resetForm();
     await loadList();
     await loadStat();
-    console.log('[saveLog] 모든 처리 완료');
   } catch(err) {
-    console.error('[saveLog] 실패:', err);
-    alert('❌ ' + (editingId?'수정':'저장') + ' 실패\n\n에러: ' + (err.message || err) + '\n\n전체 에러:\n' + JSON.stringify(err, null, 2));
+    alert((editingId?'수정':'저장') + ' 실패: ' + (err.message || err));
   }
 };
 
@@ -1178,7 +1168,18 @@ function renderList(){
 
   const el = $('logList');
   if(!filtered.length){
-    el.innerHTML = '<div class="empty">📭 일지가 없습니다</div>';
+    const totalCount = allLogs.length;
+    if(totalCount === 0){
+      el.innerHTML = '<div class="empty">' +
+        '📭 저장된 일지가 없습니다<br><br>' +
+        '<button class="btn-mini" type="button" onclick="goToWrite()" style="margin-top:8px">✏️ 첫 일지 작성하기</button>' +
+        '</div>';
+    } else {
+      el.innerHTML = '<div class="empty">' +
+        '🔍 검색 결과가 없습니다 (전체 ' + totalCount + '건 중 0건)<br><br>' +
+        '<button class="btn-mini" type="button" onclick="resetFilter()" style="margin-top:8px">🗑 필터 초기화</button>' +
+        '</div>';
+    }
     return;
   }
 
@@ -1367,6 +1368,59 @@ window.resetFilter = function(){
   $('filterFrom').value = '';
   $('filterTo').value = '';
   renderList();
+};
+
+/* 목록 툴바 함수들 */
+window.goToWrite = function(){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-tab="write"]')?.classList.add('active');
+  ['page-write','page-list','page-stat','page-pdf'].forEach(id => {
+    const el = $(id);
+    if(el) el.style.display = id === 'page-write' ? '' : 'none';
+  });
+  window.scrollTo({top: 0, behavior: 'smooth'});
+};
+
+window.refreshList = async function(){
+  toast('🔍 조회 중...');
+  await loadList();
+  toast('✓ 조회 완료');
+};
+
+window.exportListCsv = function(){
+  const data = window.__filteredLogs || allLogs;
+  if(!data.length){
+    alert('내보낼 데이터가 없습니다');
+    return;
+  }
+  const headers = ['날짜','금형재번','차수','상태','작성자','부서','작업내용','이슈','다음계획','분류','측정','FMEA','CP'];
+  const rows = data.map(l => [
+    l.log_date || '',
+    l.mold_no || '',
+    l.stage || '',
+    l.status || '',
+    l.author || '',
+    l.dept || '',
+    (l.work_done||'').replace(/\n/g,' '),
+    (l.issues||'').replace(/\n/g,' '),
+    (l.next_plan||'').replace(/\n/g,' '),
+    l.failure_category || '',
+    l.measurement_target || '',
+    l.fmea_flag ? 'Y' : '',
+    l.cp_flag ? 'Y' : ''
+  ]);
+  const csv = [headers, ...rows].map(r =>
+    r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')
+  ).join('\n');
+  // UTF-8 BOM (엑셀 한글 깨짐 방지)
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'tryout_logs_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ CSV 내보내기 완료 (' + data.length + '건)');
 };
 
 /* ============ 보고서 탭 ============ */
