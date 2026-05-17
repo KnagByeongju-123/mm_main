@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.1</title>
+<title>1공장 재고관리 v1.2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -296,7 +296,7 @@ header h1 .ver {
 .qty-wrap { display: flex; align-items: center; gap: 8px; justify-content: center; }
 .qty-btn {
   width: 44px; height: 44px; border: 1px solid var(--border-hi); background: var(--bg-card);
-  border-radius: 6px; font-size: 22px; cursor: pointer; font-weight: 600;
+  color: var(--text); border-radius: 6px; font-size: 22px; cursor: pointer; font-weight: 600;
 }
 .qty-input { width: 80px; text-align: center; font-size: 22px !important; font-weight: 600; }
 
@@ -492,7 +492,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.1</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.2</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -606,7 +606,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.1 · msm · 프레스양산
+  1공장 재고관리 v1.2 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -734,7 +734,7 @@ input[type="file"] { display: none; }
 <div class="modal-bg" id="modalStock">
   <div class="modal">
     <h2 id="stockTitle" data-i18n="in">입고</h2>
-    <div id="stockInfo" style="background:#f5f5f5;padding:10px;border-radius:6px;margin-bottom:12px;font-size:14px"></div>
+    <div id="stockInfo" style="background:var(--bg-card-hi);color:var(--text);padding:10px;border-radius:6px;margin-bottom:12px;font-size:14px;border:1px solid var(--border)"></div>
     <div class="form-group">
       <label data-i18n="qty">수량</label>
       <div class="qty-wrap">
@@ -943,7 +943,13 @@ function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.1 (현재)\n' +
+    'v1.2 (현재)\n' +
+    '• 입출고 모달 가독성 개선 (다크모드 매치)\n' +
+    '• 촬영/갤러리 버튼 글자색 수정\n' +
+    '• 취소 버튼 글자색 수정\n' +
+    '• DB 컬럼 누락 자동 대응\n' +
+    '• stock undefined 방지\n\n' +
+    'v1.1\n' +
     '• 다국어 지원: 한국어 / 독일어 / 카자흐스탄어\n' +
     '• 선택한 언어 localStorage 저장 (다른 페이지로 가도 유지)\n' +
     '• 메뉴/탭/버튼/모달 라벨 번역\n\n' +
@@ -1916,7 +1922,7 @@ function showVerInput(){
     $('stockInfo').innerHTML =
       '<b>' + escapeHtml(item.name) + '</b>' +
       (item.spec ? ' / ' + escapeHtml(item.spec) : '') + '<br>' +
-      '<span style="font-size:12px;color:#666">현재고: ' + item.stock + ' ' + (item.unit || 'EA') + '</span>';
+      '<span style="font-size:12px;color:var(--text-sub)">현재고: ' + (item.stock != null ? item.stock : 0) + ' ' + (item.unit || 'EA') + '</span>';
     $('stockQty').value = 1;
     $('stockMemo').value = '';
 
