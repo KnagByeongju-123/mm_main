@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tryout 보고서 출력 v1.5</title>
+<title>Tryout 보고서 출력 v1.6</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,6 +72,7 @@ body {
 
 .preview-wrap {
   background: var(--bg-dark); padding: 14px;
+  overflow-x: auto;
 }
 .preview-hint {
   text-align: center; font-size: 12px; color: var(--text-sub); margin-bottom: 10px;
@@ -80,7 +81,8 @@ body {
 /* 보고서 본체 — 인쇄 시 그대로 출력됨 */
 .report-page {
   background: white; color: #222;
-  max-width: 210mm; min-height: 297mm;
+  width: 210mm; min-height: 297mm;
+  max-width: none;
   margin: 0 auto;
   padding: 18mm 16mm;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
@@ -153,22 +155,24 @@ body {
 .log-table {
   width: 100%; border-collapse: collapse; font-size: 9pt;
   margin-bottom: 10px;
+  table-layout: fixed;
 }
 .log-table th, .log-table td {
   border: 1px solid #ccc; padding: 5px 6px; vertical-align: top;
   text-align: left;
+  word-break: keep-all; overflow-wrap: anywhere;
 }
 .log-table th {
   background: #1a3a5c; color: white;
   text-align: center; font-weight: 600;
 }
-.log-table .c-date  { width: 16%; }
-.log-table .c-mold  { width: 14%; }
-.log-table .c-stage { width: 8%; text-align: center; }
-.log-table .c-status{ width: 10%; text-align: center; }
-.log-table .c-body  { width: 36%; }
-.log-table .c-iatf  { width: 8%; text-align: center; }
-.log-table .c-author{ width: 8%; text-align: center; }
+.log-table .c-date  { width: 11%; text-align: center; }
+.log-table .c-mold  { width: 12%; text-align: center; }
+.log-table .c-stage { width: 7%; text-align: center; }
+.log-table .c-status{ width: 9%; text-align: center; }
+.log-table .c-body  { width: 47%; }
+.log-table .c-iatf  { width: 7%; text-align: center; }
+.log-table .c-author{ width: 7%; text-align: center; }
 .log-table td .lbl { color: #666; font-weight: 600; }
 .log-table td .sec { margin-bottom: 2px; }
 .log-table .status-tag { font-size: 8pt; padding: 1px 6px; border-radius: 8px; font-weight: 700; display: inline-block; }
@@ -221,6 +225,10 @@ body {
 .toast.show { opacity: 1; }
 
 /* 인쇄 — A4 최적화 */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
 @media print {
   body { background: white !important; }
   .app-header, .config-panel, .btn-row, .preview-hint, .toast { display: none !important; }
@@ -285,7 +293,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.5</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.6</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -338,7 +346,7 @@ body {
 </div>
 
 <div class="preview-wrap">
-  <div class="preview-hint no-print">↓ 미리보기 (인쇄 시 결재란 포함된 양식 그대로 출력)</div>
+  <div class="preview-hint no-print">↓ 미리보기 (A4 사이즈) - 모바일에서는 좌우 스크롤하여 확인하세요. 인쇄 시 양식 그대로 출력됩니다.</div>
   <div class="report-page" id="reportBody">
     <div style="text-align:center;padding:40px;color:#999">데이터 로딩 중...</div>
   </div>
@@ -351,7 +359,13 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.5 (현재)\n' +
+    'v1.6 (현재)\n' +
+    '• @page A4 명시적 선언 (인쇄 시 정확한 A4)\n' +
+    '• 테이블 컬럼 비율 재조정 (작업/이슈 영역 47%로 확대)\n' +
+    '• 한글 단어 줄바꿈 자동 처리 (글자 세로 떨어짐 방지)\n' +
+    '• 미리보기 가로 스크롤 가능 (모바일 대응)\n' +
+    '• A4 너비 210mm 강제 유지\n\n' +
+    'v1.5\n' +
     '• A4 인쇄 품질 강화\n' +
     '• 테이블 행이 페이지 경계에서 잘리지 않게 처리\n' +
     '• 결재란/사진/IATF 영역도 페이지 나눔 제어\n' +
