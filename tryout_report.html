@@ -419,7 +419,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
 
 <div class="app-header">
   <a href="index.html" class="back-btn">‹ 메인</a>
-  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v1.9</span></h1>
+  <h1>🧪 Tryout 작업일지 <span class="ver" onclick="showVer()">v2.0</span></h1>
 </div>
 
 <div class="user-bar">
@@ -718,7 +718,7 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
     </div>
   </div>
 
-  <div class="footer">Tryout 작업일지 v1.9 · msm</div>
+  <div class="footer">Tryout 작업일지 v2.0 · msm</div>
 </div>
 
 <div class="modal" id="imgModal" onclick="this.classList.remove('show')">
@@ -1011,7 +1011,7 @@ function openModal(src){
 }
 
 /* ============ 저장 ============ */
-async function saveLog(){
+window.saveLog = async function(){
   alert('[디버그] 저장 버튼 클릭됨 - 저장 시작');
   console.log('[saveLog] 시작');
 
@@ -1107,7 +1107,7 @@ async function saveLog(){
     console.error('[saveLog] 실패:', err);
     alert('❌ ' + (editingId?'수정':'저장') + ' 실패\n\n에러: ' + (err.message || err) + '\n\n전체 에러:\n' + JSON.stringify(err, null, 2));
   }
-}
+};
 
 function resetForm(){
   editingId = null;
