@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>Tryout 보고서 출력 v1.13</title>
+<title>Tryout 보고서 출력 v1.12</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -198,7 +198,7 @@ body {
 .iatf-list .it { font-size: 9pt; margin: 3px 0; }
 .iatf-list .it .tag { font-weight: 700; color: #6f42c1; margin-right: 5px; }
 
-/* 사진 표 (2칸 — 큰 사이즈) */
+/* 사진 표 (3칸) */
 .photos-table {
   width: 100%;
   border-collapse: collapse;
@@ -206,15 +206,15 @@ body {
   table-layout: fixed;
 }
 .photos-table td {
-  width: 50%;
+  width: 33.333%;
   vertical-align: top;
-  padding: 4px;
+  padding: 3px;
   page-break-inside: avoid;
   break-inside: avoid;
 }
 .photos-table .photo-box {
   width: 100%;
-  padding-bottom: 75%;           /* 4:3 비율 (정사각보다 가로형) */
+  padding-bottom: 100%;          /* 1:1 정사각 */
   position: relative;
   border: 1px solid #ccc;
   overflow: hidden;
@@ -230,7 +230,7 @@ body {
 .photos-table .photo-box .cap {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: rgba(0,0,0,0.55); color: white;
-  font-size: 8pt; padding: 3px 4px; text-align: center;
+  font-size: 7pt; padding: 2px 3px; text-align: center;
 }
 /* 빈 셀 */
 .photos-table td.empty .photo-box {
@@ -332,7 +332,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.13</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.12</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -399,11 +399,7 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.13 (현재)\n' +
-    '• 사진 표 3칸 → 2칸 (사진 사이즈 1.5배 확대)\n' +
-    '• 사진 비율 1:1 → 4:3 가로형 (작업물 사진에 적합)\n' +
-    '• 캡션 폰트 7pt → 8pt\n\n' +
-    'v1.12\n' +
+    'v1.12 (현재)\n' +
     '• 사진 영역: grid → table (3칸 표 구조)\n' +
     '  - 행(tr) 단위로 페이지 분할 — 사진이 잘리지 않음\n' +
     '  - 한 행이 페이지 끝에 안 들어가면 통째로 다음 페이지로\n' +
@@ -703,10 +699,10 @@ function render(){
       html += '<div class="r-section">' + idx + '. 첨부 사진 (' + photosFlat.length + '장)</div>';
       html += '<table class="photos-table"><tbody>';
 
-      // 2장씩 한 행에 — 행 단위로 페이지 분할
-      for(let i = 0; i < photos.length; i += 2){
+      // 3장씩 한 행에 — 행 단위로 페이지 분할
+      for(let i = 0; i < photos.length; i += 3){
         html += '<tr>';
-        for(let j = 0; j < 2; j++){
+        for(let j = 0; j < 3; j++){
           const p = photos[i + j];
           if(p){
             html += '<td>';
@@ -716,6 +712,7 @@ function render(){
             html += '</div>';
             html += '</td>';
           } else {
+            // 빈 셀 — 마지막 행 정렬용 (선택)
             html += '<td class="empty"></td>';
           }
         }
