@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>Tryout 보고서 출력 v1.7</title>
+<title>Tryout 보고서 출력 v1.8</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -301,7 +302,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.7</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.8</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -348,9 +349,10 @@ body {
   </div>
 </div>
 
-<div class="btn-row no-print">
-  <button class="btn-back" type="button" onclick="location.href='tryout_report.html'">‹ 돌아가기</button>
-  <button class="btn-print" type="button" onclick="renderAndPrint()">🖨 PDF 출력 / 인쇄</button>
+<div class="btn-row no-print" style="gap:6px">
+  <button class="btn-back" type="button" onclick="location.href='tryout_report.html'" style="flex:0 0 30%">‹ 돌아가기</button>
+  <button class="btn-print" type="button" onclick="downloadPDF()" style="flex:1;background:linear-gradient(135deg, #c4b5fd, #a78bfa);color:white">📥 PDF 다운로드</button>
+  <button class="btn-print" type="button" onclick="renderAndPrint()" style="flex:0 0 30%">🖨 인쇄</button>
 </div>
 
 <div class="preview-wrap">
@@ -367,7 +369,12 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.7 (현재)\n' +
+    'v1.8 (현재)\n' +
+    '• 📥 PDF 다운로드 버튼 추가 (html2pdf.js)\n' +
+    '• 모바일에서도 PDF 파일로 저장 가능\n' +
+    '• 파일명: 보고서번호_제목.pdf 자동 생성\n' +
+    '• 버튼 3개: [돌아가기] / [PDF 다운로드] / [인쇄]\n\n' +
+    'v1.7\n' +
     '• 결재란을 보고서 최상단 우측에 배치 (50% 너비)\n' +
     '• 제목을 가운데 정렬 + 자간 넓혀서 강조\n' +
     '• 미리보기 핀치 줌(확대/축소) 가능\n' +
@@ -669,6 +676,52 @@ function render(){
 window.renderAndPrint = function(){
   render();
   setTimeout(() => window.print(), 300);
+};
+
+/* ============ PDF 다운로드 (html2pdf.js) ============ */
+window.downloadPDF = function(){
+  // 먼저 최신 렌더링
+  render();
+
+  setTimeout(() => {
+    const el = document.getElementById('reportBody');
+    if(!el){ alert('보고서 영역을 찾을 수 없습니다'); return; }
+    if(typeof html2pdf === 'undefined'){
+      alert('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
+    // 파일명: 보고서 제목 또는 docNo
+    const titleVal = ($('cfgTitle') && $('cfgTitle').value.trim()) || 'tryout_report';
+    const docNoVal = ($('cfgDocNo') && $('cfgDocNo').value.trim()) || '';
+    let fileName = (docNoVal ? docNoVal + '_' : '') + titleVal;
+    fileName = fileName.replace(/[\/:*?"<>|]/g, '_') + '.pdf';
+
+    // 로딩 토스트
+    const overlay = document.createElement('div');
+    overlay.textContent = '📥 PDF 생성 중...';
+    overlay.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid #7dd3fc;color:#7dd3fc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:inherit';
+    document.body.appendChild(overlay);
+
+    const opt = {
+      margin:       [10, 10, 15, 10],
+      filename:     fileName,
+      image:        { type: 'jpeg', quality: 0.95 },
+      html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(el).save().then(() => {
+      overlay.textContent = '✓ PDF 저장 완료';
+      overlay.style.color = '#4ade80';
+      overlay.style.borderColor = '#4ade80';
+      setTimeout(() => overlay.remove(), 1500);
+    }).catch(err => {
+      overlay.remove();
+      alert('PDF 생성 실패: ' + (err.message || err) + '\n\n인쇄 기능으로 시도해보세요.');
+    });
+  }, 300);
 };
 
 /* 설정 변경 시 즉시 재렌더 */
