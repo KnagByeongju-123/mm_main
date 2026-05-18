@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>금형부품재고관리 v1.21</title>
+<title>금형부품재고관리 v1.23</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -520,7 +520,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1>📦 금형부품재고관리 <span class="ver" onclick="showVerInput()">v1.21</span></h1>
+  <h1>📦 금형부품재고관리 <span class="ver" onclick="showVerInput()">v1.23</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -637,7 +637,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  금형부품재고관리 v1.21 · msm · 다크테마 + 인증가드
+  금형부품재고관리 v1.23 · msm · 다크테마 + 인증가드
 </div>
 
 <div id="errMsg"></div>
@@ -828,24 +828,41 @@ input[type="file"] { display: none; }
 <!-- 품목 이동 모달 -->
 <div class="modal-bg" id="modalMove">
   <div class="modal">
-    <h2>📤 다른 공장으로 이동</h2>
+    <h2>📤 다른 공장으로 이동/복사</h2>
     <div style="background:rgba(125,211,252,0.08);border:1px solid rgba(125,211,252,0.3);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-size:13px;color:var(--text-mid)">
-      <b style="color:var(--ice)" id="moveCount">0</b>개 품목을 선택했습니다.<br>
-      어느 공장으로 이동할까요?
+      <b style="color:var(--ice)" id="moveCount">0</b>개 품목을 선택했습니다.
     </div>
 
     <div class="form-group">
-      <label>이동 대상</label>
+      <label>작업 모드</label>
+      <div id="opModeWrap" style="display:flex;gap:8px">
+        <button type="button" class="op-mode-btn" data-mode="move" data-selected="1"
+          style="flex:1;padding:12px;border:2px solid #7dd3fc;background:rgba(125,211,252,0.18);color:var(--text);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <span style="font-size:18px">📤</span>
+          <span>이동</span>
+          <span style="font-size:10px;color:var(--text-sub);font-weight:normal">원본 삭제</span>
+        </button>
+        <button type="button" class="op-mode-btn" data-mode="copy"
+          style="flex:1;padding:12px;border:2px solid var(--border-hi);background:var(--bg-card-hi);color:var(--text);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <span style="font-size:18px">📋</span>
+          <span>복사</span>
+          <span style="font-size:10px;color:var(--text-sub);font-weight:normal">원본 유지</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>대상 공장</label>
       <div id="moveTargets" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
 
     <div class="form-group">
-      <label>이동 사유 / 메모 <span style="font-size:11px;color:var(--text-sub)">(선택)</span></label>
+      <label>사유 / 메모 <span style="font-size:11px;color:var(--text-sub)">(선택)</span></label>
       <input type="text" id="moveMemo" placeholder="예: 1공장 작업 투입 / 본사 재고 이관" autocomplete="off">
     </div>
 
-    <div style="background:#fff3cd;color:#664d03;padding:10px;border-radius:6px;font-size:12px;line-height:1.5;margin-bottom:12px;border:1px solid #ffe69c">
-      ⚠️ <b>주의:</b> 선택한 품목이 현재 위치(본사)에서 사라지고 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.
+    <div id="moveWarnBox" style="background:#fff3cd;color:#664d03;padding:10px;border-radius:6px;font-size:12px;line-height:1.5;margin-bottom:12px;border:1px solid #ffe69c">
+      ⚠️ <b>이동 모드:</b> 선택한 품목이 현재 위치(본사)에서 <b>사라지고</b> 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.
     </div>
 
     <div class="modal-buttons">
@@ -860,7 +877,17 @@ function showVerInput(){
   alert(
     '📦 금형부품재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.21 (현재)\n' +
+    'v1.23 (현재)\n' +
+    '• 복사 = 품목만 생성 (수량=0)\n' +
+    '  - 대상 공장에서 실재고 조사 후 입고 처리\n' +
+    '  - 이미 있는 품명은 스킵\n' +
+    '  - 원본/대상 양쪽 이력 안 남김 (마스터 데이터 복제용)\n\n' +
+    'v1.22\n' +
+    '• 복사 기능 추가 (이동/복사 토글)\n' +
+    '  - 이동: 원본 삭제하고 대상으로\n' +
+    '  - 복사: 원본 유지하고 대상에도 추가\n' +
+    '  - 모달 상단에 모드 선택 버튼\n\n' +
+    'v1.21\n' +
     '• 제목 변경: 재고관리(금형부품) → 금형부품재고관리\n' +
     '• 모달 [닫기] 버튼 글자 안 보이던 문제 해결\n' +
     '  (다크테마 색상으로 수정)\n\n' +
@@ -1346,10 +1373,62 @@ function showVerInput(){
     });
   }
 
+  // 현재 작업 모드 (move | copy)
+  let currentOpMode = 'move';
+
+  function updateOpModeUI(){
+    document.querySelectorAll('.op-mode-btn').forEach(b => {
+      const isSel = b.dataset.mode === currentOpMode;
+      b.dataset.selected = isSel ? '1' : '';
+      if(isSel){
+        b.style.borderColor = '#7dd3fc';
+        b.style.background = 'rgba(125,211,252,0.18)';
+      } else {
+        b.style.borderColor = 'var(--border-hi)';
+        b.style.background = 'var(--bg-card-hi)';
+      }
+    });
+
+    const warnBox = document.getElementById('moveWarnBox');
+    const btn = document.getElementById('btnDoMove');
+    const currentName = FACTORIES[CURRENT_FACTORY].name;
+    if(currentOpMode === 'copy'){
+      if(warnBox){
+        warnBox.style.background = '#d1ecf1';
+        warnBox.style.color = '#0c5460';
+        warnBox.style.borderColor = '#bee5eb';
+        warnBox.innerHTML = '📋 <b>복사 모드:</b> ' + escapeHtml(currentName) + '에는 그대로 두고, 대상 공장에 <b>품목만 생성</b>됩니다 (수량=0). 대상 공장에서 실재고 확인 후 입고 처리하세요. <br>※ 이미 같은 품명이 대상에 있으면 스킵됩니다.';
+      }
+      if(btn) btn.textContent = '복사 실행';
+    } else {
+      if(warnBox){
+        warnBox.style.background = '#fff3cd';
+        warnBox.style.color = '#664d03';
+        warnBox.style.borderColor = '#ffe69c';
+        warnBox.innerHTML = '⚠️ <b>이동 모드:</b> 선택한 품목이 ' + escapeHtml(currentName) + '에서 <b>사라지고</b> 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.';
+      }
+      if(btn) btn.textContent = '이동 실행';
+    }
+  }
+
   window.openMoveModal = function(){
     if(selectedIds.size === 0){ alert('선택된 품목이 없습니다.'); return; }
     document.getElementById('moveCount').textContent = selectedIds.size;
     document.getElementById('moveMemo').value = '';
+
+    // 작업 모드 기본값 = 이동
+    currentOpMode = 'move';
+
+    // 모드 토글 버튼 이벤트 (한 번만 등록)
+    document.querySelectorAll('.op-mode-btn').forEach(b => {
+      if(b.dataset.bound) return;
+      b.dataset.bound = '1';
+      b.addEventListener('click', () => {
+        currentOpMode = b.dataset.mode;
+        updateOpModeUI();
+      });
+    });
+    updateOpModeUI();
 
     // 대상 공장 버튼 동적 생성 (현재 공장 제외)
     const tgt = document.getElementById('moveTargets');
@@ -1361,7 +1440,7 @@ function showVerInput(){
       btn.className = 'move-target-btn';
       btn.dataset.target = key;
       btn.style.cssText = 'padding:14px;border:2px solid var(--border-hi);background:var(--bg-card-hi);color:var(--text);border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:10px';
-      btn.innerHTML = '<span style="font-size:22px">📤</span><span>' + escapeHtml(f.name) + '으로 이동</span>';
+      btn.innerHTML = '<span style="font-size:22px">📦</span><span>' + escapeHtml(f.name) + '</span>';
       btn.addEventListener('click', () => {
         tgt.querySelectorAll('.move-target-btn').forEach(b => {
           b.style.borderColor = 'var(--border-hi)';
@@ -1380,27 +1459,31 @@ function showVerInput(){
 
   async function doMoveItems(){
     const tgt = document.querySelector('#moveTargets .move-target-btn[data-selected="1"]');
-    if(!tgt){ alert('이동 대상 공장을 선택해주세요.'); return; }
+    if(!tgt){ alert('대상 공장을 선택해주세요.'); return; }
     const targetKey = tgt.dataset.target;
     const target = FACTORIES[targetKey];
     if(!target) return;
 
+    const isCopy = (currentOpMode === 'copy');
+    const opLabel = isCopy ? '복사' : '이동';
     const memo = document.getElementById('moveMemo').value.trim();
     const moveCount = selectedIds.size;
-    if(!confirm(moveCount + '개 품목을 ' + target.name + '으로 이동합니다.\n계속하시겠습니까?')){
-      return;
-    }
+    const confirmMsg = isCopy
+      ? moveCount + '개 품목을 ' + target.name + '에 복사합니다.\n(품목만 생성됩니다. 수량은 0으로 시작하니 대상 공장에서 실재고 확인 후 입고 처리하세요)\n계속하시겠습니까?'
+      : moveCount + '개 품목을 ' + target.name + '으로 이동합니다.\n계속하시겠습니까?';
+    if(!confirm(confirmMsg)) return;
 
     const btn = document.getElementById('btnDoMove');
     btn.disabled = true;
     const origBtnText = btn.textContent;
-    btn.textContent = '이동 중...';
+    btn.textContent = opLabel + ' 중...';
 
-    let success = 0, failed = 0;
+    let success = 0, failed = 0, skipped = 0;
     const failedDetails = [];
+    const skippedNames = [];
     const ids = Array.from(selectedIds);
     const author = (window.__msmSession && window.__msmSession.name) || '관리자';
-    const moveTag = '[이동] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:'');
+    const opTag = '[' + opLabel + '] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:'');
 
     try {
       for(const id of ids){
@@ -1421,8 +1504,28 @@ function showVerInput(){
             .limit(1);
           if(r1.error) throw new Error('대상 검색 실패: ' + r1.error.message);
 
+          // ========== 복사 모드: 품목만 생성 ==========
+          if(isCopy){
+            if(r1.data && r1.data.length > 0){
+              // 이미 있으면 스킵 (중복 등록 방지)
+              skipped++;
+              skippedNames.push(item.name);
+              continue;
+            }
+            // 신규 → stock=0으로 품목만 생성, 이력 안 남김
+            step = '대상 신규 등록(복사)';
+            const newItem = mapItemTo(item);
+            newItem.stock = 0;  // 복사는 수량 0으로 시작
+            const r2 = await sb.from(target.items).insert(newItem).select().single();
+            if(r2.error) throw new Error('대상 신규 insert 실패: ' + r2.error.message);
+            if(!r2.data) throw new Error('대상 신규 insert 결과 없음');
+            success++;
+            continue;
+          }
+
+          // ========== 이동 모드: 수량 포함 전체 이관 ==========
           if(r1.data && r1.data.length > 0){
-            // STEP 2a. 기존 → 재고 합산
+            // 대상에 기존 품목 → 재고 합산
             step = '대상 재고 합산';
             const e = r1.data[0];
             const newStock = Number(e.stock || 0) + srcQty;
@@ -1430,7 +1533,7 @@ function showVerInput(){
             if(r2.error) throw new Error('대상 재고 update 실패: ' + r2.error.message);
             targetItemId = e.id;
           } else {
-            // STEP 2b. 신규 등록
+            // 대상에 없음 → 신규 등록 (수량 포함)
             step = '대상 신규 등록';
             const newItem = mapItemTo(item);
             const r2 = await sb.from(target.items).insert(newItem).select().single();
@@ -1439,9 +1542,7 @@ function showVerInput(){
             targetItemId = r2.data.id;
           }
 
-          // ===== 대상지 등록 확실 =====
-
-          // STEP 3. 대상 이력
+          // 대상 이력
           step = '대상 이력 기록';
           const r3 = await sb.from(target.hist).insert(
             makeHistPayload(target.histExtra, {
@@ -1450,13 +1551,13 @@ function showVerInput(){
               item_spec: item.spec,
               type: 'in',
               qty: srcQty,
-              memo: moveTag,
+              memo: opTag,
               author: author
             })
           );
           if(r3.error) console.warn('대상 이력 기록 실패(데이터는 이동됨):', r3.error.message);
 
-          // STEP 4. 원본 이력 (본사 - histExtra=true)
+          // 원본 이력 (본사 - histExtra=true)
           step = '원본 이력 기록';
           const r4 = await sb.from(T_HIST).insert(
             makeHistPayload(true, {
@@ -1465,20 +1566,20 @@ function showVerInput(){
               item_spec: item.spec,
               type: 'out',
               qty: srcQty,
-              memo: moveTag,
+              memo: opTag,
               author: author
             })
           );
           if(r4.error) console.warn('원본 이력 기록 실패:', r4.error.message);
 
-          // STEP 5. 원본 삭제
+          // 원본 삭제
           step = '원본 삭제';
           const r5 = await sb.from(T_ITEMS).delete().eq('id', item.id);
           if(r5.error) throw new Error('원본 삭제 실패: ' + r5.error.message);
 
           success++;
         } catch(err){
-          console.error('이동 실패:', item.name, '단계=' + step, err);
+          console.error(opLabel + ' 실패:', item.name, '단계=' + step, err);
           failed++;
           failedDetails.push(item.name + ' (단계: ' + step + ' / ' + (err.message || err) + ')');
         }
@@ -1486,16 +1587,25 @@ function showVerInput(){
 
       closeModal('modalMove');
       exitSelectMode();
-      let msg = '✓ 이동 완료\n성공: ' + success + '개';
+      let msg = '✓ ' + opLabel + ' 완료\n성공: ' + success + '개';
+      if(skipped > 0){
+        msg += '\n스킵: ' + skipped + '개 (이미 대상에 존재)';
+        if(skippedNames.length <= 5){
+          msg += '\n  · ' + skippedNames.join('\n  · ');
+        }
+      }
       if(failed > 0){
         msg += '\n실패: ' + failed + '개\n\n[실패 상세]\n' + failedDetails.slice(0, 5).join('\n');
         if(failedDetails.length > 5) msg += '\n... 외 ' + (failedDetails.length-5) + '개';
+      }
+      if(isCopy && success > 0){
+        msg += '\n\n※ 대상 공장(' + target.name + ')에서 실재고 확인 후 입고 처리하세요.';
       }
       alert(msg);
       await loadData();
       renderList();
     } catch(err){
-      alert('이동 처리 중 오류: ' + (err.message || err));
+      alert(opLabel + ' 처리 중 오류: ' + (err.message || err));
     } finally {
       btn.disabled = false;
       btn.textContent = origBtnText;
