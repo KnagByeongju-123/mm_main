@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>재고관리(금형부품) v1.20</title>
+<title>금형부품재고관리 v1.21</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -230,7 +230,7 @@ body.select-mode .select-bar { display: flex; }
   font-family: inherit;
 }
 .btn-primary { background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%); color: white; }
-.btn-secondary { background: #e9ecef; color: var(--text); }
+.btn-secondary { background: #475569; color: #f1f5f9; }
 .btn-danger { background: #dc3545; color: white; }
 
 .password-wrap { position: relative; }
@@ -520,7 +520,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1>📦 재고관리(금형부품) <span class="ver" onclick="showVerInput()">v1.20</span></h1>
+  <h1>📦 금형부품재고관리 <span class="ver" onclick="showVerInput()">v1.21</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -637,7 +637,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  재고관리(금형부품) v1.20 · msm · 다크테마 + 인증가드
+  금형부품재고관리 v1.21 · msm · 다크테마 + 인증가드
 </div>
 
 <div id="errMsg"></div>
@@ -858,9 +858,13 @@ input[type="file"] { display: none; }
 <script>
 function showVerInput(){
   alert(
-    '📦 재고관리(금형부품) 변경 이력\n' +
+    '📦 금형부품재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.20 (현재)\n' +
+    'v1.21 (현재)\n' +
+    '• 제목 변경: 재고관리(금형부품) → 금형부품재고관리\n' +
+    '• 모달 [닫기] 버튼 글자 안 보이던 문제 해결\n' +
+    '  (다크테마 색상으로 수정)\n\n' +
+    'v1.20\n' +
     '• 이동 시 공통 안전 필드만 복사 (code 등 미존재 컬럼 제외)\n' +
     '  → "Could not find code column" 오류 해결\n\n' +
     'v1.19\n' +
