@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.3</title>
+<title>1공장 재고관리 v1.4</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -539,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.3</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.4</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -661,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.3 · msm · 프레스양산
+  1공장 재고관리 v1.4 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -1048,7 +1048,10 @@ function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.3 (현재)\n' +
+    'v1.4 (현재)\n' +
+    '• 캐시 갱신 — 이전 업로드 파일이 잘려있던 문제 해결\n' +
+    '  (탭 클릭/재고 표시 정상화)\n\n' +
+    'v1.3\n' +
     '• 다중 선택 + 다른 공장으로 이동 기능\n' +
     '  - 카드 길게 누르기 → 선택 모드 진입\n' +
     '  - 짧게 탭으로 추가 선택/해제\n' +
@@ -2566,4 +2569,255 @@ function showVerInput(){
               const ix = items.findIndex(x => x.id === existing.id);
               if (ix >= 0) items[ix] = Object.assign({}, items[ix], data);
               updated++;
-            } else
+            } else {
+              data.id = Date.now() + r;
+              data.created_at = new Date().toISOString();
+              items.push(data);
+              added++;
+            }
+          }
+        } catch(e) {
+          failed++;
+          if (errors.length < 3) errors.push(name + ': ' + e.message);
+        }
+      }
+
+      if (!sb) saveLocal();
+      await loadData();
+
+      result.style.background = '#d4edda';
+      result.style.color = '#155724';
+      let msg = '✅ 완료! 추가 ' + added + '건, 수정 ' + updated + '건';
+      if (failed > 0) {
+        msg += ', 실패 ' + failed + '건';
+        if (errors.length > 0) msg += '\n' + errors.join('\n');
+      }
+      result.style.whiteSpace = 'pre-line';
+      result.textContent = msg;
+    } catch(e) {
+      result.style.background = '#f8d7da';
+      result.style.color = '#721c24';
+      result.textContent = '❌ 실패: ' + e.message;
+    }
+    $('csvInput').value = '';
+  }
+
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === name);
+    });
+    ['list', 'history', 'export'].forEach(p => {
+      $('page-' + p).style.display = p === name ? 'block' : 'none';
+    });
+    $('btnAdd').style.display = name === 'list' ? 'block' : 'none';
+  }
+
+  // ============ Init ============
+  document.addEventListener('DOMContentLoaded', () => {
+    // URL 파라미터: ?loc=A01 → 해당 위치 품목만 표시
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const locParam = params.get('loc');
+      if (locParam) {
+        locFilter = locParam.trim();
+        $('locFilterName').textContent = locFilter;
+        $('locFilterBar').style.display = 'flex';
+      }
+    } catch(e) {}
+
+    // 전체보기 버튼
+    tap('btnLocClear', () => {
+      locFilter = '';
+      $('locFilterBar').style.display = 'none';
+      // URL에서 loc 제거
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete('loc');
+        window.history.replaceState({}, '', u);
+      } catch(e) {}
+      renderList();
+    });
+
+    // 탭
+    document.querySelectorAll('.tab').forEach(t => {
+      tap(t, () => switchTab(t.dataset.tab));
+    });
+
+    // 검색
+    $('searchInput').addEventListener('input', renderList);
+    $('filterCat').addEventListener('change', renderList);
+
+    // 이력 자동완성
+    const hInp = $('historySearch');
+    const hAC = $('histAC');
+    let acIdx = -1;
+
+    function getHistNames() {
+      const map = {};
+      items.forEach(i => { if (i.name) map[i.name] = true; });
+      hist.forEach(h => { if (h.item_name) map[h.item_name] = true; });
+      return Object.keys(map).sort((a, b) => a.localeCompare(b, 'ko'));
+    }
+
+    function showAC(q) {
+      if (!q) { hAC.style.display = 'none'; return; }
+      const matches = getHistNames().filter(n => n.toLowerCase().includes(q.toLowerCase()));
+      if (matches.length === 0) { hAC.style.display = 'none'; return; }
+      hAC.innerHTML = '';
+      matches.slice(0, 20).forEach((name) => {
+        const div = document.createElement('div');
+        div.className = 'hist-ac-item';
+        const ql = q.toLowerCase();
+        const nl = name.toLowerCase();
+        const idx = nl.indexOf(ql);
+        div.innerHTML = escapeHtml(name.slice(0, idx)) +
+          '<mark>' + escapeHtml(name.slice(idx, idx + q.length)) + '</mark>' +
+          escapeHtml(name.slice(idx + q.length));
+        div.addEventListener('mousedown', e => { e.preventDefault(); });
+        div.addEventListener('click', () => {
+          hInp.value = name;
+          hAC.style.display = 'none';
+          acIdx = -1;
+          renderHistory();
+        });
+        hAC.appendChild(div);
+      });
+      acIdx = -1;
+      hAC.style.display = 'block';
+    }
+
+    hInp.addEventListener('input', () => { showAC(hInp.value); });
+    hInp.addEventListener('keydown', e => {
+      const its = hAC.querySelectorAll('.hist-ac-item');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acIdx = Math.min(acIdx + 1, its.length - 1);
+        its.forEach((el, i) => el.classList.toggle('active', i === acIdx));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acIdx = Math.max(acIdx - 1, -1);
+        its.forEach((el, i) => el.classList.toggle('active', i === acIdx));
+      } else if (e.key === 'Enter') {
+        if (acIdx >= 0 && its[acIdx]) {
+          hInp.value = its[acIdx].textContent;
+          hAC.style.display = 'none'; acIdx = -1;
+        }
+        renderHistory();
+      } else if (e.key === 'Escape') {
+        hAC.style.display = 'none'; acIdx = -1;
+      }
+    });
+    hInp.addEventListener('blur', () => {
+      setTimeout(() => { hAC.style.display = 'none'; acIdx = -1; }, 150);
+    });
+    tap($('btnHistSearch'), () => {
+      hAC.style.display = 'none';
+      renderHistory();
+    });
+
+    // 삭제된 이력 보기 토글
+    if ($('showDeletedHist')) {
+      $('showDeletedHist').addEventListener('change', renderHistory);
+    }
+
+    // 이력 일자 빠른선택
+    document.querySelectorAll('.date-quick').forEach(b => {
+      tap(b, () => {
+        document.querySelectorAll('.date-quick').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        historyDateRange = b.dataset.range;
+        $('dateRangeBar').style.display = historyDateRange === 'custom' ? 'block' : 'none';
+        renderHistory();
+      });
+    });
+    $('dateFrom').addEventListener('change', () => {
+      historyDateFrom = $('dateFrom').value;
+      renderHistory();
+    });
+    $('dateTo').addEventListener('change', () => {
+      historyDateTo = $('dateTo').value;
+      renderHistory();
+    });
+
+    // 헤더/FAB
+    tap('btnSettings', openSettings);
+    tap('btnAdd', () => openItemModal(null));
+
+    // 상세
+    tap('btnDetailClose', () => closeModal('modalDetail'));
+    tap('btnDoIn', () => {
+      closeModal('modalDetail');
+      openStock(curDetail, 'in');
+    });
+    tap('btnDoOut', () => {
+      closeModal('modalDetail');
+      openStock(curDetail, 'out');
+    });
+    tap('btnDoEdit', () => {
+      closeModal('modalDetail');
+      openItemModal(curDetail);
+    });
+
+    // 품목 모달
+    tap('btnItemCancel', () => closeModal('modalItem'));
+    tap('btnItemSave', saveItem);
+    tap('btnDelete', deleteItem);
+
+    // 사진 - 카메라/갤러리 분리
+    tap('btnTakePhoto', () => $('photoInputCamera').click());
+    tap('btnChoosePhoto', () => $('photoInputGallery').click());
+    tap('btnRemovePhoto', clearPhoto);
+    $('photoInputCamera').addEventListener('change', e => {
+      onPhotoSelect(e.target.files[0]);
+    });
+    $('photoInputGallery').addEventListener('change', e => {
+      onPhotoSelect(e.target.files[0]);
+    });
+
+    // 수량
+    tap('btnStockCancel', () => closeModal('modalStock'));
+    tap('btnStockOk', confirmStock);
+    tap('qtyMinus', () => adjustQty(-1));
+    tap('qtyPlus', () => adjustQty(1));
+
+    // 설정
+    tap('btnSettingsClose', () => closeModal('modalSettings'));
+    tap('btnDoMove', doMoveItems);
+    tap('btnAddCategory', addCategory);
+    $('newCategoryInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addCategory();
+      }
+    });
+
+    // 내보내기
+    tap('btnExportItems', () => exportCSV('items'));
+    tap('btnExportHistory', () => exportCSV('history'));
+    setupExportFilterEvents();
+
+    // CSV 업로드
+    tap('btnDownloadTemplate', downloadTemplate);
+    tap('btnUploadCSV', () => $('csvInput').click());
+    $('csvInput').addEventListener('change', e => {
+      uploadCSV(e.target.files[0]);
+    });
+
+    // 모달 배경
+    document.querySelectorAll('.modal-bg').forEach(bg => {
+      bg.addEventListener('click', e => {
+        if (e.target === bg) bg.classList.remove('show');
+      });
+    });
+
+    initSupabase();
+    loadCategories();
+    fillCategorySelects();
+    renderCategoryList();
+    loadData();
+  });
+})();
+</script>
+</body>
+</html>
