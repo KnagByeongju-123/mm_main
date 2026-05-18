@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>재고관리(금형부품) v1.2</title>
+<title>금형부품재고관리 v1.3</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 :root {
@@ -317,7 +317,7 @@ body {
 
 <div class="header">
   <a href="index.html" class="back-btn" data-i18n="back">‹ 메인</a>
-  <h1><span data-i18n-keep>⚙️ </span><span data-i18n="title">재고관리(금형부품)</span> <span class="ver" onclick="showVer()">v1.2</span></h1>
+  <h1><span data-i18n-keep>⚙️ </span><span data-i18n="title">금형부품재고관리</span> <span class="ver" onclick="showVer()">v1.3</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -356,7 +356,7 @@ body {
   </div>
 
   <div class="footer">
-    v1.2 · msm Smart Factory · 1공장
+    v1.3 · msm Smart Factory · 1공장
   </div>
 </div>
 
@@ -367,7 +367,7 @@ body {
 const I18N = {
   ko: {
     back: '‹ 메인',
-    title: '재고관리(금형부품)',
+    title: '금형부품재고관리',
     login_required: '내 정보 등록',
     login_needed: '로그인 필요',
     admin: '관리자',
@@ -454,7 +454,9 @@ function showVer(){
   alert(
     '⚙️ 재고관리(금형부품) 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.2 (현재)\n' +
+    'v1.3 (현재)\n' +
+    '• 한국어 제목 변경: 재고관리(금형부품) → 금형부품재고관리\n\n' +
+    'v1.2\n' +
     '• 다국어 지원: 한국어 / 독일어 / 카자흐스탄어\n' +
     '• 선택한 언어 localStorage 저장 (페이지 이동해도 유지)\n\n' +
     'v1.1\n' +

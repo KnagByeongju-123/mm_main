@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.10</title>
+<title>금형부품재고관리 v1.11</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -539,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.10</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.11</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -661,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.10 · msm · 프레스양산
+  금형부품재고관리 v1.11 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -882,7 +882,7 @@ input[type="file"] { display: none; }
 /* ============ 다국어 시스템 ============ */
 const I18N = {
   ko: {
-    page_title: '1공장 재고관리',
+    page_title: '금형부품재고관리',
     tab_inv: '재고', tab_hist: '이력', tab_export: '일괄처리',
     sum_total: '전체 품목', sum_low: '재고부족', sum_value: '재고금액(만)',
     loc_filter_pre: '위치', loc_filter_post: '품목만 보기', show_all: '전체보기',
@@ -1046,9 +1046,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showVerInput(){
   alert(
-    '📦 1공장 재고관리 변경 이력\n' +
+    '📦 금형부품재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.10 (현재)\n' +
+    'v1.11 (현재)\n' +
+    '• 한국어 제목 변경: 1공장 재고관리 → 금형부품재고관리\n\n' +
+    'v1.10\n' +
     '• 이동 시 공통 안전 필드만 복사 (code 등 미존재 컬럼 제외)\n' +
     '  → "Could not find code column" 오류 해결\n\n' +
     'v1.9\n' +
