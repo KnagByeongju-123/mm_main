@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.9</title>
+<title>1공장 재고관리 v1.10</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -539,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.9</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.10</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -661,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.9 · msm · 프레스양산
+  1공장 재고관리 v1.10 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -1048,7 +1048,10 @@ function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.9 (현재)\n' +
+    'v1.10 (현재)\n' +
+    '• 이동 시 공통 안전 필드만 복사 (code 등 미존재 컬럼 제외)\n' +
+    '  → "Could not find code column" 오류 해결\n\n' +
+    'v1.9\n' +
     '• 매핑 단순화: items 테이블은 모든 공장 동일 스키마(stock 사용)\n' +
     '  → 이전 qty 오류 해결\n' +
     '• history 테이블만 본사가 추가 컬럼(worker, item_spec) 사용\n\n' +
@@ -1118,10 +1121,21 @@ function showVerInput(){
   const CURRENT_FACTORY = 'f1';
 
   // 품목 그대로 복사 (id/타임스탬프만 제외)
+  // 공장 간 공통 안전 필드만 사용 (모든 공장 _items 테이블에 존재)
+  const SAFE_ITEM_FIELDS = ['name','category','unit','spec','stock','min_stock','price','location','vendor','memo','photo'];
+
   function mapItemTo(item){
-    const c = Object.assign({}, item);
-    delete c.id; delete c.created_at; delete c.updated_at;
-    return c;
+    const out = {};
+    SAFE_ITEM_FIELDS.forEach(k => {
+      if(item[k] !== undefined && item[k] !== null) out[k] = item[k];
+    });
+    // 필수 보정
+    out.name = out.name || '';
+    out.stock = Number(out.stock || 0);
+    out.min_stock = Number(out.min_stock || 0);
+    out.price = Number(out.price || 0);
+    out.unit = out.unit || 'EA';
+    return out;
   }
   // 이력 payload — 본사는 추가 컬럼
   function makeHistPayload(histExtra, args){
