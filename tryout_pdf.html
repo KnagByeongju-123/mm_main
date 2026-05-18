@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>Tryout 보고서 출력 v1.10</title>
+<title>Tryout 보고서 출력 v1.11</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -317,7 +317,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.10</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.11</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -384,7 +384,12 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.10 (현재)\n' +
+    'v1.11 (현재)\n' +
+    '• PDF 변환 정확도 개선\n' +
+    '  - 모든 이미지 로드 완료 대기 후 캡처\n' +
+    '  - 보고서 폭을 794px로 강제 + 리플로우\n' +
+    '  - 모바일에서도 정확한 A4 레이아웃\n\n' +
+    'v1.10\n' +
     '• 사진 그리드: 한 줄 4장 → 3장 (PDF에서 더 보기 좋음)\n' +
     '• aspect-ratio → padding-bottom 100% (호환성 개선)\n' +
     '• 페이지 분할 옵션 개선 (avoid-all → 특정 요소만)\n' +
@@ -705,77 +710,114 @@ window.renderAndPrint = function(){
 };
 
 /* ============ PDF 다운로드 (html2pdf.js) ============ */
-window.downloadPDF = function(){
-  // 먼저 최신 렌더링
+window.downloadPDF = async function(){
   render();
 
-  setTimeout(() => {
-    const el = document.getElementById('reportBody');
-    if(!el){ alert('보고서 영역을 찾을 수 없습니다'); return; }
-    if(typeof html2pdf === 'undefined'){
-      alert('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-      return;
-    }
+  // 렌더 완료 대기
+  await new Promise(r => setTimeout(r, 300));
 
-    // 파일명: 보고서 제목 또는 docNo
-    const titleVal = ($('cfgTitle') && $('cfgTitle').value.trim()) || 'tryout_report';
-    const docNoVal = ($('cfgDocNo') && $('cfgDocNo').value.trim()) || '';
-    let fileName = (docNoVal ? docNoVal + '_' : '') + titleVal;
-    fileName = fileName.replace(/[\/:*?"<>|]/g, '_') + '.pdf';
+  const el = document.getElementById('reportBody');
+  if(!el){ alert('보고서 영역을 찾을 수 없습니다'); return; }
+  if(typeof html2pdf === 'undefined'){
+    alert('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
 
-    // 로딩 토스트
-    const overlay = document.createElement('div');
-    overlay.textContent = '📥 PDF 생성 중...';
-    overlay.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid #7dd3fc;color:#7dd3fc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:inherit';
-    document.body.appendChild(overlay);
+  // 파일명
+  const titleVal = ($('cfgTitle') && $('cfgTitle').value.trim()) || 'tryout_report';
+  const docNoVal = ($('cfgDocNo') && $('cfgDocNo').value.trim()) || '';
+  let fileName = (docNoVal ? docNoVal + '_' : '') + titleVal;
+  fileName = fileName.replace(/[\/:*?"<>|]/g, '_') + '.pdf';
 
-    // ─── A4 정확 매핑 ───
-    // A4 portrait: 210mm × 297mm = 794px × 1123px (96 dpi 기준)
-    // html2canvas로 캡처할 폭을 강제 = 모바일 화면 폭과 무관하게 A4 비율 유지
-    const A4_WIDTH_PX = 794;   // 210mm
-    // report-page 자체에 padding 18mm 있으므로 jsPDF margin=0
-    const opt = {
-      margin:       0,
-      filename:     fileName,
-      image:        { type: 'jpeg', quality: 0.95 },
-      html2canvas:  {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        windowWidth: A4_WIDTH_PX,    // 모바일에서도 A4 폭으로 강제
-        width: A4_WIDTH_PX,
-        scrollX: 0, scrollY: 0
-      },
-      jsPDF:        {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait',
-        compress: true
-      },
-      pagebreak:    {
-        mode: ['css', 'legacy'],
-        avoid: ['.log-table tr', '.photos-grid .p', '.iatf-list .it']
-      }
-    };
+  // 로딩 토스트
+  const overlay = document.createElement('div');
+  overlay.textContent = '📥 PDF 생성 중...';
+  overlay.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid #7dd3fc;color:#7dd3fc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:inherit';
+  document.body.appendChild(overlay);
 
-    // 변환 중에만 box-shadow 제거 (그림자가 PDF에 캡처되는 것 방지)
-    const origShadow = el.style.boxShadow;
-    el.style.boxShadow = 'none';
-
-    html2pdf().set(opt).from(el).save().then(() => {
-      el.style.boxShadow = origShadow;
-      overlay.textContent = '✓ PDF 저장 완료';
-      overlay.style.color = '#4ade80';
-      overlay.style.borderColor = '#4ade80';
-      setTimeout(() => overlay.remove(), 1500);
-    }).catch(err => {
-      el.style.boxShadow = origShadow;
-      overlay.remove();
-      alert('PDF 생성 실패: ' + (err.message || err) + '\n\n인쇄 기능으로 시도해보세요.');
+  // ─── 1. 모든 이미지 로드 완료까지 대기 ───
+  overlay.textContent = '🖼️ 이미지 로딩 중...';
+  const imgs = el.querySelectorAll('img');
+  await Promise.all(Array.from(imgs).map(img => {
+    if(img.complete && img.naturalHeight !== 0) return Promise.resolve();
+    return new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve;
+      // 안전장치 - 5초 후 무조건 진행
+      setTimeout(resolve, 5000);
     });
-  }, 300);
+  }));
+
+  // ─── 2. report-page 폭을 px로 강제 (CSS의 210mm를 정확한 px로) ───
+  // A4 portrait: 210mm × 297mm = 794px × 1123px (96 dpi)
+  const A4_WIDTH_PX = 794;
+  const origStyle = {
+    width: el.style.width,
+    minHeight: el.style.minHeight,
+    maxWidth: el.style.maxWidth,
+    boxShadow: el.style.boxShadow,
+    margin: el.style.margin
+  };
+  el.style.width = A4_WIDTH_PX + 'px';
+  el.style.maxWidth = A4_WIDTH_PX + 'px';
+  el.style.minHeight = 'auto';
+  el.style.boxShadow = 'none';
+  el.style.margin = '0';
+
+  // 강제 리플로우 - 브라우저가 새 폭으로 다시 그리도록
+  void el.offsetWidth;
+  await new Promise(r => setTimeout(r, 200));
+
+  overlay.textContent = '📥 PDF 생성 중...';
+
+  const opt = {
+    margin:       0,
+    filename:     fileName,
+    image:        { type: 'jpeg', quality: 0.95 },
+    html2canvas:  {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: A4_WIDTH_PX,
+      width: A4_WIDTH_PX
+    },
+    jsPDF:        {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+      compress: true
+    },
+    pagebreak:    {
+      mode: ['css', 'legacy'],
+      avoid: ['.log-table tr', '.photos-grid .p', '.iatf-list .it']
+    }
+  };
+
+  // 원복 함수
+  function restore(){
+    el.style.width     = origStyle.width;
+    el.style.maxWidth  = origStyle.maxWidth;
+    el.style.minHeight = origStyle.minHeight;
+    el.style.boxShadow = origStyle.boxShadow;
+    el.style.margin    = origStyle.margin;
+  }
+
+  try {
+    await html2pdf().set(opt).from(el).save();
+    restore();
+    overlay.textContent = '✓ PDF 저장 완료';
+    overlay.style.color = '#4ade80';
+    overlay.style.borderColor = '#4ade80';
+    setTimeout(() => overlay.remove(), 1500);
+  } catch(err){
+    restore();
+    overlay.remove();
+    alert('PDF 생성 실패: ' + (err.message || err) + '\n\n인쇄 기능으로 시도해보세요.');
+  }
 };
 
 /* 설정 변경 시 즉시 재렌더 */
