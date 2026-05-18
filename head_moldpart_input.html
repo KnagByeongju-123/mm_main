@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>재고관리(금형부품) v1.14</title>
+<title>재고관리(금형부품) v1.15</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -520,7 +520,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1>📦 재고관리(금형부품) <span class="ver" onclick="showVerInput()">v1.14</span></h1>
+  <h1>📦 재고관리(금형부품) <span class="ver" onclick="showVerInput()">v1.15</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -637,7 +637,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  재고관리(금형부품) v1.14 · msm · 다크테마 + 인증가드
+  재고관리(금형부품) v1.15 · msm · 다크테마 + 인증가드
 </div>
 
 <div id="errMsg"></div>
@@ -860,7 +860,9 @@ function showVerInput(){
   alert(
     '📦 재고관리(금형부품) 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.14 (현재)\n' +
+    'v1.15 (현재)\n' +
+    '• 이동 대상에 2공장/3공장 추가 (총 1공장/2공장/3공장 선택 가능)\n\n' +
+    'v1.14\n' +
     '• 다중 선택 + 다른 공장으로 이동 기능\n' +
     '  - 카드 길게 누르기 → 선택 모드 진입\n' +
     '  - 짧게 탭으로 추가 선택/해제\n' +
@@ -888,8 +890,9 @@ function showVerInput(){
   // 다중 선택 + 이동 기능: 공장별 테이블 매핑
   const FACTORIES = {
     'hq':  { name: '본사',   items: 'press_inventory_items', hist: 'press_inventory_history' },
-    'f1':  { name: '1공장',  items: 'f1_inventory_items',    hist: 'f1_inventory_history' }
-    // 추가 공장이 생기면 여기 등록
+    'f1':  { name: '1공장',  items: 'f1_inventory_items',    hist: 'f1_inventory_history' },
+    'f2':  { name: '2공장',  items: 'f2_inventory_items',    hist: 'f2_inventory_history' },
+    'f3':  { name: '3공장',  items: 'f3_inventory_items',    hist: 'f3_inventory_history' }
   };
   const CURRENT_FACTORY = 'hq';  // 이 파일은 본사
   let selectedIds = new Set();   // 선택된 품목 ID

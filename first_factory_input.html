@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.4</title>
+<title>1공장 재고관리 v1.5</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -539,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.4</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.5</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -661,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.4 · msm · 프레스양산
+  1공장 재고관리 v1.5 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -1048,7 +1048,10 @@ function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.4 (현재)\n' +
+    'v1.5 (현재)\n' +
+    '• 이동 시 loadData 함수명 오류 수정\n' +
+    '• 이동 대상에 2공장/3공장 추가 (총 본사/2공장/3공장 선택 가능)\n\n' +
+    'v1.4\n' +
     '• 캐시 갱신 — 이전 업로드 파일이 잘려있던 문제 해결\n' +
     '  (탭 클릭/재고 표시 정상화)\n\n' +
     'v1.3\n' +
@@ -1088,7 +1091,9 @@ function showVerInput(){
   // 다중 선택 + 이동 기능: 공장별 테이블 매핑
   const FACTORIES = {
     'hq':  { name: '본사',   items: 'press_inventory_items', hist: 'press_inventory_history' },
-    'f1':  { name: '1공장',  items: 'f1_inventory_items',    hist: 'f1_inventory_history' }
+    'f1':  { name: '1공장',  items: 'f1_inventory_items',    hist: 'f1_inventory_history' },
+    'f2':  { name: '2공장',  items: 'f2_inventory_items',    hist: 'f2_inventory_history' },
+    'f3':  { name: '3공장',  items: 'f3_inventory_items',    hist: 'f3_inventory_history' }
   };
   const CURRENT_FACTORY = 'f1';  // 이 파일은 1공장
   let selectedIds = new Set();
@@ -1599,7 +1604,7 @@ function showVerInput(){
       closeModal('modalMove');
       exitSelectMode();
       alert('✓ 이동 완료\n성공: ' + success + '개' + (failed>0?'\n실패: '+failed+'개':''));
-      await load();
+      await loadData();
       renderList();
     } catch(err){
       alert('이동 처리 중 오류: ' + (err.message || err));
