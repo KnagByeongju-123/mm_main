@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>금형부품재고관리 v1.14</title>
+<title>금형부품재고관리 v1.15</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -539,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.14</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.15</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -661,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  금형부품재고관리 v1.14 · msm · 프레스양산
+  금형부품재고관리 v1.15 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -1066,7 +1066,12 @@ function showVerInput(){
   alert(
     '📦 금형부품재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.14 (현재)\n' +
+    'v1.15 (현재)\n' +
+    '• 복사/이동: 품명(name) + 규격(spec) 조합으로 매칭\n' +
+    '  - 같은 품명이라도 규격이 다르면 다른 품목으로 처리\n' +
+    '  - 예) 20GI-005 / BUTTON,DIE  ≠  20GI-005 / PAD\n' +
+    '  - 잘못된 합쳐짐 방지\n\n' +
+    'v1.14\n' +
     '• 복사 = 품목만 생성 (수량=0)\n' +
     '  - 대상 공장에서 실재고 조사 후 입고 처리\n' +
     '  - 이미 있는 품명은 스킵\n' +
@@ -1705,12 +1710,17 @@ function showVerInput(){
         try {
           const srcQty = Number(item.stock || 0);
 
-          // STEP 1. 대상 공장에 동일 품명 검색
+          // STEP 1. 대상 공장에 동일 품명+규격 검색 (같은 name이라도 spec 다르면 다른 부품)
           step = '대상 검색';
-          const r1 = await sb.from(target.items)
-            .select('id,stock')
-            .eq('name', item.name)
-            .limit(1);
+          const itemSpec = (item.spec == null ? '' : String(item.spec));
+          let q1 = sb.from(target.items).select('id,stock,spec').eq('name', item.name);
+          // spec이 비어있으면 spec is null도 매칭, 값 있으면 정확히 일치
+          if(itemSpec === ''){
+            q1 = q1.or('spec.is.null,spec.eq.');
+          } else {
+            q1 = q1.eq('spec', itemSpec);
+          }
+          const r1 = await q1.limit(1);
           if(r1.error) throw new Error('대상 검색 실패: ' + r1.error.message);
 
           // ========== 복사 모드: 품목만 생성 ==========
@@ -1718,7 +1728,8 @@ function showVerInput(){
             if(r1.data && r1.data.length > 0){
               // 이미 있으면 스킵 (중복 등록 방지)
               skipped++;
-              skippedNames.push(item.name);
+              const lbl = item.name + (itemSpec ? ' / ' + itemSpec : '');
+              skippedNames.push(lbl);
               continue;
             }
             // 신규 → stock=0으로 품목만 생성, 이력 안 남김
