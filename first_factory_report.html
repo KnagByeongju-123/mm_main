@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 보고서</title>
+<title>1공장 보고서 v1.2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
@@ -336,7 +336,7 @@ header h1 .ver {
 <!-- ======================================================== -->
 
 <header>
-  <h1>📄 1공장 보고서 <span class="ver" onclick="showVerReport()">v1.0</span></h1>
+  <h1>📄 1공장 보고서 <span class="ver" onclick="showVerReport()">v1.2</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -526,7 +526,7 @@ header h1 .ver {
 </div>
 
 <div class="app-footer">
-  1공장 보고서 v1.0 · msm
+  1공장 보고서 v1.2 · msm
 </div>
 
 <script>
@@ -534,7 +534,14 @@ function showVerReport(){
   alert(
     '📄 1공장 보고서 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.0 (현재)\n' +
+    'v1.2 (현재)\n' +
+    '• PDF 출력 새 창 문법 오류 수정\n' +
+    '  (자식 script 태그가 부모를 깨뜨리는 문제 해결)\n\n' +
+    'v1.1\n' +
+    '• 📥 PDF 다운로드 버튼 추가 (html2pdf.js)\n' +
+    '• 모바일에서도 PDF 파일로 저장 가능\n' +
+    '• 새 창에서 [PDF 다운로드] / [인쇄] / [닫기] 3버튼\n\n' +
+    'v1.0\n' +
     '• 1공장 전용 보고서 페이지 오픈\n' +
     '• 별도 DB 테이블 사용 (f1_reports)\n' +
     '• 월보고/발주/폐기 보고서, PDF·Excel 출력'
@@ -1084,6 +1091,7 @@ function showVerReport(){
 <head>
 <meta charset="UTF-8">
 <title>${escapeHtml(doc.title)}</title>
+<` + `script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></scr` + `ipt>
 <style>
 :root {
   --bg-dark:    #0f172a;
@@ -1142,16 +1150,20 @@ table.body tr.total td { background: #f5f0fb; }
   border: none; border-radius: 6px; cursor: pointer; font-weight: 600;
 }
 .toolbar .pdf { background: #dc3545; color: white; }
+.toolbar .save { background: #6f42c1; color: white; }
 .toolbar .close { background: #6c757d; color: white; }
 </style>
 </head>
 <body>
 
 <div class="no-print toolbar">
-  💡 <b>PDF 저장</b>: 아래 [인쇄] 버튼 → "PDF로 저장" 선택<br>
-  <button class="pdf" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+  💡 <b>PDF 저장</b>: [PDF 다운로드] 또는 [인쇄]로 저장 가능<br>
+  <button class="save" onclick="downloadPDF()">📥 PDF 다운로드</button>
+  <button class="pdf" onclick="window.print()">🖨 인쇄</button>
   <button class="close" onclick="window.close()">닫기</button>
 </div>
+
+<div id="reportBody">
 
 <h1>${escapeHtml(typeLabel(doc.doc_type))}</h1>
 
@@ -1181,6 +1193,51 @@ ${(doc.footer_left || doc.footer_center || doc.footer_right) ? `
   <div class="pf-right">${escapeHtml(doc.footer_right || '')}</div>
 </div>
 ` : ''}
+
+</div><!-- /reportBody -->
+
+<` + `script>
+function downloadPDF() {
+  var el = document.getElementById('reportBody');
+  if (!el) { alert('보고서 영역을 찾을 수 없습니다'); return; }
+  if (typeof html2pdf === 'undefined') {
+    alert('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  var docTitle = ${JSON.stringify(doc.title || 'report')};
+  var fileName = docTitle.replace(/[\\/:*?"<>|]/g, '_') + '.pdf';
+
+  var overlay = document.createElement('div');
+  overlay.textContent = '📥 PDF 생성 중...';
+  overlay.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid #7dd3fc;color:#7dd3fc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:inherit';
+  document.body.appendChild(overlay);
+
+  var tb = document.querySelector('.toolbar');
+  if (tb) tb.style.display = 'none';
+
+  var opt = {
+    margin: [10, 10, 15, 10],
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  html2pdf().set(opt).from(el).save().then(function(){
+    overlay.textContent = '✓ PDF 저장 완료';
+    overlay.style.color = '#4ade80';
+    overlay.style.borderColor = '#4ade80';
+    if (tb) tb.style.display = '';
+    setTimeout(function(){ overlay.remove(); }, 1500);
+  }).catch(function(err){
+    overlay.remove();
+    if (tb) tb.style.display = '';
+    alert('PDF 생성 실패: ' + (err.message || err));
+  });
+}
+</scr` + `ipt>
 
 </body>
 </html>`;
