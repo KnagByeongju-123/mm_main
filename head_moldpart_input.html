@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>재고관리(금형부품) v1.15</title>
+<title>재고관리(금형부품) v1.18</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -520,7 +520,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1>📦 재고관리(금형부품) <span class="ver" onclick="showVerInput()">v1.15</span></h1>
+  <h1>📦 재고관리(금형부품) <span class="ver" onclick="showVerInput()">v1.18</span></h1>
   <button class="btn-icon" id="btnSettings">⚙️</button>
 </header>
 
@@ -637,7 +637,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  재고관리(금형부품) v1.15 · msm · 다크테마 + 인증가드
+  재고관리(금형부품) v1.18 · msm · 다크테마 + 인증가드
 </div>
 
 <div id="errMsg"></div>
@@ -860,7 +860,21 @@ function showVerInput(){
   alert(
     '📦 재고관리(금형부품) 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.15 (현재)\n' +
+    'v1.18 (현재)\n' +
+    '• 공장 간 스키마 차이 매핑 적용\n' +
+    '  - 본사(qty/min_qty/unit_price/image_url) ↔ 1/2/3공장(stock/min_stock/price/photo)\n' +
+    '  - 본사 이력 컬럼 worker/item_spec 자동 처리\n\n' +
+    'v1.17\n' +
+    '• 이력 컬럼명 수정: quantity → qty\n' +
+    '• by 컬럼 제거(존재하지 않음), 작업자명을 memo에 합침\n' +
+    '  → 이전 이동 시 이력 기록 실패하던 문제 해결\n\n' +
+    'v1.16\n' +
+    '• 이동 로직 안전화 (데이터 손실 방지)\n' +
+    '  - 대상지 등록 확실히 성공 후에만 원본 삭제\n' +
+    '  - 모든 DB 호출 에러 체크\n' +
+    '  - 실패 시 어느 단계에서 실패했는지 상세 표시\n' +
+    '• load() → loadData() 함수명 수정\n\n' +
+    'v1.15\n' +
     '• 이동 대상에 2공장/3공장 추가 (총 1공장/2공장/3공장 선택 가능)\n\n' +
     'v1.14\n' +
     '• 다중 선택 + 다른 공장으로 이동 기능\n' +
@@ -887,15 +901,60 @@ function showVerInput(){
   const T_ITEMS = 'press_inventory_items';
   const T_HIST = 'press_inventory_history';
 
-  // 다중 선택 + 이동 기능: 공장별 테이블 매핑
+  // 다중 선택 + 이동 기능: 공장별 테이블 매핑 + 스키마
   const FACTORIES = {
-    'hq':  { name: '본사',   items: 'press_inventory_items', hist: 'press_inventory_history' },
-    'f1':  { name: '1공장',  items: 'f1_inventory_items',    hist: 'f1_inventory_history' },
-    'f2':  { name: '2공장',  items: 'f2_inventory_items',    hist: 'f2_inventory_history' },
-    'f3':  { name: '3공장',  items: 'f3_inventory_items',    hist: 'f3_inventory_history' }
+    'hq':  { name: '본사',  items: 'press_inventory_items', hist: 'press_inventory_history', schema: 'press' },
+    'f1':  { name: '1공장', items: 'f1_inventory_items',    hist: 'f1_inventory_history',    schema: 'f' },
+    'f2':  { name: '2공장', items: 'f2_inventory_items',    hist: 'f2_inventory_history',    schema: 'f' },
+    'f3':  { name: '3공장', items: 'f3_inventory_items',    hist: 'f3_inventory_history',    schema: 'f' }
   };
-  const CURRENT_FACTORY = 'hq';  // 이 파일은 본사
-  let selectedIds = new Set();   // 선택된 품목 ID
+  const CURRENT_FACTORY = 'hq';
+
+  // 본사 → 다른 공장 매핑
+  function mapItemTo(item, targetSchema){
+    if(targetSchema === 'f'){
+      // 본사 → 1/2/3공장 (stock/min_stock/price/photo)
+      return {
+        name:       item.name,
+        spec:       item.spec || null,
+        category:   item.category || null,
+        unit:       item.unit || 'EA',
+        location:   item.location || null,
+        vendor:     item.vendor || null,
+        memo:       item.memo || null,
+        stock:      Number(item.qty || 0),
+        min_stock:  Number(item.min_qty || 0),
+        price:      Number(item.unit_price || 0),
+        photo:      item.image_url || null
+      };
+    } else {
+      // 본사 → 본사 (해당 없음, 그대로)
+      const c = Object.assign({}, item);
+      delete c.id; delete c.created_at; delete c.updated_at;
+      return c;
+    }
+  }
+
+  function getStockCol(schema){ return schema === 'press' ? 'qty' : 'stock'; }
+  function getStockVal(itemRow, schema){
+    return schema === 'press' ? itemRow.qty : itemRow.stock;
+  }
+  function makeHistPayload(targetSchema, args){
+    const base = {
+      item_id:   args.item_id,
+      item_name: args.item_name,
+      type:      args.type,
+      qty:       Number(args.qty || 0),
+      memo:      args.memo
+    };
+    if(targetSchema === 'press'){
+      base.item_spec = args.item_spec || null;
+      base.worker = args.author || null;
+    }
+    return base;
+  }
+
+  let selectedIds = new Set();
   let longPressTimer = null;
   const DEFAULT_CATEGORIES = ['금형부품', '소모공구', '유압부품', '전기부품', '안전용품', '기타'];
 
@@ -1337,77 +1396,116 @@ function showVerInput(){
 
     const btn = document.getElementById('btnDoMove');
     btn.disabled = true;
+    const origBtnText = btn.textContent;
     btn.textContent = '이동 중...';
 
     let success = 0, failed = 0;
+    const failedDetails = [];
     const ids = Array.from(selectedIds);
     const author = (window.__msmSession && window.__msmSession.name) || '관리자';
+    const moveTag = '[이동] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:'');
 
     try {
       for(const id of ids){
         const item = items.find(x => String(x.id) === String(id));
-        if(!item){ failed++; continue; }
+        if(!item){ failed++; failedDetails.push('id=' + id + ' (없음)'); continue; }
+
+        let targetItemId = null;
+        let step = 'start';
 
         try {
-          // 1. 대상 공장에 동일 품명 있는지 확인
-          const { data: existing } = await sb.from(target.items).select('*').eq('name', item.name).limit(1);
+          const targetSchema = target.schema;
+          const targetStockCol = getStockCol(targetSchema);
+          const srcQty = Number(item.qty || 0);  // 본사 컬럼명은 qty
 
-          if(existing && existing.length > 0){
-            // 기존 품목 → 재고만 더함
-            const e = existing[0];
-            const newStock = (e.stock || 0) + (item.stock || 0);
-            await sb.from(target.items).update({ stock: newStock }).eq('id', e.id);
+          // STEP 1. 대상 공장에 동일 품명 검색
+          step = '대상 검색';
+          const r1 = await sb.from(target.items)
+            .select('id,' + targetStockCol)
+            .eq('name', item.name)
+            .limit(1);
+          if(r1.error) throw new Error('대상 검색 실패: ' + r1.error.message);
 
-            await sb.from(target.hist).insert({
-              item_id: e.id, item_name: e.name,
-              type: 'in', quantity: item.stock || 0,
-              memo: '[이동입고] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:''),
-              by: author
-            }).then(()=>{}).catch(()=>{});
+          if(r1.data && r1.data.length > 0){
+            // STEP 2a. 기존 → 재고 합산
+            step = '대상 재고 합산';
+            const e = r1.data[0];
+            const newQty = Number(getStockVal(e, targetSchema) || 0) + srcQty;
+            const updatePayload = {};
+            updatePayload[targetStockCol] = newQty;
+            const r2 = await sb.from(target.items).update(updatePayload).eq('id', e.id);
+            if(r2.error) throw new Error('대상 재고 update 실패: ' + r2.error.message);
+            targetItemId = e.id;
           } else {
-            // 신규 품목 → 그대로 복사 (id 제외)
-            const newItem = Object.assign({}, item);
-            delete newItem.id;
-            delete newItem.created_at;
-            delete newItem.updated_at;
-            const { data: inserted } = await sb.from(target.items).insert(newItem).select().single();
-
-            if(inserted){
-              await sb.from(target.hist).insert({
-                item_id: inserted.id, item_name: inserted.name,
-                type: 'in', quantity: item.stock || 0,
-                memo: '[이동입고-신규] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:''),
-                by: author
-              }).then(()=>{}).catch(()=>{});
-            }
+            // STEP 2b. 신규 등록 (스키마 매핑)
+            step = '대상 신규 등록';
+            const newItem = mapItemTo(item, targetSchema);
+            const r2 = await sb.from(target.items).insert(newItem).select().single();
+            if(r2.error) throw new Error('대상 신규 insert 실패: ' + r2.error.message);
+            if(!r2.data) throw new Error('대상 신규 insert 결과 없음');
+            targetItemId = r2.data.id;
           }
 
-          // 2. 현재 공장에서 이동 출고 이력 + 품목 삭제
-          await sb.from(T_HIST).insert({
-            item_id: item.id, item_name: item.name,
-            type: 'out', quantity: item.stock || 0,
-            memo: '[이동출고] →' + target.name + (memo?' / '+memo:''),
-            by: author
-          }).then(()=>{}).catch(()=>{});
+          // ===== 대상지 등록 확실 =====
 
-          await sb.from(T_ITEMS).delete().eq('id', item.id);
+          // STEP 3. 대상 이력 (실패 경고만)
+          step = '대상 이력 기록';
+          const r3 = await sb.from(target.hist).insert(
+            makeHistPayload(targetSchema, {
+              item_id: targetItemId,
+              item_name: item.name,
+              item_spec: item.spec,
+              type: 'in',
+              qty: srcQty,
+              memo: moveTag,
+              author: author
+            })
+          );
+          if(r3.error) console.warn('대상 이력 기록 실패(데이터는 이동됨):', r3.error.message);
+
+          // STEP 4. 원본 이력 (본사 스키마)
+          step = '원본 이력 기록';
+          const r4 = await sb.from(T_HIST).insert(
+            makeHistPayload('press', {
+              item_id: item.id,
+              item_name: item.name,
+              item_spec: item.spec,
+              type: 'out',
+              qty: srcQty,
+              memo: moveTag,
+              author: author
+            })
+          );
+          if(r4.error) console.warn('원본 이력 기록 실패:', r4.error.message);
+
+          // STEP 5. 원본 삭제
+          step = '원본 삭제';
+          const r5 = await sb.from(T_ITEMS).delete().eq('id', item.id);
+          if(r5.error) throw new Error('원본 삭제 실패: ' + r5.error.message);
+
           success++;
         } catch(err){
-          console.error('이동 실패:', item.name, err);
+          console.error('이동 실패:', item.name, '단계=' + step, err);
           failed++;
+          failedDetails.push(item.name + ' (단계: ' + step + ' / ' + (err.message || err) + ')');
         }
       }
 
       closeModal('modalMove');
       exitSelectMode();
-      alert('✓ 이동 완료\n성공: ' + success + '개' + (failed>0?'\n실패: '+failed+'개':''));
-      await load();
+      let msg = '✓ 이동 완료\n성공: ' + success + '개';
+      if(failed > 0){
+        msg += '\n실패: ' + failed + '개\n\n[실패 상세]\n' + failedDetails.slice(0, 5).join('\n');
+        if(failedDetails.length > 5) msg += '\n... 외 ' + (failedDetails.length-5) + '개';
+      }
+      alert(msg);
+      await loadData();
       renderList();
     } catch(err){
       alert('이동 처리 중 오류: ' + (err.message || err));
     } finally {
       btn.disabled = false;
-      btn.textContent = '이동 실행';
+      btn.textContent = origBtnText;
     }
   }
   // 이동 실행 버튼 연결은 DOMContentLoaded에서
