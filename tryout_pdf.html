@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>Tryout 보고서 출력 v1.12</title>
+<title>Tryout 보고서 출력 v1.14</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -171,6 +171,13 @@ body {
   text-align: left;
   word-break: keep-all; overflow-wrap: anywhere;
 }
+/* 짧은 컬럼들은 세로 가운데 정렬 (본문이 길어도 같이 안 위로 붙음) */
+.log-table .c-date,
+.log-table .c-mold,
+.log-table .c-stage,
+.log-table .c-status,
+.log-table .c-iatf,
+.log-table .c-author { vertical-align: middle; }
 .log-table th {
   background: #1a3a5c; color: white;
   text-align: center; font-weight: 600;
@@ -332,7 +339,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.12</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.14</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -399,7 +406,12 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.12 (현재)\n' +
+    'v1.14 (현재)\n' +
+    '• 짧은 셀(날짜/금형/차수/상태/IATF/작성자) 세로 가운데 정렬\n' +
+    '  → 본문이 길어도 같이 위로 안 붙음\n\n' +
+    'v1.13\n' +
+    '• 사진 3칸 표 구조 확정 (보기 안정적)\n\n' +
+    'v1.12\n' +
     '• 사진 영역: grid → table (3칸 표 구조)\n' +
     '  - 행(tr) 단위로 페이지 분할 — 사진이 잘리지 않음\n' +
     '  - 한 행이 페이지 끝에 안 들어가면 통째로 다음 페이지로\n' +
@@ -712,7 +724,6 @@ function render(){
             html += '</div>';
             html += '</td>';
           } else {
-            // 빈 셀 — 마지막 행 정렬용 (선택)
             html += '<td class="empty"></td>';
           }
         }
