@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>Tryout 보고서 출력 v1.11</title>
+<title>Tryout 보고서 출력 v1.12</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -198,35 +198,46 @@ body {
 .iatf-list .it { font-size: 9pt; margin: 3px 0; }
 .iatf-list .it .tag { font-weight: 700; color: #6f42c1; margin-right: 5px; }
 
-/* 사진 그리드 */
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-bottom: 10px;
-  page-break-inside: auto;
-}
-.photos-grid .p {
-  border: 1px solid #ccc;
-  position: relative;
+/* 사진 표 (3칸) */
+.photos-table {
   width: 100%;
-  padding-bottom: 100%;   /* 1:1 정사각 — aspect-ratio 대신 호환성용 */
-  overflow: hidden;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  table-layout: fixed;
+}
+.photos-table td {
+  width: 33.333%;
+  vertical-align: top;
+  padding: 3px;
   page-break-inside: avoid;
   break-inside: avoid;
 }
-.photos-grid .p img {
+.photos-table .photo-box {
+  width: 100%;
+  padding-bottom: 100%;          /* 1:1 정사각 */
+  position: relative;
+  border: 1px solid #ccc;
+  overflow: hidden;
+  background: #f8f8f8;
+}
+.photos-table .photo-box img {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
 }
-.photos-grid .p .cap {
+.photos-table .photo-box .cap {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: rgba(0,0,0,0.55); color: white;
   font-size: 7pt; padding: 2px 3px; text-align: center;
 }
+/* 빈 셀 */
+.photos-table td.empty .photo-box {
+  border: 1px dashed #ddd;
+  background: transparent;
+}
+.photos-table td.empty .photo-box::before { content: ''; }
 
 /* 푸터 3칸 */
 .r-footer {
@@ -284,7 +295,11 @@ body {
     page-break-after: avoid;
     break-after: avoid;
   }
-  .photos-grid .p {
+  .photos-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .photos-table td {
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -317,7 +332,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.11</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.12</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -384,7 +399,12 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.11 (현재)\n' +
+    'v1.12 (현재)\n' +
+    '• 사진 영역: grid → table (3칸 표 구조)\n' +
+    '  - 행(tr) 단위로 페이지 분할 — 사진이 잘리지 않음\n' +
+    '  - 한 행이 페이지 끝에 안 들어가면 통째로 다음 페이지로\n' +
+    '  - PDF 렌더링 안정성 대폭 향상\n\n' +
+    'v1.11\n' +
     '• PDF 변환 정확도 개선\n' +
     '  - 모든 이미지 로드 완료 대기 후 캡처\n' +
     '  - 보고서 폭을 794px로 강제 + 리플로우\n' +
@@ -675,12 +695,31 @@ function render(){
     });
     if(photosFlat.length){
       const idx = includeIatf && filtered.some(l => l.fmea_flag || l.cp_flag) ? 3 : 2;
+      const photos = photosFlat.slice(0, 32);
       html += '<div class="r-section">' + idx + '. 첨부 사진 (' + photosFlat.length + '장)</div>';
-      html += '<div class="photos-grid">';
-      photosFlat.slice(0, 32).forEach(p => {
-        html += '<div class="p"><img src="' + p.src + '"><div class="cap">' + escapeHtml(p.date||'') + ' · ' + escapeHtml(p.mold||'') + '</div></div>';
-      });
-      html += '</div>';
+      html += '<table class="photos-table"><tbody>';
+
+      // 3장씩 한 행에 — 행 단위로 페이지 분할
+      for(let i = 0; i < photos.length; i += 3){
+        html += '<tr>';
+        for(let j = 0; j < 3; j++){
+          const p = photos[i + j];
+          if(p){
+            html += '<td>';
+            html += '<div class="photo-box">';
+            html += '<img src="' + p.src + '">';
+            html += '<div class="cap">' + escapeHtml(p.date || '') + ' · ' + escapeHtml(p.mold || '') + '</div>';
+            html += '</div>';
+            html += '</td>';
+          } else {
+            // 빈 셀 — 마지막 행 정렬용 (선택)
+            html += '<td class="empty"></td>';
+          }
+        }
+        html += '</tr>';
+      }
+
+      html += '</tbody></table>';
       if(photosFlat.length > 32){
         html += '<p style="font-size:8pt;color:#888">사진이 많아 첫 32장만 인쇄됩니다 (전체 ' + photosFlat.length + '장)</p>';
       }
@@ -793,7 +832,7 @@ window.downloadPDF = async function(){
     },
     pagebreak:    {
       mode: ['css', 'legacy'],
-      avoid: ['.log-table tr', '.photos-grid .p', '.iatf-list .it']
+      avoid: ['.log-table tr', '.photos-table tr', '.iatf-list .it']
     }
   };
 
