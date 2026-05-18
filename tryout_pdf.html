@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>Tryout 보고서 출력 v1.8</title>
+<title>Tryout 보고서 출력 v1.9</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -302,7 +302,7 @@ body {
 
 <div class="app-header">
   <a href="tryout_report.html" class="back-btn">‹ 작업일지</a>
-  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.8</span></h1>
+  <h1>📄 Tryout 보고서 출력 <span class="ver" onclick="showVer()">v1.9</span></h1>
 </div>
 
 <div class="config-panel no-print">
@@ -369,7 +369,13 @@ function showVer(){
   alert(
     '📄 Tryout 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.8 (현재)\n' +
+    'v1.9 (현재)\n' +
+    '• PDF 다운로드 A4 정확 매핑\n' +
+    '  - html2canvas windowWidth 강제 (794px = 210mm)\n' +
+    '  - 모바일 화면 폭 무관하게 A4 비율 유지\n' +
+    '  - jsPDF margin=0 (보고서 자체 padding 18mm 사용)\n' +
+    '  - 변환 중 box-shadow 제거 (PDF 깔끔)\n\n' +
+    'v1.8\n' +
     '• 📥 PDF 다운로드 버튼 추가 (html2pdf.js)\n' +
     '• 모바일에서도 PDF 파일로 저장 가능\n' +
     '• 파일명: 보고서번호_제목.pdf 자동 생성\n' +
@@ -703,21 +709,46 @@ window.downloadPDF = function(){
     overlay.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid #7dd3fc;color:#7dd3fc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:inherit';
     document.body.appendChild(overlay);
 
+    // ─── A4 정확 매핑 ───
+    // A4 portrait: 210mm × 297mm = 794px × 1123px (96 dpi 기준)
+    // html2canvas로 캡처할 폭을 강제 = 모바일 화면 폭과 무관하게 A4 비율 유지
+    const A4_WIDTH_PX = 794;   // 210mm
+    // report-page 자체에 padding 18mm 있으므로 jsPDF margin=0
     const opt = {
-      margin:       [10, 10, 15, 10],
+      margin:       0,
       filename:     fileName,
       image:        { type: 'jpeg', quality: 0.95 },
-      html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      html2canvas:  {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        windowWidth: A4_WIDTH_PX,    // 모바일에서도 A4 폭으로 강제
+        width: A4_WIDTH_PX,
+        scrollX: 0, scrollY: 0
+      },
+      jsPDF:        {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+        compress: true
+      },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
+    // 변환 중에만 box-shadow 제거 (그림자가 PDF에 캡처되는 것 방지)
+    const origShadow = el.style.boxShadow;
+    el.style.boxShadow = 'none';
+
     html2pdf().set(opt).from(el).save().then(() => {
+      el.style.boxShadow = origShadow;
       overlay.textContent = '✓ PDF 저장 완료';
       overlay.style.color = '#4ade80';
       overlay.style.borderColor = '#4ade80';
       setTimeout(() => overlay.remove(), 1500);
     }).catch(err => {
+      el.style.boxShadow = origShadow;
       overlay.remove();
       alert('PDF 생성 실패: ' + (err.message || err) + '\n\n인쇄 기능으로 시도해보세요.');
     });
