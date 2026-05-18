@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.8</title>
+<title>1공장 재고관리 v1.9</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -539,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.8</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.9</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -661,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.8 · msm · 프레스양산
+  1공장 재고관리 v1.9 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -1048,7 +1048,11 @@ function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.8 (현재)\n' +
+    'v1.9 (현재)\n' +
+    '• 매핑 단순화: items 테이블은 모든 공장 동일 스키마(stock 사용)\n' +
+    '  → 이전 qty 오류 해결\n' +
+    '• history 테이블만 본사가 추가 컬럼(worker, item_spec) 사용\n\n' +
+    'v1.8\n' +
     '• 공장 간 스키마 차이 매핑 적용\n' +
     '  - 1공장(stock/min_stock/price/photo) ↔ 본사(qty/min_qty/unit_price/image_url)\n' +
     '  - 본사 이력 컬럼 worker/item_spec 자동 처리\n' +
@@ -1102,51 +1106,25 @@ function showVerInput(){
   const T_ITEMS = 'f1_inventory_items';
   const T_HIST = 'f1_inventory_history';
 
-  // 다중 선택 + 이동 기능: 공장별 테이블 매핑 + 스키마
-  // 스키마 타입:
-  //   'press'  : 본사 (qty/min_qty/unit_price/image_url)
-  //   'f'      : 1/2/3공장 (stock/min_stock/price/photo)
+  // 다중 선택 + 이동 기능: 공장별 테이블 매핑
+  // items 테이블은 모든 공장이 같은 스키마: stock, min_stock, price, photo
+  // history 테이블만 본사는 추가 컬럼(worker, item_spec, unit_price, image_url) 있음
   const FACTORIES = {
-    'hq':  { name: '본사',  items: 'press_inventory_items', hist: 'press_inventory_history', schema: 'press' },
-    'f1':  { name: '1공장', items: 'f1_inventory_items',    hist: 'f1_inventory_history',    schema: 'f' },
-    'f2':  { name: '2공장', items: 'f2_inventory_items',    hist: 'f2_inventory_history',    schema: 'f' },
-    'f3':  { name: '3공장', items: 'f3_inventory_items',    hist: 'f3_inventory_history',    schema: 'f' }
+    'hq':  { name: '본사',  items: 'press_inventory_items', hist: 'press_inventory_history', histExtra: true  },
+    'f1':  { name: '1공장', items: 'f1_inventory_items',    hist: 'f1_inventory_history',    histExtra: false },
+    'f2':  { name: '2공장', items: 'f2_inventory_items',    hist: 'f2_inventory_history',    histExtra: false },
+    'f3':  { name: '3공장', items: 'f3_inventory_items',    hist: 'f3_inventory_history',    histExtra: false }
   };
-  const CURRENT_FACTORY = 'f1';  // 이 파일은 1공장
+  const CURRENT_FACTORY = 'f1';
 
-  // 1공장 → 본사 매핑 (필드명 변환)
-  function mapItemTo(item, targetSchema){
-    if(targetSchema === 'press'){
-      // 1공장 → 본사
-      return {
-        name:       item.name,
-        spec:       item.spec || null,
-        category:   item.category || null,
-        unit:       item.unit || 'EA',
-        location:   item.location || null,
-        vendor:     item.vendor || null,
-        memo:       item.memo || null,
-        qty:        Number(item.stock || 0),
-        min_qty:    Number(item.min_stock || 0),
-        unit_price: Number(item.price || 0),
-        image_url:  item.photo || null
-      };
-    } else {
-      // 1공장 → 1/2/3공장 (동일 스키마, 그대로)
-      const c = Object.assign({}, item);
-      delete c.id; delete c.created_at; delete c.updated_at;
-      return c;
-    }
+  // 품목 그대로 복사 (id/타임스탬프만 제외)
+  function mapItemTo(item){
+    const c = Object.assign({}, item);
+    delete c.id; delete c.created_at; delete c.updated_at;
+    return c;
   }
-
-  // 대상 공장의 재고 컬럼명 (qty vs stock)
-  function getStockCol(schema){ return schema === 'press' ? 'qty' : 'stock'; }
-  function getStockVal(itemRow, schema){
-    return schema === 'press' ? itemRow.qty : itemRow.stock;
-  }
-  // 이력 insert payload (대상 스키마에 맞춰)
-  function makeHistPayload(targetSchema, args){
-    // args: { item_id, item_name, item_spec, type, qty, memo, author }
+  // 이력 payload — 본사는 추가 컬럼
+  function makeHistPayload(histExtra, args){
     const base = {
       item_id:   args.item_id,
       item_name: args.item_name,
@@ -1154,8 +1132,7 @@ function showVerInput(){
       qty:       Number(args.qty || 0),
       memo:      args.memo
     };
-    if(targetSchema === 'press'){
-      // 본사 이력 — worker, dept, item_spec 컬럼 있음
+    if(histExtra){
       base.item_spec = args.item_spec || null;
       base.worker = args.author || null;
     }
@@ -1625,14 +1602,12 @@ function showVerInput(){
         let step = 'start';
 
         try {
-          const targetSchema = target.schema;  // 'press' or 'f'
-          const targetStockCol = getStockCol(targetSchema);
-          const srcQty = Number(item.stock || 0);  // 1공장 컬럼명은 stock
+          const srcQty = Number(item.stock || 0);
 
           // STEP 1. 대상 공장에 동일 품명 검색
           step = '대상 검색';
           const r1 = await sb.from(target.items)
-            .select('id,' + targetStockCol)
+            .select('id,stock')
             .eq('name', item.name)
             .limit(1);
           if(r1.error) throw new Error('대상 검색 실패: ' + r1.error.message);
@@ -1641,16 +1616,14 @@ function showVerInput(){
             // STEP 2a. 기존 → 재고 합산
             step = '대상 재고 합산';
             const e = r1.data[0];
-            const newQty = Number(getStockVal(e, targetSchema) || 0) + srcQty;
-            const updatePayload = {};
-            updatePayload[targetStockCol] = newQty;
-            const r2 = await sb.from(target.items).update(updatePayload).eq('id', e.id);
+            const newStock = Number(e.stock || 0) + srcQty;
+            const r2 = await sb.from(target.items).update({ stock: newStock }).eq('id', e.id);
             if(r2.error) throw new Error('대상 재고 update 실패: ' + r2.error.message);
             targetItemId = e.id;
           } else {
-            // STEP 2b. 신규 → 스키마 매핑해서 insert
+            // STEP 2b. 신규 → 그대로 복사
             step = '대상 신규 등록';
-            const newItem = mapItemTo(item, targetSchema);
+            const newItem = mapItemTo(item);
             const r2 = await sb.from(target.items).insert(newItem).select().single();
             if(r2.error) throw new Error('대상 신규 insert 실패: ' + r2.error.message);
             if(!r2.data) throw new Error('대상 신규 insert 결과 없음');
@@ -1659,10 +1632,10 @@ function showVerInput(){
 
           // ===== 대상 등록 확실 =====
 
-          // STEP 3. 대상 공장 이력 (실패 경고만)
+          // STEP 3. 대상 이력 (실패 경고만)
           step = '대상 이력 기록';
           const r3 = await sb.from(target.hist).insert(
-            makeHistPayload(targetSchema, {
+            makeHistPayload(target.histExtra, {
               item_id: targetItemId,
               item_name: targetItemName,
               item_spec: item.spec,
@@ -1674,10 +1647,10 @@ function showVerInput(){
           );
           if(r3.error) console.warn('대상 이력 기록 실패(데이터는 이동됨):', r3.error.message);
 
-          // STEP 4. 원본 공장 이력 (1공장 스키마)
+          // STEP 4. 원본 이력 (1공장 - histExtra=false)
           step = '원본 이력 기록';
           const r4 = await sb.from(T_HIST).insert(
-            makeHistPayload('f', {
+            makeHistPayload(false, {
               item_id: item.id,
               item_name: item.name,
               type: 'out',
