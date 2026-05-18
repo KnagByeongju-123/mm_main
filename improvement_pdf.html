@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
-<title>개선활동 보고서 출력 v1.2</title>
+<title>개선활동 보고서 출력 v1.3</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
@@ -406,14 +407,15 @@ body {
 
 <div class="app-header no-print">
   <a href="improvement_report.html" class="back-btn">‹ 개선활동</a>
-  <h1>📄 개선활동 보고서 출력 <span class="ver" onclick="showVer()">v1.2</span></h1>
+  <h1>📄 개선활동 보고서 출력 <span class="ver" onclick="showVer()">v1.3</span></h1>
   <button class="btn-settings" onclick="openSettings()" type="button" title="설정">⚙️</button>
 </div>
 
 <div class="config-panel no-print">
-  <div class="btn-row" style="margin:0">
-    <button class="btn-action btn-back" onclick="goBack()">‹ 돌아가기</button>
-    <button class="btn-action btn-print" onclick="window.print()">🖨 인쇄 / PDF 저장</button>
+  <div class="btn-row" style="margin:0;gap:6px">
+    <button class="btn-action btn-back" onclick="goBack()" style="flex:0 0 30%">‹ 돌아가기</button>
+    <button class="btn-action btn-print" onclick="downloadPDF()" style="flex:1;background:linear-gradient(135deg, #c4b5fd, #a78bfa);color:white">📥 PDF 다운로드</button>
+    <button class="btn-action btn-print" onclick="window.print()" style="flex:0 0 30%">🖨 인쇄</button>
   </div>
 </div>
 
@@ -467,7 +469,11 @@ function showVer(){
   alert(
     '📄 개선활동 보고서 출력 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.2 (현재)\n' +
+    'v1.3 (현재)\n' +
+    '• 📥 PDF 다운로드 버튼 추가 (html2pdf.js 사용)\n' +
+    '• 모바일에서도 PDF 파일로 저장 가능\n' +
+    '• 보고서 번호로 파일명 자동 생성\n\n' +
+    'v1.2\n' +
     '• ⚙️ 설정 버튼 + 모달 추가 (헤더 우측)\n' +
     '• 비고/바닥글을 모달 안에서 관리 (화면 깔끔)\n' +
     '• 메인 화면은 [돌아가기] / [인쇄] 버튼만 표시\n\n' +
@@ -481,9 +487,67 @@ function showVer(){
     '• 결재란 상단 우측 50% 배치\n' +
     '• 개선 전/후 사진 좌우 비교 레이아웃\n' +
     '• 정성/정량 효과 박스 분리\n' +
-    '• IATF 16949 연계 정보 표시\n' +
     '• @page A4 명시 + 핀치 줌 가능'
   );
+}
+
+/* ============ PDF 다운로드 (html2pdf.js) ============ */
+function downloadPDF(){
+  const el = document.getElementById('reportPage');
+  if(!el){ alert('보고서 영역을 찾을 수 없습니다'); return; }
+  if(typeof html2pdf === 'undefined'){
+    alert('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+
+  // 파일명: 보고서번호 또는 기본명
+  let fileName = 'improvement_report';
+  try {
+    const docNoEl = document.querySelector('#reportPage [data-doc-no]') ||
+                    document.querySelector('#reportPage .doc-no') ||
+                    document.querySelector('#reportPage');
+    const txt = (docNoEl && docNoEl.textContent) || '';
+    const m = txt.match(/IMP-\d{6,}-?\d*/);
+    if(m) fileName = m[0];
+  } catch(e){}
+  fileName += '.pdf';
+
+  // 로딩 토스트
+  const toast = document.createElement('div');
+  toast.textContent = '📥 PDF 생성 중...';
+  toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.95);border:1px solid #7dd3fc;color:#7dd3fc;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:inherit';
+  document.body.appendChild(toast);
+
+  // html2pdf 옵션 — A4 portrait, 여백 0 (보고서 자체에 padding 적용됨)
+  const opt = {
+    margin:       0,
+    filename:     fileName,
+    image:        { type: 'jpeg', quality: 0.95 },
+    html2canvas:  {
+      scale: 2,          // 고해상도
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    },
+    jsPDF:        {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+      compress: true
+    },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  html2pdf().set(opt).from(el).save().then(() => {
+    toast.textContent = '✓ PDF 저장 완료';
+    toast.style.color = '#4ade80';
+    toast.style.borderColor = '#4ade80';
+    setTimeout(() => toast.remove(), 1500);
+  }).catch(err => {
+    toast.remove();
+    alert('PDF 생성 실패: ' + (err.message || err) + '\n\n인쇄 기능으로 시도해보세요.');
+  });
 }
 
 (function(){
