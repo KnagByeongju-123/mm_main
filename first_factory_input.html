@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>1공장 재고관리 v1.2</title>
+<title>1공장 재고관리 v1.3</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -92,6 +92,53 @@ header h1 .ver {
   display: flex; gap: 10px;
 }
 .item-card.low-stock { border-left-color: #dc3545; background: rgba(252,165,165,0.05); }
+
+/* 선택 모드 */
+.item-card.selected {
+  background: rgba(125,211,252,0.18) !important;
+  border-left-color: #7dd3fc !important;
+  box-shadow: 0 0 0 2px rgba(125,211,252,0.5);
+}
+.item-card.selected::before {
+  content: '✓';
+  position: absolute;
+  top: 8px; right: 8px;
+  background: #7dd3fc; color: #0f172a;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 14px;
+  z-index: 5;
+}
+.item-card { position: relative; }
+body.select-mode .item-actions { display: none !important; }
+body.select-mode .tap-hint { display: none !important; }
+body.select-mode .item-card { user-select: none; -webkit-user-select: none; }
+
+/* 선택 모드 상단 바 */
+.select-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: white; padding: 12px 14px;
+  display: none; align-items: center; gap: 10px;
+  box-shadow: 0 2px 10px rgba(14,165,233,0.4);
+}
+body.select-mode .select-bar { display: flex; }
+.select-bar .count { font-weight: 800; font-size: 16px; flex: 1; }
+.select-bar button {
+  background: rgba(255,255,255,0.15);
+  color: white; border: 1px solid rgba(255,255,255,0.3);
+  padding: 7px 12px; border-radius: 6px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+}
+.select-bar button:active { transform: scale(0.95); }
+.select-bar button.btn-move {
+  background: white; color: #0284c7;
+  border-color: white; font-weight: 800;
+}
+.select-bar button.btn-cancel { background: transparent; }
+
 .item-thumb {
   width: 44px; height: 44px; border-radius: 6px; flex-shrink: 0;
   background: var(--bg-card-hi); display: flex; align-items: center; justify-content: center;
@@ -492,7 +539,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.2</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">1공장 재고관리</span> <span class="ver" onclick="showVerInput()">v1.3</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -510,6 +557,14 @@ input[type="file"] { display: none; }
 <div class="container">
 
   <div id="page-list">
+
+    <!-- 다중 선택 바 (선택 모드일 때만 표시) -->
+    <div class="select-bar" id="selectBar">
+      <span class="count"><span id="selCount">0</span><span data-i18n="selected_count">개 선택됨</span></span>
+      <button class="btn-move" type="button" onclick="openMoveModal()"><span data-i18n-keep>📤 </span><span data-i18n="move">이동</span></button>
+      <button class="btn-cancel" type="button" onclick="exitSelectMode()"><span data-i18n-keep>✕ </span><span data-i18n="cancel">취소</span></button>
+    </div>
+
     <div class="summary">
       <div class="summary-card"><div class="num" id="sumTotal">0</div><div class="label" data-i18n="sum_total">전체 품목</div></div>
       <div class="summary-card"><div class="num warn" id="sumLow">0</div><div class="label" data-i18n="sum_low">재고부족</div></div>
@@ -606,7 +661,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  1공장 재고관리 v1.2 · msm · 프레스양산
+  1공장 재고관리 v1.3 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -794,6 +849,35 @@ input[type="file"] { display: none; }
   </div>
 </div>
 
+<!-- 품목 이동 모달 -->
+<div class="modal-bg" id="modalMove">
+  <div class="modal">
+    <h2><span data-i18n-keep>📤 </span><span data-i18n="move_title">다른 공장으로 이동</span></h2>
+    <div style="background:rgba(125,211,252,0.08);border:1px solid rgba(125,211,252,0.3);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-size:13px;color:var(--text-mid)">
+      <b style="color:var(--ice)" id="moveCount">0</b><span data-i18n="move_desc">개 품목을 선택했습니다. 어느 공장으로 이동할까요?</span>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="move_target">이동 대상</label>
+      <div id="moveTargets" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <div class="form-group">
+      <label><span data-i18n="move_memo">이동 사유 / 메모</span> <span style="font-size:11px;color:var(--text-sub)">(선택)</span></label>
+      <input type="text" id="moveMemo" data-i18n-ph="move_memo_ph" placeholder="예: 본사 반환 / 사용 종료" autocomplete="off">
+    </div>
+
+    <div style="background:#fff3cd;color:#664d03;padding:10px;border-radius:6px;font-size:12px;line-height:1.5;margin-bottom:12px;border:1px solid #ffe69c" data-i18n-html="move_warn">
+      ⚠️ <b>주의:</b> 선택한 품목이 현재 위치(1공장)에서 사라지고 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.
+    </div>
+
+    <div class="modal-buttons">
+      <button class="btn-secondary" type="button" onclick="closeModal('modalMove')" data-i18n="cancel">취소</button>
+      <button class="btn-primary" id="btnDoMove" type="button" data-i18n="move_exec">이동 실행</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============ 다국어 시스템 ============ */
 const I18N = {
@@ -829,7 +913,14 @@ const I18N = {
     settings: '설정', cat_manage: '분류 관리',
     cat_manage_desc: '추가/삭제 및 ≡ 드래그로 순서 변경 가능합니다.',
     new_cat_ph: '새 분류 입력', add: '+ 추가',
-    cloud_connected: '☁️ 클라우드 자동 연결됨'
+    cloud_connected: '☁️ 클라우드 자동 연결됨',
+    selected_count: '개 선택됨', move: '이동',
+    move_title: '다른 공장으로 이동',
+    move_desc: '개 품목을 선택했습니다. 어느 공장으로 이동할까요?',
+    move_target: '이동 대상', move_memo: '이동 사유 / 메모',
+    move_memo_ph: '예: 본사 반환 / 사용 종료',
+    move_warn: '⚠️ <b>주의:</b> 선택한 품목이 현재 위치(1공장)에서 사라지고 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.',
+    move_exec: '이동 실행', move_to: '으로 이동'
   },
   de: {
     page_title: 'Werk 1 Lagerverwaltung',
@@ -863,7 +954,14 @@ const I18N = {
     settings: 'Einstellungen', cat_manage: 'Kategorien verwalten',
     cat_manage_desc: 'Hinzufügen/Löschen und ≡ zum Sortieren ziehen.',
     new_cat_ph: 'Neue Kategorie', add: '+ Hinzufügen',
-    cloud_connected: '☁️ Cloud automatisch verbunden'
+    cloud_connected: '☁️ Cloud automatisch verbunden',
+    selected_count: ' ausgewählt', move: 'Verschieben',
+    move_title: 'In anderes Werk verschieben',
+    move_desc: ' Artikel ausgewählt. In welches Werk verschieben?',
+    move_target: 'Zielwerk', move_memo: 'Grund / Notiz',
+    move_memo_ph: 'z.B. Rückgabe / Beendet',
+    move_warn: '⚠️ <b>Hinweis:</b> Die ausgewählten Artikel werden vom aktuellen Werk (Werk 1) entfernt und dem Zielwerk hinzugefügt. Im Verlauf wird ein [Verschoben]-Eintrag erstellt.',
+    move_exec: 'Verschieben', move_to: ' verschieben'
   },
   kk: {
     page_title: '1-зауыт қойма басқару',
@@ -897,7 +995,14 @@ const I18N = {
     settings: 'Параметрлер', cat_manage: 'Санаттарды басқару',
     cat_manage_desc: 'Қосу/жою және ≡ сүйреп ретін өзгерту.',
     new_cat_ph: 'Жаңа санат', add: '+ Қосу',
-    cloud_connected: '☁️ Бұлт автоматты түрде қосылған'
+    cloud_connected: '☁️ Бұлт автоматты түрде қосылған',
+    selected_count: ' таңдалды', move: 'Жылжыту',
+    move_title: 'Басқа зауытқа жылжыту',
+    move_desc: ' тауар таңдалды. Қай зауытқа жылжытамыз?',
+    move_target: 'Мақсатты зауыт', move_memo: 'Себебі / ескертпе',
+    move_memo_ph: 'мыс: Бас кеңсеге қайтару',
+    move_warn: '⚠️ <b>Назар аударыңыз:</b> Таңдалған тауарлар ағымдағы орыннан (1-зауыт) жойылып, мақсатты зауыт қоймасына қосылады. Тарихта [жылжыту] жазбасы қалады.',
+    move_exec: 'Орындау', move_to: ' зауытына'
   }
 };
 
@@ -943,7 +1048,14 @@ function showVerInput(){
   alert(
     '📦 1공장 재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.2 (현재)\n' +
+    'v1.3 (현재)\n' +
+    '• 다중 선택 + 다른 공장으로 이동 기능\n' +
+    '  - 카드 길게 누르기 → 선택 모드 진입\n' +
+    '  - 짧게 탭으로 추가 선택/해제\n' +
+    '  - 상단 [📤 이동] → 본사로 이동\n' +
+    '  - 동일 품명 존재 시 재고 합산\n' +
+    '  - 양쪽 공장에 이동 이력 자동 기록\n\n' +
+    'v1.2\n' +
     '• 입출고 모달 가독성 개선 (다크모드 매치)\n' +
     '• 촬영/갤러리 버튼 글자색 수정\n' +
     '• 취소 버튼 글자색 수정\n' +
@@ -969,6 +1081,15 @@ function showVerInput(){
   const LS = 'f1Inv_';
   const T_ITEMS = 'f1_inventory_items';
   const T_HIST = 'f1_inventory_history';
+
+  // 다중 선택 + 이동 기능: 공장별 테이블 매핑
+  const FACTORIES = {
+    'hq':  { name: '본사',   items: 'press_inventory_items', hist: 'press_inventory_history' },
+    'f1':  { name: '1공장',  items: 'f1_inventory_items',    hist: 'f1_inventory_history' }
+  };
+  const CURRENT_FACTORY = 'f1';  // 이 파일은 1공장
+  let selectedIds = new Set();
+  let longPressTimer = null;
   const DEFAULT_CATEGORIES = ['프레스부품', '금형부품', '유압부품', '전기부품', '소모공구', '안전용품', '기타'];
 
   // === Supabase 하드코딩 ===
@@ -1322,6 +1443,169 @@ function showVerInput(){
     }
   }
 
+  // ============================================================
+  // 다중 선택 + 이동 기능
+  // ============================================================
+  function enterSelectMode(firstId){
+    document.body.classList.add('select-mode');
+    selectedIds = new Set();
+    if(firstId) selectedIds.add(String(firstId));
+    updateSelectionUI();
+  }
+
+  function exitSelectMode(){
+    document.body.classList.remove('select-mode');
+    selectedIds = new Set();
+    document.querySelectorAll('.item-card.selected').forEach(c => c.classList.remove('selected'));
+    updateSelectionUI();
+  }
+  window.exitSelectMode = exitSelectMode;
+
+  function toggleSelect(id){
+    id = String(id);
+    if(selectedIds.has(id)) selectedIds.delete(id);
+    else selectedIds.add(id);
+    if(selectedIds.size === 0){
+      exitSelectMode();
+      return;
+    }
+    updateSelectionUI();
+  }
+
+  function updateSelectionUI(){
+    const cnt = selectedIds.size;
+    const el = document.getElementById('selCount');
+    if(el) el.textContent = cnt;
+    document.querySelectorAll('.item-card').forEach(card => {
+      const id = card.dataset.id;
+      card.classList.toggle('selected', selectedIds.has(String(id)));
+    });
+  }
+
+  window.openMoveModal = function(){
+    if(selectedIds.size === 0){ alert('선택된 품목이 없습니다.'); return; }
+    document.getElementById('moveCount').textContent = selectedIds.size;
+    document.getElementById('moveMemo').value = '';
+
+    // 대상 공장 버튼 동적 생성 (현재 공장 제외) - 다국어 적용
+    const dict = (typeof I18N !== 'undefined' && I18N[getLang()]) || {};
+    const moveToTxt = dict.move_to || '으로 이동';
+    const tgt = document.getElementById('moveTargets');
+    tgt.innerHTML = '';
+    Object.entries(FACTORIES).forEach(([key, f]) => {
+      if(key === CURRENT_FACTORY) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'move-target-btn';
+      btn.dataset.target = key;
+      btn.style.cssText = 'padding:14px;border:2px solid var(--border-hi);background:var(--bg-card-hi);color:var(--text);border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:10px';
+      btn.innerHTML = '<span style="font-size:22px">📤</span><span>' + escapeHtml(f.name) + escapeHtml(moveToTxt) + '</span>';
+      btn.addEventListener('click', () => {
+        tgt.querySelectorAll('.move-target-btn').forEach(b => {
+          b.style.borderColor = 'var(--border-hi)';
+          b.style.background = 'var(--bg-card-hi)';
+          b.dataset.selected = '';
+        });
+        btn.style.borderColor = '#7dd3fc';
+        btn.style.background = 'rgba(125,211,252,0.18)';
+        btn.dataset.selected = '1';
+      });
+      tgt.appendChild(btn);
+    });
+
+    openModal('modalMove');
+  };
+
+  async function doMoveItems(){
+    const tgt = document.querySelector('#moveTargets .move-target-btn[data-selected="1"]');
+    if(!tgt){ alert('이동 대상 공장을 선택해주세요.'); return; }
+    const targetKey = tgt.dataset.target;
+    const target = FACTORIES[targetKey];
+    if(!target) return;
+
+    const memo = document.getElementById('moveMemo').value.trim();
+    const moveCount = selectedIds.size;
+    if(!confirm(moveCount + '개 품목을 ' + target.name + '으로 이동합니다.\n계속하시겠습니까?')){
+      return;
+    }
+
+    const btn = document.getElementById('btnDoMove');
+    btn.disabled = true;
+    const origBtnText = btn.textContent;
+    btn.textContent = '이동 중...';
+
+    let success = 0, failed = 0;
+    const ids = Array.from(selectedIds);
+    const author = (window.__msmSession && window.__msmSession.name) || '관리자';
+
+    try {
+      for(const id of ids){
+        const item = items.find(x => String(x.id) === String(id));
+        if(!item){ failed++; continue; }
+
+        try {
+          // 1. 대상 공장에 동일 품명 있는지 확인
+          const { data: existing } = await sb.from(target.items).select('*').eq('name', item.name).limit(1);
+
+          if(existing && existing.length > 0){
+            // 기존 품목 → 재고 합산
+            const e = existing[0];
+            const newStock = (e.stock || 0) + (item.stock || 0);
+            await sb.from(target.items).update({ stock: newStock }).eq('id', e.id);
+
+            await sb.from(target.hist).insert({
+              item_id: e.id, item_name: e.name,
+              type: 'in', quantity: item.stock || 0,
+              memo: '[이동입고] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:''),
+              by: author
+            }).then(()=>{}).catch(()=>{});
+          } else {
+            // 신규 품목 → 그대로 복사
+            const newItem = Object.assign({}, item);
+            delete newItem.id;
+            delete newItem.created_at;
+            delete newItem.updated_at;
+            const { data: inserted } = await sb.from(target.items).insert(newItem).select().single();
+
+            if(inserted){
+              await sb.from(target.hist).insert({
+                item_id: inserted.id, item_name: inserted.name,
+                type: 'in', quantity: item.stock || 0,
+                memo: '[이동입고-신규] ' + FACTORIES[CURRENT_FACTORY].name + '→' + target.name + (memo?' / '+memo:''),
+                by: author
+              }).then(()=>{}).catch(()=>{});
+            }
+          }
+
+          // 2. 현재 공장에서 이동 출고 이력 + 품목 삭제
+          await sb.from(T_HIST).insert({
+            item_id: item.id, item_name: item.name,
+            type: 'out', quantity: item.stock || 0,
+            memo: '[이동출고] →' + target.name + (memo?' / '+memo:''),
+            by: author
+          }).then(()=>{}).catch(()=>{});
+
+          await sb.from(T_ITEMS).delete().eq('id', item.id);
+          success++;
+        } catch(err){
+          console.error('이동 실패:', item.name, err);
+          failed++;
+        }
+      }
+
+      closeModal('modalMove');
+      exitSelectMode();
+      alert('✓ 이동 완료\n성공: ' + success + '개' + (failed>0?'\n실패: '+failed+'개':''));
+      await load();
+      renderList();
+    } catch(err){
+      alert('이동 처리 중 오류: ' + (err.message || err));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = origBtnText;
+    }
+  }
+
   function renderList() {
     const q = $('searchInput').value.toLowerCase();
     const cat = $('filterCat').value;
@@ -1394,12 +1678,45 @@ function showVerInput(){
       '</div>';
     }).join('');
 
-    // 입출고는 카드의 thumb/body 클릭 시
+    // 입출고는 카드의 thumb/body 클릭 시 + 길게 누르면 선택 모드
+    list.querySelectorAll('.item-card').forEach(card => {
+      const id = card.dataset.id;
+
+      // 선택 상태 시각화 (재렌더 후)
+      if(selectedIds.has(id)) card.classList.add('selected');
+
+      // ----- 길게 누르기로 선택 모드 진입 -----
+      const startLongPress = (e) => {
+        clearTimeout(longPressTimer);
+        longPressTimer = setTimeout(() => {
+          if(!document.body.classList.contains('select-mode')){
+            enterSelectMode(id);
+            if(navigator.vibrate) navigator.vibrate(50);
+          }
+        }, 500);
+      };
+      const cancelLongPress = () => { clearTimeout(longPressTimer); };
+      card.addEventListener('touchstart', startLongPress, { passive: true });
+      card.addEventListener('touchend', cancelLongPress);
+      card.addEventListener('touchmove', cancelLongPress);
+      card.addEventListener('touchcancel', cancelLongPress);
+      card.addEventListener('mousedown', startLongPress);
+      card.addEventListener('mouseup', cancelLongPress);
+      card.addEventListener('mouseleave', cancelLongPress);
+    });
+
     list.querySelectorAll('[data-act="open"]').forEach(zone => {
       tap(zone, () => {
         const card = zone.closest('.item-card');
         if (!card) return;
         const id = card.dataset.id;
+
+        // 선택 모드면 토글 선택
+        if(document.body.classList.contains('select-mode')){
+          toggleSelect(id);
+          return;
+        }
+        // 평상 모드 → 입출고 모달
         const item = items.find(x => String(x.id) === String(id));
         if (item) openDetail(item);
       });
@@ -2249,254 +2566,4 @@ function showVerInput(){
               const ix = items.findIndex(x => x.id === existing.id);
               if (ix >= 0) items[ix] = Object.assign({}, items[ix], data);
               updated++;
-            } else {
-              data.id = Date.now() + r;
-              data.created_at = new Date().toISOString();
-              items.push(data);
-              added++;
-            }
-          }
-        } catch(e) {
-          failed++;
-          if (errors.length < 3) errors.push(name + ': ' + e.message);
-        }
-      }
-
-      if (!sb) saveLocal();
-      await loadData();
-
-      result.style.background = '#d4edda';
-      result.style.color = '#155724';
-      let msg = '✅ 완료! 추가 ' + added + '건, 수정 ' + updated + '건';
-      if (failed > 0) {
-        msg += ', 실패 ' + failed + '건';
-        if (errors.length > 0) msg += '\n' + errors.join('\n');
-      }
-      result.style.whiteSpace = 'pre-line';
-      result.textContent = msg;
-    } catch(e) {
-      result.style.background = '#f8d7da';
-      result.style.color = '#721c24';
-      result.textContent = '❌ 실패: ' + e.message;
-    }
-    $('csvInput').value = '';
-  }
-
-
-  function switchTab(name) {
-    document.querySelectorAll('.tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.tab === name);
-    });
-    ['list', 'history', 'export'].forEach(p => {
-      $('page-' + p).style.display = p === name ? 'block' : 'none';
-    });
-    $('btnAdd').style.display = name === 'list' ? 'block' : 'none';
-  }
-
-  // ============ Init ============
-  document.addEventListener('DOMContentLoaded', () => {
-    // URL 파라미터: ?loc=A01 → 해당 위치 품목만 표시
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const locParam = params.get('loc');
-      if (locParam) {
-        locFilter = locParam.trim();
-        $('locFilterName').textContent = locFilter;
-        $('locFilterBar').style.display = 'flex';
-      }
-    } catch(e) {}
-
-    // 전체보기 버튼
-    tap('btnLocClear', () => {
-      locFilter = '';
-      $('locFilterBar').style.display = 'none';
-      // URL에서 loc 제거
-      try {
-        const u = new URL(window.location.href);
-        u.searchParams.delete('loc');
-        window.history.replaceState({}, '', u);
-      } catch(e) {}
-      renderList();
-    });
-
-    // 탭
-    document.querySelectorAll('.tab').forEach(t => {
-      tap(t, () => switchTab(t.dataset.tab));
-    });
-
-    // 검색
-    $('searchInput').addEventListener('input', renderList);
-    $('filterCat').addEventListener('change', renderList);
-
-    // 이력 자동완성
-    const hInp = $('historySearch');
-    const hAC = $('histAC');
-    let acIdx = -1;
-
-    function getHistNames() {
-      const map = {};
-      items.forEach(i => { if (i.name) map[i.name] = true; });
-      hist.forEach(h => { if (h.item_name) map[h.item_name] = true; });
-      return Object.keys(map).sort((a, b) => a.localeCompare(b, 'ko'));
-    }
-
-    function showAC(q) {
-      if (!q) { hAC.style.display = 'none'; return; }
-      const matches = getHistNames().filter(n => n.toLowerCase().includes(q.toLowerCase()));
-      if (matches.length === 0) { hAC.style.display = 'none'; return; }
-      hAC.innerHTML = '';
-      matches.slice(0, 20).forEach((name) => {
-        const div = document.createElement('div');
-        div.className = 'hist-ac-item';
-        const ql = q.toLowerCase();
-        const nl = name.toLowerCase();
-        const idx = nl.indexOf(ql);
-        div.innerHTML = escapeHtml(name.slice(0, idx)) +
-          '<mark>' + escapeHtml(name.slice(idx, idx + q.length)) + '</mark>' +
-          escapeHtml(name.slice(idx + q.length));
-        div.addEventListener('mousedown', e => { e.preventDefault(); });
-        div.addEventListener('click', () => {
-          hInp.value = name;
-          hAC.style.display = 'none';
-          acIdx = -1;
-          renderHistory();
-        });
-        hAC.appendChild(div);
-      });
-      acIdx = -1;
-      hAC.style.display = 'block';
-    }
-
-    hInp.addEventListener('input', () => { showAC(hInp.value); });
-    hInp.addEventListener('keydown', e => {
-      const its = hAC.querySelectorAll('.hist-ac-item');
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        acIdx = Math.min(acIdx + 1, its.length - 1);
-        its.forEach((el, i) => el.classList.toggle('active', i === acIdx));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        acIdx = Math.max(acIdx - 1, -1);
-        its.forEach((el, i) => el.classList.toggle('active', i === acIdx));
-      } else if (e.key === 'Enter') {
-        if (acIdx >= 0 && its[acIdx]) {
-          hInp.value = its[acIdx].textContent;
-          hAC.style.display = 'none'; acIdx = -1;
-        }
-        renderHistory();
-      } else if (e.key === 'Escape') {
-        hAC.style.display = 'none'; acIdx = -1;
-      }
-    });
-    hInp.addEventListener('blur', () => {
-      setTimeout(() => { hAC.style.display = 'none'; acIdx = -1; }, 150);
-    });
-    tap($('btnHistSearch'), () => {
-      hAC.style.display = 'none';
-      renderHistory();
-    });
-
-    // 삭제된 이력 보기 토글
-    if ($('showDeletedHist')) {
-      $('showDeletedHist').addEventListener('change', renderHistory);
-    }
-
-    // 이력 일자 빠른선택
-    document.querySelectorAll('.date-quick').forEach(b => {
-      tap(b, () => {
-        document.querySelectorAll('.date-quick').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        historyDateRange = b.dataset.range;
-        $('dateRangeBar').style.display = historyDateRange === 'custom' ? 'block' : 'none';
-        renderHistory();
-      });
-    });
-    $('dateFrom').addEventListener('change', () => {
-      historyDateFrom = $('dateFrom').value;
-      renderHistory();
-    });
-    $('dateTo').addEventListener('change', () => {
-      historyDateTo = $('dateTo').value;
-      renderHistory();
-    });
-
-    // 헤더/FAB
-    tap('btnSettings', openSettings);
-    tap('btnAdd', () => openItemModal(null));
-
-    // 상세
-    tap('btnDetailClose', () => closeModal('modalDetail'));
-    tap('btnDoIn', () => {
-      closeModal('modalDetail');
-      openStock(curDetail, 'in');
-    });
-    tap('btnDoOut', () => {
-      closeModal('modalDetail');
-      openStock(curDetail, 'out');
-    });
-    tap('btnDoEdit', () => {
-      closeModal('modalDetail');
-      openItemModal(curDetail);
-    });
-
-    // 품목 모달
-    tap('btnItemCancel', () => closeModal('modalItem'));
-    tap('btnItemSave', saveItem);
-    tap('btnDelete', deleteItem);
-
-    // 사진 - 카메라/갤러리 분리
-    tap('btnTakePhoto', () => $('photoInputCamera').click());
-    tap('btnChoosePhoto', () => $('photoInputGallery').click());
-    tap('btnRemovePhoto', clearPhoto);
-    $('photoInputCamera').addEventListener('change', e => {
-      onPhotoSelect(e.target.files[0]);
-    });
-    $('photoInputGallery').addEventListener('change', e => {
-      onPhotoSelect(e.target.files[0]);
-    });
-
-    // 수량
-    tap('btnStockCancel', () => closeModal('modalStock'));
-    tap('btnStockOk', confirmStock);
-    tap('qtyMinus', () => adjustQty(-1));
-    tap('qtyPlus', () => adjustQty(1));
-
-    // 설정
-    tap('btnSettingsClose', () => closeModal('modalSettings'));
-    tap('btnAddCategory', addCategory);
-    $('newCategoryInput').addEventListener('keypress', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addCategory();
-      }
-    });
-
-    // 내보내기
-    tap('btnExportItems', () => exportCSV('items'));
-    tap('btnExportHistory', () => exportCSV('history'));
-    setupExportFilterEvents();
-
-    // CSV 업로드
-    tap('btnDownloadTemplate', downloadTemplate);
-    tap('btnUploadCSV', () => $('csvInput').click());
-    $('csvInput').addEventListener('change', e => {
-      uploadCSV(e.target.files[0]);
-    });
-
-    // 모달 배경
-    document.querySelectorAll('.modal-bg').forEach(bg => {
-      bg.addEventListener('click', e => {
-        if (e.target === bg) bg.classList.remove('show');
-      });
-    });
-
-    initSupabase();
-    loadCategories();
-    fillCategorySelects();
-    renderCategoryList();
-    loadData();
-  });
-})();
-</script>
-</body>
-</html>
+            } else
