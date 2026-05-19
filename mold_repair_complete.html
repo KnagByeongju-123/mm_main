@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>금형 수리완료 v1.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
+.container { max-width: 820px; margin: 0 auto; }
+
+header { background: linear-gradient(135deg, #16a34a, #15803d); padding: 16px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(22,163,74,0.3); }
+h1 { font-size: 22px; font-weight: 700; }
+.subtitle { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+
+.card { background: #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #334155; }
+.card-title { font-size: 14px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.card-title::before { content: ''; width: 4px; height: 16px; background: #16a34a; border-radius: 2px; }
+
+.field { margin-bottom: 10px; }
+label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; font-weight: 600; }
+.required::after { content: '*'; color: #ef4444; margin-left: 3px; }
+
+input, select, textarea {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569;
+    background: #0f172a; color: #e2e8f0; font-size: 14px; font-family: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #16a34a; }
+input:disabled, input:read-only { background: #0c1525; color: #94a3b8; }
+textarea { resize: vertical; min-height: 70px; }
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.btn { padding: 12px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+.btn-primary { background: linear-gradient(135deg, #16a34a, #15803d); color: white; width: 100%; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,0.4); }
+.btn-secondary { background: #334155; color: #e2e8f0; width: 100%; }
+.btn-small { padding: 6px 10px; font-size: 12px; }
+
+.req-list { max-height: 360px; overflow-y: auto; }
+.req-item { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.req-item:hover { border-color: #16a34a; }
+.req-item.selected { border-color: #16a34a; background: #14532d; }
+.req-item .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.req-item .no { font-weight: 700; color: #60a5fa; font-size: 14px; }
+.req-item .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+.badge.urgent { background: #7f1d1d; color: #fecaca; }
+.badge.normal { background: #1e3a8a; color: #bfdbfe; }
+.badge.low { background: #14532d; color: #bbf7d0; }
+.badge.requested { background: #78350f; color: #fde68a; }
+.badge.in_progress { background: #1e3a8a; color: #bfdbfe; }
+.badge.completed { background: #14532d; color: #bbf7d0; }
+.req-item .info { font-size: 12px; color: #cbd5e1; margin-top: 6px; line-height: 1.5; }
+.req-item .desc { font-size: 11px; color: #94a3b8; margin-top: 4px; max-height: 36px; overflow: hidden; }
+
+.repair-type-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.repair-type-btn { padding: 8px 4px; border-radius: 8px; border: 2px solid #475569; background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 11px; font-weight: 600; }
+.repair-type-btn.active { border-color: #16a34a; background: #14532d; color: #bbf7d0; }
+
+.photo-area { border: 2px dashed #475569; border-radius: 8px; padding: 14px; text-align: center; cursor: pointer; background: #0f172a; }
+.photo-area:hover { border-color: #16a34a; }
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.photo-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; }
+.photo-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-del { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: rgba(220,38,38,0.9); color: white; border: none; cursor: pointer; font-size: 14px; line-height: 1; }
+
+.parts-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 6px; margin-bottom: 6px; align-items: center; }
+.parts-row input { padding: 8px; font-size: 13px; }
+.parts-row .del-part { background: #dc2626; color: white; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; }
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.toast.success { border-color: #16a34a; }
+.toast.error { border-color: #dc2626; }
+
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 12px; }
+.modal.show { display: flex; }
+.modal-content { background: #1e293b; border-radius: 12px; padding: 16px; width: 100%; max-width: 320px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.modal-close { background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; }
+.pin-input { letter-spacing: 8px; text-align: center; font-size: 20px; }
+
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; background: #1e293b; padding: 6px; border-radius: 8px; }
+.tab { padding: 10px; border-radius: 6px; text-align: center; font-weight: 700; cursor: pointer; font-size: 13px; color: #94a3b8; }
+.tab.active { background: #16a34a; color: white; }
+
+footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; margin-top: 20px; }
+
+.empty { padding: 30px; text-align: center; color: #64748b; }
+
+.full-img { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+.full-img.show { display: flex; }
+.full-img img { max-width: 100%; max-height: 100%; }
+.full-img .close { position: absolute; top: 20px; right: 20px; color: white; font-size: 30px; cursor: pointer; background: none; border: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+    <h1>✅ 금형 수리완료</h1>
+    <div class="subtitle">Mold Repair Complete · v1.0</div>
+</header>
+
+<!-- 수리자 인증 -->
+<div class="card">
+    <div class="card-title">수리자 정보</div>
+    <div class="row">
+        <div class="field">
+            <label class="required">사원ID</label>
+            <input type="text" id="userId" placeholder="4자리" maxlength="4" inputmode="numeric">
+        </div>
+        <div class="field">
+            <label>수리자</label>
+            <input type="text" id="userName" readonly>
+        </div>
+    </div>
+</div>
+
+<!-- 의뢰 선택 -->
+<div class="tabs">
+    <div class="tab active" data-tab="requested" onclick="switchTab('requested')">📥 대기 (의뢰됨)</div>
+    <div class="tab" data-tab="in_progress" onclick="switchTab('in_progress')">🔧 진행중</div>
+</div>
+
+<div class="card">
+    <div class="card-title">수리 대상 선택</div>
+    <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+        <input type="text" id="searchKey" placeholder="금형코드/의뢰번호 검색" oninput="renderRequests()">
+        <button class="btn btn-secondary btn-small" style="width:auto;" onclick="loadRequests()">🔄</button>
+    </div>
+    <div class="req-list" id="reqList"></div>
+</div>
+
+<!-- 수리 내용 (선택후 표시) -->
+<div id="repairForm" style="display:none;">
+
+<div class="card">
+    <div class="card-title">의뢰 정보 (참조)</div>
+    <div class="row">
+        <div class="field">
+            <label>의뢰번호</label>
+            <input type="text" id="repairNo" readonly>
+        </div>
+        <div class="field">
+            <label>금형코드</label>
+            <input type="text" id="moldCode" readonly>
+        </div>
+    </div>
+    <div class="row">
+        <div class="field">
+            <label>의뢰자</label>
+            <input type="text" id="requestUser" readonly>
+        </div>
+        <div class="field">
+            <label>의뢰일</label>
+            <input type="text" id="requestDate" readonly>
+        </div>
+    </div>
+    <div class="field">
+        <label>현상</label>
+        <textarea id="defectDesc" readonly></textarea>
+    </div>
+    <div id="requestPhotos" class="photo-grid"></div>
+</div>
+
+<div class="card">
+    <div class="card-title">수리 내용</div>
+    <div class="row">
+        <div class="field">
+            <label class="required">수리 시작</label>
+            <input type="datetime-local" id="repairStart">
+        </div>
+        <div class="field">
+            <label class="required">수리 완료</label>
+            <input type="datetime-local" id="repairEnd">
+        </div>
+    </div>
+    <div class="field">
+        <label class="required">수리유형</label>
+        <div class="repair-type-row">
+            <button type="button" class="repair-type-btn" data-type="분해수리">분해수리</button>
+            <button type="button" class="repair-type-btn" data-type="부품교체">부품교체</button>
+            <button type="button" class="repair-type-btn" data-type="연마">연마</button>
+            <button type="button" class="repair-type-btn" data-type="용접">용접</button>
+            <button type="button" class="repair-type-btn" data-type="기타">기타</button>
+        </div>
+    </div>
+    <div class="field">
+        <label class="required">조치내용</label>
+        <textarea id="repairAction" placeholder="어떻게 수리했는지 상세히 기재"></textarea>
+    </div>
+    <div class="field">
+        <label>원인 분석</label>
+        <textarea id="causeAnalysis" placeholder="발생 원인 (5-Why, 직접/근본원인)"></textarea>
+    </div>
+    <div class="field">
+        <label>재발방지 대책</label>
+        <textarea id="prevention" placeholder="재발 방지를 위한 조치사항"></textarea>
+    </div>
+</div>
+
+<!-- 사용부품 -->
+<div class="card">
+    <div class="card-title">사용 부품</div>
+    <div id="partsList"></div>
+    <button class="btn btn-secondary btn-small" style="margin-top:6px;" onclick="addPartRow()">＋ 부품 추가</button>
+    <div class="field" style="margin-top:10px;">
+        <label>총 수리비용 (자동 합산)</label>
+        <input type="text" id="totalCost" readonly>
+    </div>
+</div>
+
+<!-- 사진 -->
+<div class="card">
+    <div class="card-title">수리 사진 (최대 5장)</div>
+    <div class="photo-area" onclick="document.getElementById('photoInput').click()">
+        <div style="font-size: 28px;">📸</div>
+        <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">탭하여 사진 추가</div>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="addPhotos(event)">
+    </div>
+    <div class="photo-grid" id="photoGrid"></div>
+</div>
+
+<button class="btn btn-primary" onclick="submitComplete()">✅ 수리 완료 등록</button>
+<button class="btn btn-secondary" style="margin-top:8px;" onclick="saveProgress()">💾 진행중 저장 (계속 수리)</button>
+
+</div>
+
+<footer>금형 수리완료 시스템 · Rev 1.0 · 태진다이텍 품질관리팀</footer>
+
+</div>
+
+<!-- PIN 모달 -->
+<div class="modal" id="pinModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 style="font-size: 16px;">PIN 확인</h2>
+            <button class="modal-close" onclick="document.getElementById('pinModal').classList.remove('show')">✕</button>
+        </div>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;" id="pinUserInfo"></p>
+        <input type="password" class="pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#e2e8f0;">
+        <button class="btn btn-primary" onclick="verifyPin()">확인</button>
+    </div>
+</div>
+
+<div class="full-img" id="fullImg">
+    <button class="close" onclick="document.getElementById('fullImg').classList.remove('show')">✕</button>
+    <img id="fullImgSrc">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+
+const sbHeaders = () => ({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+});
+
+let userDB = [];
+let requests = [];
+let selectedReq = null;
+let currentTab = 'requested';
+let selectedRepairType = '';
+let photos = [];
+let verifiedUser = null;
+let pendingUser = null;
+
+window.addEventListener('DOMContentLoaded', async () => {
+    const now = new Date();
+    const isoNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('repairStart').value = isoNow;
+    document.getElementById('repairEnd').value = isoNow;
+    
+    await loadUserDB();
+    bindEvents();
+    
+    const lastUser = localStorage.getItem('MR_LAST_USER');
+    if (lastUser) {
+        const u = JSON.parse(lastUser);
+        document.getElementById('userId').value = u.id;
+        document.getElementById('userName').value = u.name;
+        verifiedUser = u;
+        await loadRequests();
+    }
+});
+
+async function loadUserDB() {
+    try {
+        const res = await fetch('사원DB.json');
+        userDB = await res.json();
+    } catch (e) {
+        userDB = [];
+    }
+}
+
+function bindEvents() {
+    document.getElementById('userId').addEventListener('input', (e) => {
+        const id = e.target.value.trim();
+        if (id.length === 4) {
+            const user = userDB.find(u => u.ID === id);
+            if (user) openPinModal(user);
+            else { toast('등록되지 않은 사원ID', 'error'); document.getElementById('userName').value = ''; verifiedUser = null; }
+        }
+    });
+    
+    document.querySelectorAll('.repair-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.repair-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedRepairType = btn.dataset.type;
+        });
+    });
+    
+    document.getElementById('pinInput').addEventListener('input', (e) => {
+        if (e.target.value.length === 4) verifyPin();
+    });
+}
+
+function openPinModal(user) {
+    pendingUser = user;
+    document.getElementById('pinUserInfo').textContent = `${user.부서} · ${user.직위} · ${user.성명}`;
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinModal').classList.add('show');
+    setTimeout(() => document.getElementById('pinInput').focus(), 100);
+}
+
+async function verifyPin() {
+    const pin = document.getElementById('pinInput').value;
+    if (pin !== pendingUser.ID) {
+        toast('PIN 불일치', 'error');
+        document.getElementById('pinInput').value = '';
+        return;
+    }
+    verifiedUser = {
+        id: pendingUser.ID,
+        name: pendingUser.성명,
+        dept: pendingUser.부서,
+        position: pendingUser.직위
+    };
+    document.getElementById('userName').value = verifiedUser.name;
+    localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
+    document.getElementById('pinModal').classList.remove('show');
+    toast(`${verifiedUser.name}님 환영합니다`, 'success');
+    await loadRequests();
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+    renderRequests();
+}
+
+async function loadRequests() {
+    try {
+        const url = `${SB_URL}/rest/v1/mm_mold_repair?status=in.(requested,in_progress)&order=request_date.desc,id.desc&limit=200`;
+        const res = await fetch(url, { headers: sbHeaders() });
+        requests = await res.json();
+        renderRequests();
+    } catch (e) {
+        console.error(e);
+        toast('의뢰 목록 로드 실패', 'error');
+    }
+}
+
+function renderRequests() {
+    const filtered = requests.filter(r => r.status === currentTab);
+    const q = document.getElementById('searchKey').value.trim().toLowerCase();
+    const list = q
+        ? filtered.filter(r => (r.repair_no || '').toLowerCase().includes(q) || (r.mold_code || '').toLowerCase().includes(q))
+        : filtered;
+    
+    const box = document.getElementById('reqList');
+    if (!list.length) {
+        box.innerHTML = '<div class="empty">해당하는 의뢰가 없습니다</div>';
+        return;
+    }
+    
+    box.innerHTML = '';
+    list.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'req-item' + (selectedReq && selectedReq.id === r.id ? ' selected' : '');
+        div.innerHTML = `
+            <div class="top">
+                <div class="no">${r.repair_no}</div>
+                <div>
+                    <span class="badge ${r.urgency || 'normal'}">${urgencyLabel(r.urgency)}</span>
+                    <span class="badge ${r.status}">${statusLabel(r.status)}</span>
+                </div>
+            </div>
+            <div class="info">
+                <b>${r.mold_code || '-'}</b> · ${r.item_code || '-'} ${r.item_name || ''}<br>
+                ${r.defect_type || '-'} · ${r.defect_part || '-'} · ${r.request_user || '-'} (${r.request_date})
+            </div>
+            <div class="desc">${(r.defect_desc || '').substring(0, 80)}</div>
+        `;
+        div.addEventListener('click', () => selectRequest(r));
+        box.appendChild(div);
+    });
+}
+
+function urgencyLabel(u) {
+    return u === 'urgent' ? '🚨긴급' : u === 'low' ? '낮음' : '보통';
+}
+function statusLabel(s) {
+    return s === 'requested' ? '의뢰' : s === 'in_progress' ? '진행' : s === 'completed' ? '완료' : s;
+}
+
+function selectRequest(r) {
+    selectedReq = r;
+    renderRequests();
+    
+    document.getElementById('repairNo').value = r.repair_no;
+    document.getElementById('moldCode').value = `${r.mold_code} ${r.mold_name ? '· '+r.mold_name : ''}`;
+    document.getElementById('requestUser').value = `${r.request_user || ''} (${r.request_dept || ''})`;
+    document.getElementById('requestDate').value = r.request_date;
+    document.getElementById('defectDesc').value = `[${r.defect_type || ''}/${r.defect_part || ''}] ${r.defect_desc || ''}`;
+    
+    // 의뢰 사진
+    const reqPhotos = document.getElementById('requestPhotos');
+    reqPhotos.innerHTML = '';
+    (r.defect_photos || []).forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'photo-item';
+        const img = document.createElement('img');
+        img.src = p;
+        img.addEventListener('click', () => showFullImg(p));
+        div.appendChild(img);
+        reqPhotos.appendChild(div);
+    });
+    
+    // 진행중인 경우 기존 데이터 복원
+    if (r.status === 'in_progress') {
+        if (r.repair_start_dt) document.getElementById('repairStart').value = r.repair_start_dt.slice(0, 16);
+        document.getElementById('repairAction').value = r.repair_action || '';
+        document.getElementById('causeAnalysis').value = r.cause_analysis || '';
+        document.getElementById('prevention').value = r.prevention || '';
+        if (r.repair_type) {
+            selectedRepairType = r.repair_type;
+            document.querySelectorAll('.repair-type-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.type === r.repair_type);
+            });
+        }
+        photos = r.repair_photos || [];
+        renderPhotos();
+        
+        // 부품
+        const parts = r.parts_used || [];
+        document.getElementById('partsList').innerHTML = '';
+        if (parts.length === 0) addPartRow();
+        else parts.forEach(p => addPartRow(p));
+    } else {
+        // 신규
+        document.getElementById('repairAction').value = '';
+        document.getElementById('causeAnalysis').value = '';
+        document.getElementById('prevention').value = '';
+        selectedRepairType = '';
+        document.querySelectorAll('.repair-type-btn').forEach(b => b.classList.remove('active'));
+        photos = [];
+        renderPhotos();
+        document.getElementById('partsList').innerHTML = '';
+        addPartRow();
+    }
+    
+    document.getElementById('repairForm').style.display = 'block';
+    document.getElementById('repairForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ============ 부품 행 ============
+function addPartRow(data = {}) {
+    const row = document.createElement('div');
+    row.className = 'parts-row';
+    row.innerHTML = `
+        <input type="text" placeholder="부품명" class="p-name" value="${data.name || ''}">
+        <input type="number" placeholder="수량" class="p-qty" value="${data.qty || ''}" inputmode="numeric">
+        <input type="number" placeholder="비용(원)" class="p-cost" value="${data.cost || ''}" inputmode="numeric">
+        <button type="button" class="del-part">✕</button>
+    `;
+    row.querySelector('.del-part').addEventListener('click', () => {
+        row.remove();
+        recalcTotal();
+    });
+    row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalcTotal));
+    document.getElementById('partsList').appendChild(row);
+    recalcTotal();
+}
+
+function recalcTotal() {
+    let total = 0;
+    document.querySelectorAll('.parts-row').forEach(r => {
+        const cost = parseFloat(r.querySelector('.p-cost').value) || 0;
+        total += cost;
+    });
+    document.getElementById('totalCost').value = total.toLocaleString() + ' 원';
+}
+
+function collectParts() {
+    const parts = [];
+    document.querySelectorAll('.parts-row').forEach(r => {
+        const name = r.querySelector('.p-name').value.trim();
+        const qty = parseFloat(r.querySelector('.p-qty').value) || 0;
+        const cost = parseFloat(r.querySelector('.p-cost').value) || 0;
+        if (name) parts.push({ name, qty, cost });
+    });
+    return parts;
+}
+
+// ============ 사진 ============
+async function addPhotos(e) {
+    const files = Array.from(e.target.files);
+    for (const file of files) {
+        if (photos.length >= 5) { toast('최대 5장', 'error'); break; }
+        try {
+            const c = await compressImage(file, 1024, 0.7);
+            photos.push(c);
+        } catch (err) { console.error(err); }
+    }
+    renderPhotos();
+    e.target.value = '';
+}
+
+function compressImage(file, maxWidth, quality) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.onerror = reject;
+            img.src = ev.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderPhotos() {
+    const grid = document.getElementById('photoGrid');
+    grid.innerHTML = '';
+    photos.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'photo-item';
+        const img = document.createElement('img');
+        img.src = p;
+        img.addEventListener('click', () => showFullImg(p));
+        const del = document.createElement('button');
+        del.className = 'photo-del';
+        del.textContent = '×';
+        del.addEventListener('click', (e) => { e.stopPropagation(); photos.splice(i, 1); renderPhotos(); });
+        div.appendChild(img);
+        div.appendChild(del);
+        grid.appendChild(div);
+    });
+}
+
+function showFullImg(src) {
+    document.getElementById('fullImgSrc').src = src;
+    document.getElementById('fullImg').classList.add('show');
+}
+
+// ============ 저장 ============
+function collectPayload(status) {
+    return {
+        status,
+        repair_start_dt: document.getElementById('repairStart').value || null,
+        repair_end_dt: status === 'completed' ? (document.getElementById('repairEnd').value || null) : null,
+        repair_user_id: verifiedUser.id,
+        repair_user: verifiedUser.name,
+        repair_type: selectedRepairType,
+        repair_action: document.getElementById('repairAction').value.trim(),
+        cause_analysis: document.getElementById('causeAnalysis').value.trim(),
+        prevention: document.getElementById('prevention').value.trim(),
+        parts_used: collectParts(),
+        repair_cost: collectParts().reduce((s, p) => s + (p.cost || 0), 0),
+        repair_photos: photos,
+        updated_at: new Date().toISOString()
+    };
+}
+
+async function updateRecord(payload) {
+    const url = `${SB_URL}/rest/v1/mm_mold_repair?id=eq.${selectedReq.id}`;
+    const res = await fetch(url, {
+        method: 'PATCH',
+        headers: sbHeaders(),
+        body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+    }
+    return res.json();
+}
+
+async function saveProgress() {
+    if (!verifiedUser) { toast('수리자 PIN 인증 필요', 'error'); return; }
+    if (!selectedReq) { toast('의뢰를 선택하세요', 'error'); return; }
+    
+    try {
+        await updateRecord(collectPayload('in_progress'));
+        toast('진행중 저장 완료', 'success');
+        await loadRequests();
+    } catch (e) {
+        toast('저장 실패: ' + e.message, 'error');
+    }
+}
+
+async function submitComplete() {
+    if (!verifiedUser) { toast('수리자 PIN 인증 필요', 'error'); return; }
+    if (!selectedReq) { toast('의뢰를 선택하세요', 'error'); return; }
+    if (!selectedRepairType) { toast('수리유형을 선택하세요', 'error'); return; }
+    if (!document.getElementById('repairAction').value.trim()) { toast('조치내용을 입력하세요', 'error'); return; }
+    if (!document.getElementById('repairStart').value || !document.getElementById('repairEnd').value) {
+        toast('수리 시작/완료 시간 필수', 'error'); return;
+    }
+    
+    if (!confirm('수리 완료로 등록하시겠습니까?\n등록 후에는 수정이 제한됩니다.')) return;
+    
+    try {
+        await updateRecord(collectPayload('completed'));
+        toast(`완료 등록: ${selectedReq.repair_no}`, 'success');
+        setTimeout(() => {
+            selectedReq = null;
+            document.getElementById('repairForm').style.display = 'none';
+            loadRequests();
+        }, 1500);
+    } catch (e) {
+        toast('등록 실패: ' + e.message, 'error');
+    }
+}
+
+function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

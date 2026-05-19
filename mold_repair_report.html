@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>금형 수리보고서 v1.0</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
+.container { max-width: 1100px; margin: 0 auto; }
+
+header { background: linear-gradient(135deg, #2563eb, #1e40af); padding: 16px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+h1 { font-size: 22px; font-weight: 700; }
+.subtitle { font-size: 12px; opacity: 0.9; margin-top: 4px; }
+
+.card { background: #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #334155; }
+.card-title { font-size: 14px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.card-title::before { content: ''; width: 4px; height: 16px; background: #2563eb; border-radius: 2px; }
+
+.filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; align-items: end; }
+@media (max-width: 768px) { .filter-row { grid-template-columns: 1fr 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+label { font-size: 11px; color: #94a3b8; font-weight: 600; }
+input, select {
+    padding: 8px 10px; border-radius: 6px; border: 1px solid #475569;
+    background: #0f172a; color: #e2e8f0; font-size: 13px; font-family: inherit;
+}
+
+.btn { padding: 8px 14px; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-primary { background: linear-gradient(135deg, #2563eb, #1e40af); color: white; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-success { background: #16a34a; color: white; }
+.btn-action-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
+@media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+.stat-card { background: #1e293b; border-radius: 10px; padding: 14px; text-align: center; border: 1px solid #334155; }
+.stat-card .num { font-size: 24px; font-weight: 700; }
+.stat-card .lbl { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+.stat-card.total .num { color: #60a5fa; }
+.stat-card.req .num { color: #f59e0b; }
+.stat-card.prog .num { color: #3b82f6; }
+.stat-card.done .num { color: #16a34a; }
+.stat-card.cost .num { color: #ec4899; font-size: 18px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #0f172a; padding: 8px 6px; text-align: left; color: #cbd5e1; border-bottom: 1px solid #475569; font-weight: 700; white-space: nowrap; }
+td { padding: 8px 6px; border-bottom: 1px solid #334155; color: #e2e8f0; }
+tr:hover { background: #0f172a; cursor: pointer; }
+
+.badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
+.badge.urgent { background: #7f1d1d; color: #fecaca; }
+.badge.normal { background: #1e3a8a; color: #bfdbfe; }
+.badge.low { background: #14532d; color: #bbf7d0; }
+.badge.requested { background: #78350f; color: #fde68a; }
+.badge.in_progress { background: #1e3a8a; color: #bfdbfe; }
+.badge.completed { background: #14532d; color: #bbf7d0; }
+.badge.cancelled { background: #4b5563; color: #d1d5db; }
+
+.empty { padding: 30px; text-align: center; color: #64748b; }
+
+/* 보고서 출력 */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 12px; overflow-y: auto; }
+.modal.show { display: flex; }
+.modal-content { background: white; color: #1f2937; border-radius: 12px; padding: 24px; width: 100%; max-width: 800px; max-height: 95vh; overflow-y: auto; }
+.modal-close { position: sticky; top: 0; float: right; background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; z-index: 10; }
+
+/* 보고서 시트 */
+.report { font-family: 'Malgun Gothic', sans-serif; color: #000; }
+.report h2 { text-align: center; font-size: 22px; margin: 10px 0 16px 0; letter-spacing: 4px; border-bottom: 3px double #000; padding-bottom: 10px; }
+.report .meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 12px; color: #555; }
+.report table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+.report th, .report td { border: 1px solid #555; padding: 6px 8px; }
+.report th { background: #e5e7eb; font-weight: 700; width: 110px; text-align: center; }
+.report .section-title { background: #1f2937; color: white; padding: 6px 10px; font-weight: 700; font-size: 13px; margin: 14px 0 6px 0; }
+.report .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 12px 0; }
+.report .photos img { width: 100%; border: 1px solid #999; aspect-ratio: 4/3; object-fit: cover; }
+.report .sign-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 16px; }
+.report .sign-box { border: 1px solid #555; }
+.report .sign-box .sh { background: #e5e7eb; padding: 4px; text-align: center; font-size: 11px; font-weight: 700; }
+.report .sign-box .sb { height: 50px; padding: 4px; text-align: center; font-size: 11px; }
+
+@media print {
+    body * { visibility: hidden; }
+    .modal, .modal * { visibility: visible; }
+    .modal { position: absolute; background: white; inset: 0; padding: 0; }
+    .modal-content { box-shadow: none; max-height: none; max-width: none; }
+    .modal-close { display: none; }
+}
+
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 12px 20px; border-radius: 8px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.toast.success { border-color: #16a34a; }
+.toast.error { border-color: #dc2626; }
+
+footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+    <h1>📊 금형 수리보고서</h1>
+    <div class="subtitle">Mold Repair Report · v1.0</div>
+</header>
+
+<!-- 필터 -->
+<div class="card">
+    <div class="card-title">조회 조건</div>
+    <div class="filter-row">
+        <div class="field">
+            <label>시작일</label>
+            <input type="date" id="dateFrom">
+        </div>
+        <div class="field">
+            <label>종료일</label>
+            <input type="date" id="dateTo">
+        </div>
+        <div class="field">
+            <label>상태</label>
+            <select id="filterStatus">
+                <option value="">전체</option>
+                <option value="requested">의뢰됨</option>
+                <option value="in_progress">진행중</option>
+                <option value="completed">완료</option>
+                <option value="cancelled">취소</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>검색</label>
+            <input type="text" id="filterKey" placeholder="금형/품번/의뢰번호">
+        </div>
+    </div>
+    <div class="btn-action-row">
+        <button class="btn btn-primary" onclick="loadData()">🔍 조회</button>
+        <button class="btn btn-success" onclick="exportCSV()">📥 CSV 다운로드</button>
+        <button class="btn btn-secondary" onclick="setMonth()">이번달</button>
+        <button class="btn btn-secondary" onclick="setLast3M()">최근 3개월</button>
+        <button class="btn btn-secondary" onclick="setYear()">올해</button>
+    </div>
+</div>
+
+<!-- 통계 -->
+<div class="stats-grid" id="statsBox"></div>
+
+<!-- 목록 -->
+<div class="card">
+    <div class="card-title">수리 이력</div>
+    <div class="table-wrap">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>의뢰번호</th>
+                    <th>금형</th>
+                    <th>품번</th>
+                    <th>불량유형</th>
+                    <th>긴급도</th>
+                    <th>상태</th>
+                    <th>의뢰자</th>
+                    <th>의뢰일</th>
+                    <th>수리자</th>
+                    <th>수리완료</th>
+                    <th>리드타임</th>
+                    <th>비용(원)</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<footer>금형 수리보고서 시스템 · Rev 1.0 · 태진다이텍 품질관리팀</footer>
+</div>
+
+<!-- 보고서 모달 -->
+<div class="modal" id="reportModal">
+    <div class="modal-content">
+        <button class="modal-close" onclick="document.getElementById('reportModal').classList.remove('show')">✕ 닫기</button>
+        <button class="btn btn-primary" style="float:right; margin-right:6px;" onclick="window.print()">🖨️ 인쇄</button>
+        <div style="clear:both;"></div>
+        <div class="report" id="reportContent"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+
+const sbHeaders = () => ({
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json'
+});
+
+let allData = [];
+
+window.addEventListener('DOMContentLoaded', () => {
+    setMonth();
+    loadData();
+});
+
+function setMonth() {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1);
+    document.getElementById('dateFrom').value = first.toISOString().slice(0, 10);
+    document.getElementById('dateTo').value = today.toISOString().slice(0, 10);
+}
+function setLast3M() {
+    const today = new Date();
+    const from = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    document.getElementById('dateFrom').value = from.toISOString().slice(0, 10);
+    document.getElementById('dateTo').value = today.toISOString().slice(0, 10);
+}
+function setYear() {
+    const today = new Date();
+    document.getElementById('dateFrom').value = `${today.getFullYear()}-01-01`;
+    document.getElementById('dateTo').value = today.toISOString().slice(0, 10);
+}
+
+async function loadData() {
+    const from = document.getElementById('dateFrom').value;
+    const to = document.getElementById('dateTo').value;
+    const status = document.getElementById('filterStatus').value;
+    const key = document.getElementById('filterKey').value.trim();
+    
+    let url = `${SB_URL}/rest/v1/mm_mold_repair?select=*&order=request_date.desc,id.desc&limit=2000`;
+    if (from) url += `&request_date=gte.${from}`;
+    if (to) url += `&request_date=lte.${to}`;
+    if (status) url += `&status=eq.${status}`;
+    
+    try {
+        const res = await fetch(url, { headers: sbHeaders() });
+        let data = await res.json();
+        if (key) {
+            const q = key.toLowerCase();
+            data = data.filter(r =>
+                (r.repair_no || '').toLowerCase().includes(q) ||
+                (r.mold_code || '').toLowerCase().includes(q) ||
+                (r.item_code || '').toLowerCase().includes(q) ||
+                (r.item_name || '').toLowerCase().includes(q) ||
+                (r.request_user || '').toLowerCase().includes(q)
+            );
+        }
+        allData = data;
+        renderStats();
+        renderTable();
+    } catch (e) {
+        console.error(e);
+        toast('데이터 로드 실패', 'error');
+    }
+}
+
+function renderStats() {
+    const total = allData.length;
+    const req = allData.filter(r => r.status === 'requested').length;
+    const prog = allData.filter(r => r.status === 'in_progress').length;
+    const done = allData.filter(r => r.status === 'completed').length;
+    const totalCost = allData.reduce((s, r) => s + (parseFloat(r.repair_cost) || 0), 0);
+    
+    document.getElementById('statsBox').innerHTML = `
+        <div class="stat-card total"><div class="num">${total}</div><div class="lbl">전체</div></div>
+        <div class="stat-card req"><div class="num">${req}</div><div class="lbl">의뢰됨</div></div>
+        <div class="stat-card prog"><div class="num">${prog}</div><div class="lbl">진행중</div></div>
+        <div class="stat-card done"><div class="num">${done}</div><div class="lbl">완료</div></div>
+        <div class="stat-card cost"><div class="num">${totalCost.toLocaleString()}원</div><div class="lbl">총 비용</div></div>
+    `;
+}
+
+function renderTable() {
+    const body = document.getElementById('dataBody');
+    if (!allData.length) {
+        body.innerHTML = '<tr><td colspan="12" class="empty">데이터가 없습니다</td></tr>';
+        return;
+    }
+    body.innerHTML = '';
+    allData.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b style="color:#60a5fa;">${r.repair_no}</b></td>
+            <td>${r.mold_code || '-'}<br><span style="font-size:10px;color:#94a3b8;">${r.mold_name || ''}</span></td>
+            <td>${r.item_code || '-'}<br><span style="font-size:10px;color:#94a3b8;">${r.item_name || ''}</span></td>
+            <td>${r.defect_type || '-'}</td>
+            <td><span class="badge ${r.urgency || 'normal'}">${urgencyLabel(r.urgency)}</span></td>
+            <td><span class="badge ${r.status}">${statusLabel(r.status)}</span></td>
+            <td>${r.request_user || '-'}</td>
+            <td>${r.request_date || '-'}</td>
+            <td>${r.repair_user || '-'}</td>
+            <td>${r.repair_end_dt ? r.repair_end_dt.slice(0, 16).replace('T', ' ') : '-'}</td>
+            <td>${leadTime(r)}</td>
+            <td style="text-align:right;">${(r.repair_cost || 0).toLocaleString()}</td>
+        `;
+        tr.addEventListener('click', () => openReport(r));
+        body.appendChild(tr);
+    });
+}
+
+function leadTime(r) {
+    if (!r.repair_end_dt) return '-';
+    const start = new Date(r.request_date);
+    const end = new Date(r.repair_end_dt);
+    const ms = end - start;
+    const h = ms / 1000 / 3600;
+    if (h < 24) return `${h.toFixed(1)}h`;
+    return `${(h / 24).toFixed(1)}d`;
+}
+
+function urgencyLabel(u) { return u === 'urgent' ? '🚨긴급' : u === 'low' ? '낮음' : '보통'; }
+function statusLabel(s) { return s === 'requested' ? '의뢰' : s === 'in_progress' ? '진행' : s === 'completed' ? '완료' : s === 'cancelled' ? '취소' : s; }
+
+// ============ 보고서 출력 ============
+function openReport(r) {
+    const reqPhotos = (r.defect_photos || []).map(p => `<img src="${p}">`).join('');
+    const repPhotos = (r.repair_photos || []).map(p => `<img src="${p}">`).join('');
+    const parts = (r.parts_used || []).map(p => 
+        `<tr><td>${p.name}</td><td style="text-align:center;">${p.qty || ''}</td><td style="text-align:right;">${(p.cost || 0).toLocaleString()}원</td></tr>`
+    ).join('');
+    const partsTable = parts ? 
+        `<table style="margin-top:6px;"><thead><tr><th style="width:auto;">부품명</th><th style="width:80px;">수량</th><th style="width:120px;">비용</th></tr></thead><tbody>${parts}<tr><td colspan="2" style="text-align:right;font-weight:700;">합 계</td><td style="text-align:right;font-weight:700;">${(r.repair_cost || 0).toLocaleString()}원</td></tr></tbody></table>`
+        : '<div style="font-size:11px;color:#888;padding:6px;">사용 부품 없음</div>';
+    
+    document.getElementById('reportContent').innerHTML = `
+        <h2>금 형 수 리 보 고 서</h2>
+        <div class="meta">
+            <span>의뢰번호: <b>${r.repair_no}</b></span>
+            <span>출력일: ${new Date().toLocaleString('ko-KR')}</span>
+            <span>상태: <b>${statusLabel(r.status)}</b></span>
+        </div>
+        
+        <div class="section-title">1. 기본 정보</div>
+        <table>
+            <tr><th>금형코드</th><td>${r.mold_code || '-'}</td><th>금형명</th><td>${r.mold_name || '-'}</td></tr>
+            <tr><th>품번</th><td>${r.item_code || '-'}</td><th>품명</th><td>${r.item_name || '-'}</td></tr>
+            <tr><th>발생설비</th><td>${r.machine_code || '-'}</td><th>SHOT수</th><td>${r.shot_count ? r.shot_count.toLocaleString() : '-'}</td></tr>
+        </table>
+        
+        <div class="section-title">2. 의뢰 내용</div>
+        <table>
+            <tr><th>의뢰일</th><td>${r.request_date || '-'}</td><th>긴급도</th><td>${urgencyLabel(r.urgency)}</td></tr>
+            <tr><th>의뢰자</th><td>${r.request_user || '-'} (${r.request_dept || '-'})</td><th>불량유형</th><td>${r.defect_type || '-'}</td></tr>
+            <tr><th>발생부위</th><td colspan="3">${r.defect_part || '-'}</td></tr>
+            <tr><th>현상 상세</th><td colspan="3" style="white-space:pre-wrap; min-height:50px;">${escapeHtml(r.defect_desc || '')}</td></tr>
+        </table>
+        ${reqPhotos ? `<div class="section-title">2-1. 의뢰 사진</div><div class="photos">${reqPhotos}</div>` : ''}
+        
+        <div class="section-title">3. 수리 내용</div>
+        <table>
+            <tr><th>수리자</th><td>${r.repair_user || '-'}</td><th>수리유형</th><td>${r.repair_type || '-'}</td></tr>
+            <tr><th>수리 시작</th><td>${r.repair_start_dt ? r.repair_start_dt.slice(0, 16).replace('T', ' ') : '-'}</td><th>수리 완료</th><td>${r.repair_end_dt ? r.repair_end_dt.slice(0, 16).replace('T', ' ') : '-'}</td></tr>
+            <tr><th>리드타임</th><td colspan="3">${leadTime(r)}</td></tr>
+            <tr><th>조치내용</th><td colspan="3" style="white-space:pre-wrap; min-height:60px;">${escapeHtml(r.repair_action || '')}</td></tr>
+            <tr><th>원인 분석</th><td colspan="3" style="white-space:pre-wrap; min-height:50px;">${escapeHtml(r.cause_analysis || '')}</td></tr>
+            <tr><th>재발방지</th><td colspan="3" style="white-space:pre-wrap; min-height:50px;">${escapeHtml(r.prevention || '')}</td></tr>
+        </table>
+        
+        <div class="section-title">4. 사용 부품 / 비용</div>
+        ${partsTable}
+        
+        ${repPhotos ? `<div class="section-title">5. 수리 사진</div><div class="photos">${repPhotos}</div>` : ''}
+        
+        <div class="sign-row">
+            <div class="sign-box"><div class="sh">의뢰자</div><div class="sb">${r.request_user || ''}</div></div>
+            <div class="sign-box"><div class="sh">수리자</div><div class="sb">${r.repair_user || ''}</div></div>
+            <div class="sign-box"><div class="sh">품질확인</div><div class="sb"></div></div>
+            <div class="sign-box"><div class="sh">팀장 승인</div><div class="sb"></div></div>
+        </div>
+    `;
+    document.getElementById('reportModal').classList.add('show');
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============ CSV 다운로드 ============
+function exportCSV() {
+    if (!allData.length) { toast('데이터 없음', 'error'); return; }
+    const headers = ['의뢰번호','금형코드','금형명','품번','품명','의뢰일','의뢰자','의뢰부서','발생설비','SHOT수','불량유형','발생부위','현상','긴급도','상태','수리시작','수리완료','수리자','수리유형','조치내용','원인','재발방지','비용'];
+    const rows = allData.map(r => [
+        r.repair_no, r.mold_code, r.mold_name, r.item_code, r.item_name,
+        r.request_date, r.request_user, r.request_dept, r.machine_code, r.shot_count,
+        r.defect_type, r.defect_part, r.defect_desc, urgencyLabel(r.urgency), statusLabel(r.status),
+        r.repair_start_dt, r.repair_end_dt, r.repair_user, r.repair_type, r.repair_action,
+        r.cause_analysis, r.prevention, r.repair_cost
+    ]);
+    const csv = [headers, ...rows].map(row =>
+        row.map(c => `"${String(c == null ? '' : c).replace(/"/g, '""').replace(/\n/g, ' ')}"`).join(',')
+    ).join('\r\n');
+    
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `금형수리이력_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV 다운로드 완료', 'success');
+}
+
+function toast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
