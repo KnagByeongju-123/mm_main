@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v1.7</title>
+<title>스마트팩토리 v1.8</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -98,6 +98,7 @@ html, body {
 }
 .acc.c-hq:hover, .acc.c-hq:focus-within { background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.4); }
 .acc.c-f1:hover, .acc.c-f1:focus-within { background: rgba(94,234,212,0.08); border-color: rgba(94,234,212,0.4); }
+.acc.c-repair:hover, .acc.c-repair:focus-within { background: rgba(252,165,165,0.08); border-color: rgba(252,165,165,0.4); }
 .acc.c-f2:hover, .acc.c-f2:focus-within { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.4); }
 .acc.c-imp:hover, .acc.c-imp:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
 .acc.c-master:hover, .acc.c-master:focus-within { background: rgba(253,186,116,0.08); border-color: rgba(253,186,116,0.4); }
@@ -108,6 +109,7 @@ html, body {
 }
 .acc.c-hq[open] { box-shadow: 0 4px 20px rgba(125,211,252,0.22); border-color: rgba(125,211,252,0.55); }
 .acc.c-f1[open] { box-shadow: 0 4px 20px rgba(94,234,212,0.22); border-color: rgba(94,234,212,0.55); }
+.acc.c-repair[open] { box-shadow: 0 4px 20px rgba(252,165,165,0.22); border-color: rgba(252,165,165,0.55); }
 .acc.c-f2[open] { box-shadow: 0 4px 20px rgba(147,197,253,0.22); border-color: rgba(147,197,253,0.55); }
 .acc.c-imp[open] { box-shadow: 0 4px 20px rgba(196,181,253,0.22); border-color: rgba(196,181,253,0.55); }
 .acc.c-master[open] { box-shadow: 0 4px 20px rgba(253,186,116,0.22); border-color: rgba(253,186,116,0.55); }
@@ -133,6 +135,7 @@ html, body {
 }
 .acc.c-hq[open] .icon     { box-shadow: 0 0 16px rgba(125,211,252,0.4); }
 .acc.c-f1[open] .icon     { box-shadow: 0 0 16px rgba(94,234,212,0.4); }
+.acc.c-repair[open] .icon { box-shadow: 0 0 16px rgba(252,165,165,0.4); }
 .acc.c-f2[open] .icon     { box-shadow: 0 0 16px rgba(147,197,253,0.4); }
 .acc.c-imp[open] .icon    { box-shadow: 0 0 16px rgba(196,181,253,0.4); }
 .acc.c-master[open] .icon { box-shadow: 0 0 16px rgba(253,186,116,0.4); }
@@ -143,6 +146,7 @@ html, body {
 }
 .acc.c-hq[open] .title     { color: #bae6fd; }
 .acc.c-f1[open] .title     { color: #99f6e4; }
+.acc.c-repair[open] .title { color: #fecaca; }
 .acc.c-f2[open] .title     { color: #bfdbfe; }
 .acc.c-imp[open] .title    { color: #ddd6fe; }
 .acc.c-master[open] .title { color: #fed7aa; }
@@ -165,6 +169,7 @@ html, body {
 
 .acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
 .acc.c-f1 .icon     { background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.3)); color: #5eead4; }
+.acc.c-repair .icon { background: linear-gradient(135deg, rgba(248,113,113,0.2), rgba(239,68,68,0.3)); color: #fca5a5; }
 .acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
 .acc.c-imp .icon    { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
@@ -283,7 +288,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v1.7</span></h1>
+  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v1.8</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -301,7 +306,7 @@ body.locked { overflow: hidden; }
 
 <div class="container">
   <details class="acc c-hq">
-    <summary><div class="icon">🔧</div><div class="title" data-i18n="hq">본사</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <summary><div class="icon">🔧</div><div class="title" data-i18n="hq">재고(본사)</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="head_moldpart.html">
         <div class="s-icon">📦</div>
@@ -314,13 +319,42 @@ body.locked { overflow: hidden; }
     </div>
   </details>
   <details class="acc c-f1">
-    <summary><div class="icon">⚙️</div><div class="title" data-i18n="f1">1공장</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <summary><div class="icon">⚙️</div><div class="title" data-i18n="f1">재고(1공장)</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
       <a class="sub-item" href="first_factory.html">
         <div class="s-icon">📦</div>
         <div class="s-text">
           <div class="s-label" data-i18n="menu_mold_f1">금형부품 재고관리</div>
           <div class="s-desc" data-i18n="menu_mold_f1_desc">프레스부품 입출고 / 재고 조회</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+  <details class="acc c-repair">
+    <summary><div class="icon">🛠️</div><div class="title" data-i18n="repair">금형수리</div><div class="count">3</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="mold_repair_request.html">
+        <div class="s-icon">📨</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_repair_req">수리의뢰</div>
+          <div class="s-desc" data-i18n="menu_repair_req_desc">금형 불량 발생 시 수리 의뢰 등록</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+      <a class="sub-item" href="mold_repair_complete.html">
+        <div class="s-icon">✅</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_repair_done">수리완료</div>
+          <div class="s-desc" data-i18n="menu_repair_done_desc">수리 진행/완료 처리 및 결과 등록</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+      <a class="sub-item" href="mold_repair_report.html">
+        <div class="s-icon">📊</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_repair_report">이력조회·보고서출력</div>
+          <div class="s-desc" data-i18n="menu_repair_report_desc">기간별 통계 / 상세 보고서 인쇄 / CSV</div>
         </div>
         <div class="s-arrow">›</div>
       </a>
@@ -374,7 +408,7 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v1.7 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
+  <div class="footer">v1.8 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
 </div>
 
 <script>
@@ -420,8 +454,9 @@ const I18N = {
     info_position: '🎖 직위: ',
     info_auto_lock: '⏱ 자동 잠금까지: ',
     info_days: '일',
-    hq: '본사',
-    f1: '1공장',
+    hq: '재고(본사)',
+    f1: '재고(1공장)',
+    repair: '금형수리',
     tryout: 'Tryout',
     improvement: '개선활동',
     master: '마스터',
@@ -429,6 +464,12 @@ const I18N = {
     menu_mold_hq_desc: '소모품 입출고 / 재고 조회',
     menu_mold_f1: '금형부품 재고관리',
     menu_mold_f1_desc: '프레스부품 입출고 / 재고 조회',
+    menu_repair_req: '수리의뢰',
+    menu_repair_req_desc: '금형 불량 발생 시 수리 의뢰 등록',
+    menu_repair_done: '수리완료',
+    menu_repair_done_desc: '수리 진행/완료 처리 및 결과 등록',
+    menu_repair_report: '이력조회·보고서출력',
+    menu_repair_report_desc: '기간별 통계 / 상세 보고서 인쇄 / CSV',
     menu_tryout: 'Tryout 보고서',
     menu_tryout_desc: '개발 단계 시작품 테스트 결과 작성',
     menu_improvement: '개선활동 보고',
@@ -461,8 +502,9 @@ const I18N = {
     info_position: '🎖 Position: ',
     info_auto_lock: '⏱ Bis zur automatischen Sperrung: ',
     info_days: ' Tage',
-    hq: 'Zentrale',
-    f1: 'Werk 1',
+    hq: 'Lager (Zentrale)',
+    f1: 'Lager (Werk 1)',
+    repair: 'Werkzeugreparatur',
     tryout: 'Tryout',
     improvement: 'Verbesserung',
     master: 'Master',
@@ -470,6 +512,12 @@ const I18N = {
     menu_mold_hq_desc: 'Wareneingang/-ausgang / Bestand',
     menu_mold_f1: 'Lagerverwaltung (Formteile)',
     menu_mold_f1_desc: 'Pressteile-Ein-/Ausgang / Bestand',
+    menu_repair_req: 'Reparaturauftrag',
+    menu_repair_req_desc: 'Reparaturanfrage bei Werkzeugfehler',
+    menu_repair_done: 'Reparatur abgeschlossen',
+    menu_repair_done_desc: 'Bearbeitung / Abschluss / Ergebnis',
+    menu_repair_report: 'Verlauf / Bericht',
+    menu_repair_report_desc: 'Statistik / Druckbericht / CSV',
     menu_tryout: 'Tryout-Bericht',
     menu_tryout_desc: 'Testergebnisse für Prototypen in der Entwicklungsphase',
     menu_improvement: 'Verbesserungsbericht',
@@ -502,8 +550,9 @@ const I18N = {
     info_position: '🎖 Лауазымы: ',
     info_auto_lock: '⏱ Автоматты бұғаттауға дейін: ',
     info_days: ' күн',
-    hq: 'Бас кеңсе',
-    f1: '1-зауыт',
+    hq: 'Қойма (Бас кеңсе)',
+    f1: 'Қойма (1-зауыт)',
+    repair: 'Қалыпты жөндеу',
     tryout: 'Tryout',
     improvement: 'Жақсарту',
     master: 'Мастер',
@@ -511,6 +560,12 @@ const I18N = {
     menu_mold_hq_desc: 'Кіріс/шығыс / қалдықты қарау',
     menu_mold_f1: 'Қойма басқару (қалып бөлшектері)',
     menu_mold_f1_desc: 'Баспасөз бөлшектерінің кірісі/шығысы / қалдықты қарау',
+    menu_repair_req: 'Жөндеу өтінімі',
+    menu_repair_req_desc: 'Қалып ақаулығы кезінде жөндеу өтінімін тіркеу',
+    menu_repair_done: 'Жөндеу аяқталды',
+    menu_repair_done_desc: 'Жөндеу орындау / аяқтау / нәтиже жазу',
+    menu_repair_report: 'Тарих / есеп шығару',
+    menu_repair_report_desc: 'Кезеңдік статистика / есеп басып шығару / CSV',
     menu_tryout: 'Tryout есебі',
     menu_tryout_desc: 'Әзірлеу кезеңіндегі өнімді сынау нәтижелерін жазу',
     menu_improvement: 'Жақсарту есебі',
