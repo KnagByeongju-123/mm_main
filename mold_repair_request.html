@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리의뢰 v1.7</title>
+<title>금형 수리의뢰 v1.8</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -110,7 +110,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div class="header-row">
         <div>
             <h1>🔧 금형 수리의뢰</h1>
-            <div class="subtitle">Mold Repair Request · v1.7</div>
+            <div class="subtitle">Mold Repair Request · v1.8</div>
         </div>
         <button class="icon-btn" onclick="openSettings()" title="알림 설정">⚙️</button>
     </div>
@@ -202,19 +202,20 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <!-- 사진 -->
 <div class="card">
-    <div class="card-title">현장 사진 (최대 5장)</div>
-    <div class="info-box">📷 사진은 자동으로 압축됩니다 (가로 1024px, 약 30KB)</div>
-    <div class="photo-area" onclick="document.getElementById('photoInput').click()">
+    <div class="card-title">현장 사진 (최대 5장, 30KB 이하)</div>
+    <div class="info-box">📷 자동 압축됩니다 · 촬영과 갤러리 사진을 함께 첨부 가능</div>
+    <div class="photo-area" onclick="openPhotoPicker()">
         <div style="font-size: 30px;">📸</div>
         <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">탭하여 사진 추가</div>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="addPhotos(event)">
+        <input type="file" id="photoInputCamera" accept="image/*" capture="environment" style="display:none" onchange="addPhotos(event)">
+        <input type="file" id="photoInputGallery" accept="image/*" multiple style="display:none" onchange="addPhotos(event)">
     </div>
     <div class="photo-grid" id="photoGrid"></div>
 </div>
 
 <button class="btn btn-primary" onclick="submitRequest()">📨 수리의뢰 등록</button>
 
-<footer>금형 수리의뢰 시스템 · Rev 1.7 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리의뢰 시스템 · Rev 1.8 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -318,6 +319,27 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">관리자 PIN 4자리를 입력하세요</p>
         <input type="password" class="search-input pin-input" id="settingsPinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
         <button class="btn btn-primary" onclick="verifySettingsPin()">확인</button>
+    </div>
+</div>
+
+<!-- 사진 소스 선택 모달 -->
+<div class="modal" id="photoPickerModal">
+    <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-header">
+            <h2 style="font-size: 16px;">📸 사진 추가</h2>
+            <button class="modal-close" onclick="document.getElementById('photoPickerModal').classList.remove('show')">✕</button>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+            <button class="btn" style="background:#dc2626;color:white;padding:18px 8px;font-size:14px;flex-direction:column;display:flex;align-items:center;gap:6px;" onclick="pickFromCamera()">
+                <span style="font-size:28px;">📷</span>
+                <span>촬영</span>
+            </button>
+            <button class="btn" style="background:#2563eb;color:white;padding:18px 8px;font-size:14px;flex-direction:column;display:flex;align-items:center;gap:6px;" onclick="pickFromGallery()">
+                <span style="font-size:28px;">🖼️</span>
+                <span>갤러리</span>
+            </button>
+        </div>
+        <div style="font-size:11px; color:#94a3b8; text-align:center; margin-top:12px;">갤러리는 여러 장 선택 가능</div>
     </div>
 </div>
 
@@ -712,39 +734,87 @@ function applyMold(m) {
     window._selectedMold = m;
 }
 
-// ============ 사진 압축 ============
+// ============ 사진 추가 (촬영 / 갤러리) ============
+function openPhotoPicker() {
+    if (photos.length >= 5) { toast('최대 5장까지', 'error'); return; }
+    document.getElementById('photoPickerModal').classList.add('show');
+}
+function pickFromCamera() {
+    document.getElementById('photoPickerModal').classList.remove('show');
+    document.getElementById('photoInputCamera').click();
+}
+function pickFromGallery() {
+    document.getElementById('photoPickerModal').classList.remove('show');
+    document.getElementById('photoInputGallery').click();
+}
+
 async function addPhotos(e) {
     const files = Array.from(e.target.files);
     for (const file of files) {
         if (photos.length >= 5) { toast('최대 5장까지', 'error'); break; }
         try {
-            const compressed = await compressImage(file, 1024, 0.7);
+            const compressed = await compressTo30KB(file);
             photos.push(compressed);
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error(err); toast('사진 처리 실패', 'error'); }
     }
     renderPhotos();
     e.target.value = '';
 }
 
-function compressImage(file, maxWidth, quality) {
+// 30KB 이하로 압축 (가로 크기/품질을 반복해서 줄임)
+async function compressTo30KB(file) {
+    const TARGET_BYTES = 30 * 1024;  // 30KB
+    const img = await loadImage(file);
+    // 시도할 (maxWidth, quality) 조합 - 점점 강하게
+    const attempts = [
+        [1024, 0.85], [1024, 0.7], [1024, 0.55],
+        [800, 0.75], [800, 0.6], [800, 0.45],
+        [640, 0.7], [640, 0.55], [640, 0.4],
+        [480, 0.6], [480, 0.45], [480, 0.3],
+        [360, 0.5], [360, 0.35], [360, 0.25]
+    ];
+    let last = null;
+    for (const [w, q] of attempts) {
+        const dataUrl = drawToDataUrl(img, w, q);
+        last = dataUrl;
+        if (dataUrlBytes(dataUrl) <= TARGET_BYTES) return dataUrl;
+    }
+    return last; // 최선의 결과 반환 (보장 30KB 못 맞춰도 가장 작은 것)
+}
+
+function loadImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
             const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let w = img.width, h = img.height;
-                if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
+            img.onload = () => resolve(img);
             img.onerror = reject;
             img.src = ev.target.result;
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+}
+
+function drawToDataUrl(img, maxWidth, quality) {
+    const canvas = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    // 흰 배경 (투명 PNG 방지)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', quality);
+}
+
+function dataUrlBytes(dataUrl) {
+    // data:image/jpeg;base64,xxxxx → base64 길이로 바이트 추정
+    const i = dataUrl.indexOf(',');
+    if (i < 0) return dataUrl.length;
+    const b64 = dataUrl.substring(i + 1);
+    return Math.ceil(b64.length * 3 / 4);
 }
 
 function renderPhotos() {
@@ -759,8 +829,13 @@ function renderPhotos() {
         del.className = 'photo-del';
         del.textContent = '×';
         del.addEventListener('click', () => { photos.splice(i, 1); renderPhotos(); });
+        // 크기 라벨 (좌하단)
+        const size = document.createElement('div');
+        size.style.cssText = 'position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;';
+        size.textContent = Math.round(dataUrlBytes(p) / 1024) + 'KB';
         div.appendChild(img);
         div.appendChild(del);
+        div.appendChild(size);
         grid.appendChild(div);
     });
 }

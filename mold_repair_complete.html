@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리완료 v1.0</title>
+<title>금형 수리완료 v1.2</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -99,20 +99,17 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <header>
     <h1>✅ 금형 수리완료</h1>
-    <div class="subtitle">Mold Repair Complete · v1.0</div>
+    <div class="subtitle">Mold Repair Complete · v1.2</div>
 </header>
 
 <!-- 수리자 인증 -->
 <div class="card">
     <div class="card-title">수리자 정보</div>
-    <div class="row">
-        <div class="field">
-            <label class="required">사원ID</label>
-            <input type="text" id="userId" placeholder="4자리" maxlength="4" inputmode="numeric">
-        </div>
-        <div class="field">
-            <label>수리자</label>
-            <input type="text" id="userName" readonly>
+    <div id="userBox" style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:14px;">
+        <div style="font-size:11px; color:#64748b; text-align:center; padding:12px 0;">
+            🔒 수리 처리를 위해 PIN 인증이 필요합니다<br>
+            <div style="font-size:11px; color:#fbbf24; margin-top:6px;">메인(index)에서 로그인하면 자동 적용됩니다</div>
+            <button class="btn" style="background:#16a34a;color:white;margin-top:10px;padding:8px 18px;font-size:13px;width:auto;" onclick="openLoginPin()">🔓 PIN 인증하기</button>
         </div>
     </div>
 </div>
@@ -213,11 +210,13 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <!-- 사진 -->
 <div class="card">
-    <div class="card-title">수리 사진 (최대 5장)</div>
-    <div class="photo-area" onclick="document.getElementById('photoInput').click()">
+    <div class="card-title">수리 사진 (최대 5장, 30KB 이하)</div>
+    <div style="background:#1e3a8a; border-left:4px solid #3b82f6; padding:8px 12px; border-radius:6px; font-size:12px; color:#bfdbfe; margin-bottom:10px;">📷 자동 압축됩니다 · 촬영과 갤러리 사진을 함께 첨부 가능</div>
+    <div class="photo-area" onclick="openPhotoPicker()">
         <div style="font-size: 28px;">📸</div>
         <div style="font-size: 13px; color: #94a3b8; margin-top: 6px;">탭하여 사진 추가</div>
-        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="addPhotos(event)">
+        <input type="file" id="photoInputCamera" accept="image/*" capture="environment" style="display:none" onchange="addPhotos(event)">
+        <input type="file" id="photoInputGallery" accept="image/*" multiple style="display:none" onchange="addPhotos(event)">
     </div>
     <div class="photo-grid" id="photoGrid"></div>
 </div>
@@ -227,19 +226,20 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 </div>
 
-<footer>금형 수리완료 시스템 · Rev 1.0 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리완료 시스템 · Rev 1.2 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
 <!-- PIN 모달 -->
 <div class="modal" id="pinModal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:340px;">
         <div class="modal-header">
-            <h2 style="font-size: 16px;">PIN 확인</h2>
+            <h2 style="font-size: 16px;">🔓 수리자 인증</h2>
             <button class="modal-close" onclick="document.getElementById('pinModal').classList.remove('show')">✕</button>
         </div>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;" id="pinUserInfo"></p>
-        <input type="password" class="pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#e2e8f0;">
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 6px;">본인 PIN 4자리를 입력하세요</p>
+        <p style="font-size: 11px; color: #fbbf24; margin-bottom: 10px;">PIN은 보안마스터에서 등록·변경됩니다</p>
+        <input type="password" class="pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; text-align:center; letter-spacing:8px; font-size:20px;">
         <button class="btn btn-primary" onclick="verifyPin()">확인</button>
     </div>
 </div>
@@ -249,11 +249,53 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <img id="fullImgSrc">
 </div>
 
+<!-- 사진 소스 선택 모달 -->
+<div class="modal" id="photoPickerModal">
+    <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-header">
+            <h2 style="font-size: 16px;">📸 사진 추가</h2>
+            <button class="modal-close" onclick="document.getElementById('photoPickerModal').classList.remove('show')">✕</button>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+            <button class="btn" style="background:#16a34a;color:white;padding:18px 8px;font-size:14px;flex-direction:column;display:flex;align-items:center;gap:6px;width:auto;" onclick="pickFromCamera()">
+                <span style="font-size:28px;">📷</span>
+                <span>촬영</span>
+            </button>
+            <button class="btn" style="background:#2563eb;color:white;padding:18px 8px;font-size:14px;flex-direction:column;display:flex;align-items:center;gap:6px;width:auto;" onclick="pickFromGallery()">
+                <span style="font-size:28px;">🖼️</span>
+                <span>갤러리</span>
+            </button>
+        </div>
+        <div style="font-size:11px; color:#94a3b8; text-align:center; margin-top:12px;">갤러리는 여러 장 선택 가능</div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const SB_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+
+// 보안마스터 (security_master.html) 공용
+const TBL_USER_PIN = 'mm_user_pin';
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
+
+// index.html 로그인 세션 (msm 전체 공용)
+const LK_AUTH = 'mm_user_session';
+function getSession() {
+    try {
+        const s = JSON.parse(localStorage.getItem(LK_AUTH) || 'null');
+        if (s && s.exp && s.exp > Date.now()) return s;
+    } catch (e) {}
+    return null;
+}
+
+// SHA-256 (보안마스터와 동일 방식)
+async function sha256hex(s) {
+    const b = new TextEncoder().encode(s);
+    const h = await crypto.subtle.digest('SHA-256', b);
+    return Array.from(new Uint8Array(h)).map(x => x.toString(16).padStart(2, '0')).join('');
+}
 
 const sbHeaders = () => ({
     'apikey': SB_KEY,
@@ -262,53 +304,83 @@ const sbHeaders = () => ({
     'Prefer': 'return=representation'
 });
 
-let userDB = [];
 let requests = [];
 let selectedReq = null;
 let currentTab = 'requested';
 let selectedRepairType = '';
 let photos = [];
 let verifiedUser = null;
-let pendingUser = null;
 
 window.addEventListener('DOMContentLoaded', async () => {
     const now = new Date();
     const isoNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('repairStart').value = isoNow;
     document.getElementById('repairEnd').value = isoNow;
-    
-    await loadUserDB();
+
     bindEvents();
-    
+
+    // 1순위: msm 통합 로그인 세션 (index.html에서 인증한 상태)
+    const sess = getSession();
+    if (sess) {
+        verifiedUser = {
+            id: sess.role === 'admin' ? 'MASTER' : sess.id,
+            name: sess.role === 'admin' ? '관리자' : sess.name,
+            dept: sess.dept || (sess.role === 'admin' ? '관리' : ''),
+            position: sess.position || (sess.role === 'admin' ? '마스터' : ''),
+            factory: sess.factory || ''
+        };
+        renderUserBox();
+        await loadRequests();
+        return;
+    }
+
+    // 2순위: 이전 PIN 인증 정보
     const lastUser = localStorage.getItem('MR_LAST_USER');
     if (lastUser) {
-        const u = JSON.parse(lastUser);
-        document.getElementById('userId').value = u.id;
-        document.getElementById('userName').value = u.name;
-        verifiedUser = u;
-        await loadRequests();
+        try {
+            verifiedUser = JSON.parse(lastUser);
+            renderUserBox();
+            await loadRequests();
+        } catch (e) { verifiedUser = null; }
     }
 });
 
-async function loadUserDB() {
-    try {
-        const res = await fetch('사원DB.json');
-        userDB = await res.json();
-    } catch (e) {
-        userDB = [];
+function renderUserBox() {
+    const box = document.getElementById('userBox');
+    if (!verifiedUser) {
+        box.innerHTML = `
+            <div style="font-size:11px; color:#64748b; text-align:center; padding:12px 0;">
+                🔒 수리 처리를 위해 PIN 인증이 필요합니다<br>
+                <div style="font-size:11px; color:#fbbf24; margin-top:6px;">메인(index)에서 로그인하면 자동 적용됩니다</div>
+                <button class="btn" style="background:#16a34a;color:white;margin-top:10px;padding:8px 18px;font-size:13px;width:auto;" onclick="openLoginPin()">🔓 PIN 인증하기</button>
+            </div>`;
+        return;
     }
+    const fromSession = !!getSession();
+    const sub = [verifiedUser.factory, verifiedUser.dept, verifiedUser.position].filter(Boolean).join(' · ');
+    const badge = fromSession
+        ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#1e3a8a;color:#bfdbfe;margin-left:6px;">로그인 세션</span>'
+        : '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#78350f;color:#fde68a;margin-left:6px;">PIN 인증</span>';
+    const btn = fromSession
+        ? '<a href="index.html" class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;text-decoration:none;width:auto;">로그아웃</a>'
+        : '<button class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;width:auto;" onclick="logoutUser()">변경</button>';
+    box.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-size:16px; font-weight:700; color:#bbf7d0;">✓ ${verifiedUser.name}${badge}</div>
+                <div style="font-size:12px; color:#94a3b8; margin-top:3px;">${sub || '-'}</div>
+            </div>
+            ${btn}
+        </div>`;
+}
+
+function logoutUser() {
+    verifiedUser = null;
+    localStorage.removeItem('MR_LAST_USER');
+    renderUserBox();
 }
 
 function bindEvents() {
-    document.getElementById('userId').addEventListener('input', (e) => {
-        const id = e.target.value.trim();
-        if (id.length === 4) {
-            const user = userDB.find(u => u.ID === id);
-            if (user) openPinModal(user);
-            else { toast('등록되지 않은 사원ID', 'error'); document.getElementById('userName').value = ''; verifiedUser = null; }
-        }
-    });
-    
     document.querySelectorAll('.repair-type-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.repair-type-btn').forEach(b => b.classList.remove('active'));
@@ -316,15 +388,15 @@ function bindEvents() {
             selectedRepairType = btn.dataset.type;
         });
     });
-    
+
+    // PIN 입력 자동 확인 (4자리 입력 즉시)
     document.getElementById('pinInput').addEventListener('input', (e) => {
         if (e.target.value.length === 4) verifyPin();
     });
 }
 
-function openPinModal(user) {
-    pendingUser = user;
-    document.getElementById('pinUserInfo').textContent = `${user.부서} · ${user.직위} · ${user.성명}`;
+// ============ PIN 인증 (보안마스터 mm_user_pin 기반) ============
+function openLoginPin() {
     document.getElementById('pinInput').value = '';
     document.getElementById('pinModal').classList.add('show');
     setTimeout(() => document.getElementById('pinInput').focus(), 100);
@@ -332,22 +404,61 @@ function openPinModal(user) {
 
 async function verifyPin() {
     const pin = document.getElementById('pinInput').value;
-    if (pin !== pendingUser.ID) {
-        toast('PIN 불일치', 'error');
-        document.getElementById('pinInput').value = '';
+    if (!/^\d{4}$/.test(pin)) {
+        toast('PIN 4자리 숫자', 'error');
         return;
     }
-    verifiedUser = {
-        id: pendingUser.ID,
-        name: pendingUser.성명,
-        dept: pendingUser.부서,
-        position: pendingUser.직위
-    };
-    document.getElementById('userName').value = verifiedUser.name;
-    localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
-    document.getElementById('pinModal').classList.remove('show');
-    toast(`${verifiedUser.name}님 환영합니다`, 'success');
-    await loadRequests();
+    try {
+        const h = await sha256hex(pin);
+
+        // 🔑 마스터 PIN: 어디서나 통과
+        if (h === MASTER_PIN_HASH) {
+            verifiedUser = {
+                id: 'MASTER',
+                name: '관리자',
+                dept: '관리',
+                position: '마스터',
+                factory: ''
+            };
+            localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
+            document.getElementById('pinModal').classList.remove('show');
+            renderUserBox();
+            toast('🔑 마스터 인증 완료', 'success');
+            await loadRequests();
+            return;
+        }
+
+        const url = `${SB_URL}/rest/v1/${TBL_USER_PIN}?select=id,name,factory,dept,position,blocked,blocked_reason&pin_hash=eq.${h}&limit=1`;
+        const res = await fetch(url, { headers: sbHeaders() });
+        if (!res.ok) throw new Error('서버 응답 오류 (' + res.status + ')');
+        const rows = await res.json();
+        if (!rows.length) {
+            toast('등록되지 않은 PIN', 'error');
+            document.getElementById('pinInput').value = '';
+            return;
+        }
+        const u = rows[0];
+        if (u.blocked) {
+            toast('🚫 차단된 사용자입니다' + (u.blocked_reason ? ' (' + u.blocked_reason + ')' : ''), 'error');
+            document.getElementById('pinInput').value = '';
+            return;
+        }
+        verifiedUser = {
+            id: u.id,
+            name: u.name,
+            dept: u.dept || '',
+            position: u.position || '',
+            factory: u.factory || ''
+        };
+        localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
+        document.getElementById('pinModal').classList.remove('show');
+        renderUserBox();
+        toast(`${verifiedUser.name}님 환영합니다`, 'success');
+        await loadRequests();
+    } catch (e) {
+        console.error(e);
+        toast('인증 실패: ' + e.message, 'error');
+    }
 }
 
 function switchTab(tab) {
@@ -511,39 +622,84 @@ function collectParts() {
     return parts;
 }
 
-// ============ 사진 ============
+// ============ 사진 추가 (촬영 / 갤러리) ============
+function openPhotoPicker() {
+    if (photos.length >= 5) { toast('최대 5장까지', 'error'); return; }
+    document.getElementById('photoPickerModal').classList.add('show');
+}
+function pickFromCamera() {
+    document.getElementById('photoPickerModal').classList.remove('show');
+    document.getElementById('photoInputCamera').click();
+}
+function pickFromGallery() {
+    document.getElementById('photoPickerModal').classList.remove('show');
+    document.getElementById('photoInputGallery').click();
+}
+
 async function addPhotos(e) {
     const files = Array.from(e.target.files);
     for (const file of files) {
         if (photos.length >= 5) { toast('최대 5장', 'error'); break; }
         try {
-            const c = await compressImage(file, 1024, 0.7);
+            const c = await compressTo30KB(file);
             photos.push(c);
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error(err); toast('사진 처리 실패', 'error'); }
     }
     renderPhotos();
     e.target.value = '';
 }
 
-function compressImage(file, maxWidth, quality) {
+// 30KB 이하로 압축
+async function compressTo30KB(file) {
+    const TARGET_BYTES = 30 * 1024;
+    const img = await loadImage(file);
+    const attempts = [
+        [1024, 0.85], [1024, 0.7], [1024, 0.55],
+        [800, 0.75], [800, 0.6], [800, 0.45],
+        [640, 0.7], [640, 0.55], [640, 0.4],
+        [480, 0.6], [480, 0.45], [480, 0.3],
+        [360, 0.5], [360, 0.35], [360, 0.25]
+    ];
+    let last = null;
+    for (const [w, q] of attempts) {
+        const dataUrl = drawToDataUrl(img, w, q);
+        last = dataUrl;
+        if (dataUrlBytes(dataUrl) <= TARGET_BYTES) return dataUrl;
+    }
+    return last;
+}
+
+function loadImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
             const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let w = img.width, h = img.height;
-                if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
+            img.onload = () => resolve(img);
             img.onerror = reject;
             img.src = ev.target.result;
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+}
+
+function drawToDataUrl(img, maxWidth, quality) {
+    const canvas = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', quality);
+}
+
+function dataUrlBytes(dataUrl) {
+    const i = dataUrl.indexOf(',');
+    if (i < 0) return dataUrl.length;
+    const b64 = dataUrl.substring(i + 1);
+    return Math.ceil(b64.length * 3 / 4);
 }
 
 function renderPhotos() {
@@ -559,8 +715,13 @@ function renderPhotos() {
         del.className = 'photo-del';
         del.textContent = '×';
         del.addEventListener('click', (e) => { e.stopPropagation(); photos.splice(i, 1); renderPhotos(); });
+        // 크기 라벨 (좌하단)
+        const size = document.createElement('div');
+        size.style.cssText = 'position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600;';
+        size.textContent = Math.round(dataUrlBytes(p) / 1024) + 'KB';
         div.appendChild(img);
         div.appendChild(del);
+        div.appendChild(size);
         grid.appendChild(div);
     });
 }
@@ -576,7 +737,7 @@ function collectPayload(status) {
         status,
         repair_start_dt: document.getElementById('repairStart').value || null,
         repair_end_dt: status === 'completed' ? (document.getElementById('repairEnd').value || null) : null,
-        repair_user_id: verifiedUser.id,
+        repair_user_id: String(verifiedUser.id || ''),
         repair_user: verifiedUser.name,
         repair_type: selectedRepairType,
         repair_action: document.getElementById('repairAction').value.trim(),
@@ -604,7 +765,7 @@ async function updateRecord(payload) {
 }
 
 async function saveProgress() {
-    if (!verifiedUser) { toast('수리자 PIN 인증 필요', 'error'); return; }
+    if (!verifiedUser) { toast('PIN 인증이 필요합니다', 'error'); openLoginPin(); return; }
     if (!selectedReq) { toast('의뢰를 선택하세요', 'error'); return; }
     
     try {
@@ -617,7 +778,7 @@ async function saveProgress() {
 }
 
 async function submitComplete() {
-    if (!verifiedUser) { toast('수리자 PIN 인증 필요', 'error'); return; }
+    if (!verifiedUser) { toast('PIN 인증이 필요합니다', 'error'); openLoginPin(); return; }
     if (!selectedReq) { toast('의뢰를 선택하세요', 'error'); return; }
     if (!selectedRepairType) { toast('수리유형을 선택하세요', 'error'); return; }
     if (!document.getElementById('repairAction').value.trim()) { toast('조치내용을 입력하세요', 'error'); return; }
