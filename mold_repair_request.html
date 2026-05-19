@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리의뢰 v1.1</title>
+<title>금형 수리의뢰 v1.2</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -110,7 +110,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div class="header-row">
         <div>
             <h1>🔧 금형 수리의뢰</h1>
-            <div class="subtitle">Mold Repair Request · v1.1</div>
+            <div class="subtitle">Mold Repair Request · v1.2</div>
         </div>
         <button class="icon-btn" onclick="openSettings()" title="알림 설정">⚙️</button>
     </div>
@@ -119,25 +119,15 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 <!-- 의뢰자 정보 -->
 <div class="card">
     <div class="card-title">의뢰자 정보</div>
-    <div class="row">
-        <div class="field">
-            <label class="required">사원ID</label>
-            <input type="text" id="userId" placeholder="4자리" maxlength="4" inputmode="numeric">
-        </div>
-        <div class="field">
-            <label>의뢰자</label>
-            <input type="text" id="userName" readonly placeholder="ID 입력시 자동">
+    <div id="userBox" style="background:#0f172a; border:1px solid #334155; border-radius:8px; padding:14px; margin-bottom:8px;">
+        <div style="font-size:11px; color:#64748b; text-align:center; padding:12px 0;">
+            🔒 의뢰 등록을 위해 PIN 인증이 필요합니다<br>
+            <button class="btn" style="background:#dc2626;color:white;margin-top:10px;padding:8px 18px;font-size:13px;" onclick="openLoginPin()">🔓 PIN 인증하기</button>
         </div>
     </div>
-    <div class="row">
-        <div class="field">
-            <label>부서</label>
-            <input type="text" id="userDept" readonly>
-        </div>
-        <div class="field">
-            <label class="required">의뢰일</label>
-            <input type="date" id="requestDate">
-        </div>
+    <div class="field" style="margin-bottom:0;">
+        <label class="required">의뢰일</label>
+        <input type="date" id="requestDate">
     </div>
 </div>
 
@@ -224,7 +214,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <button class="btn btn-primary" onclick="submitRequest()">📨 수리의뢰 등록</button>
 
-<footer>금형 수리의뢰 시스템 · Rev 1.1 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리의뢰 시스템 · Rev 1.2 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -240,16 +230,31 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<!-- PIN 입력 모달 -->
+<!-- 로그인 PIN 모달 (사원ID + PIN) -->
 <div class="modal" id="pinModal">
-    <div class="modal-content" style="max-width: 320px;">
+    <div class="modal-content" style="max-width: 340px;">
         <div class="modal-header">
-            <h2 style="font-size: 16px;">PIN 확인</h2>
+            <h2 style="font-size: 16px;">🔓 의뢰자 인증</h2>
             <button class="modal-close" onclick="document.getElementById('pinModal').classList.remove('show')">✕</button>
         </div>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;" id="pinUserInfo"></p>
-        <input type="password" class="search-input pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric">
-        <button class="btn btn-primary" onclick="verifyPin()">확인</button>
+
+        <!-- 1단계: 사원ID 입력 -->
+        <div id="pinStep1">
+            <p style="font-size:13px; color:#94a3b8; margin-bottom:10px;">사원ID 4자리를 입력하세요</p>
+            <input type="text" class="search-input pin-input" id="loginIdInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
+            <button class="btn btn-primary" onclick="checkUserId()">다음</button>
+        </div>
+
+        <!-- 2단계: PIN 입력 -->
+        <div id="pinStep2" style="display:none;">
+            <p style="font-size:13px; color:#94a3b8; margin-bottom:6px;" id="pinUserInfo"></p>
+            <p style="font-size:11px; color:#fbbf24; margin-bottom:10px;">PIN을 입력하세요</p>
+            <input type="password" class="search-input pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
+            <div style="display:flex; gap:6px;">
+                <button class="btn btn-secondary" style="flex:1;" onclick="backToStep1()">← 뒤로</button>
+                <button class="btn btn-primary" style="flex:2;" onclick="verifyPin()">확인</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -296,6 +301,13 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
             <input type="text" id="cfgNtfyTitle" placeholder="Mold Repair Request">
         </div>
 
+        <div style="height:1px; background:#334155; margin:14px 0;"></div>
+
+        <div class="field">
+            <label>🔑 관리자 PIN 변경 (4자리)</label>
+            <input type="password" id="cfgAdminPin" placeholder="비워두면 변경 안 함" maxlength="4" inputmode="numeric" autocomplete="off">
+        </div>
+
         <div style="display:flex; gap:8px; margin-top: 10px;">
             <button class="btn btn-primary" onclick="saveSettings()">💾 저장</button>
             <button class="btn btn-secondary" onclick="testNtfy()" style="background:#2563eb;color:white;">📨 테스트 전송</button>
@@ -314,11 +326,11 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 <div class="modal" id="settingsPinModal">
     <div class="modal-content" style="max-width: 320px;">
         <div class="modal-header">
-            <h2 style="font-size: 16px;">🔒 설정 접근</h2>
+            <h2 style="font-size: 16px;">🔒 관리자 인증</h2>
             <button class="modal-close" onclick="document.getElementById('settingsPinModal').classList.remove('show')">✕</button>
         </div>
-        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">관리자 PIN을 입력하세요</p>
-        <input type="password" class="search-input pin-input" id="settingsPinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric">
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">관리자 PIN 4자리를 입력하세요</p>
+        <input type="password" class="search-input pin-input" id="settingsPinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
         <button class="btn btn-primary" onclick="verifySettingsPin()">확인</button>
     </div>
 </div>
@@ -332,7 +344,12 @@ const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 
 // 설정 저장 키
 const LK_NTFY = 'MR_NTFY_CFG';
-const ADMIN_PIN = '0000'; // 관리자 PIN (원하면 사원DB 직위로 분기 가능)
+const LK_ADMIN_PIN = 'MR_ADMIN_PIN';
+const DEFAULT_ADMIN_PIN = '7575'; // 최초 기본값 (설정에서 변경 가능)
+
+function getAdminPin() {
+    return localStorage.getItem(LK_ADMIN_PIN) || DEFAULT_ADMIN_PIN;
+}
 
 const DEFAULT_NTFY = {
     enabled: '1',
@@ -363,17 +380,42 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadUserDB();
     await loadMoldMaster();
     bindEvents();
-    
-    // 최근 의뢰자 복원
+
+    // 최근 의뢰자 복원 (있으면 그대로 사용)
     const lastUser = localStorage.getItem('MR_LAST_USER');
     if (lastUser) {
-        const u = JSON.parse(lastUser);
-        document.getElementById('userId').value = u.id;
-        document.getElementById('userName').value = u.name;
-        document.getElementById('userDept').value = u.dept;
-        verifiedUser = u;
+        try {
+            verifiedUser = JSON.parse(lastUser);
+            renderUserBox();
+        } catch (e) { verifiedUser = null; }
     }
 });
+
+function renderUserBox() {
+    const box = document.getElementById('userBox');
+    if (!verifiedUser) {
+        box.innerHTML = `
+            <div style="font-size:11px; color:#64748b; text-align:center; padding:12px 0;">
+                🔒 의뢰 등록을 위해 PIN 인증이 필요합니다<br>
+                <button class="btn" style="background:#dc2626;color:white;margin-top:10px;padding:8px 18px;font-size:13px;" onclick="openLoginPin()">🔓 PIN 인증하기</button>
+            </div>`;
+        return;
+    }
+    box.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="font-size:16px; font-weight:700; color:#bbf7d0;">✓ ${verifiedUser.name}</div>
+                <div style="font-size:12px; color:#94a3b8; margin-top:3px;">${verifiedUser.dept} · ${verifiedUser.position || ''}</div>
+            </div>
+            <button class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;" onclick="logoutUser()">변경</button>
+        </div>`;
+}
+
+function logoutUser() {
+    verifiedUser = null;
+    localStorage.removeItem('MR_LAST_USER');
+    renderUserBox();
+}
 
 async function loadUserDB() {
     try {
@@ -404,22 +446,6 @@ async function loadMoldMaster() {
 }
 
 function bindEvents() {
-    // 사원ID 입력 → PIN 인증
-    document.getElementById('userId').addEventListener('input', (e) => {
-        const id = e.target.value.trim();
-        if (id.length === 4) {
-            const user = userDB.find(u => u.ID === id);
-            if (user) {
-                openPinModal(user);
-            } else {
-                toast('등록되지 않은 사원ID', 'error');
-                document.getElementById('userName').value = '';
-                document.getElementById('userDept').value = '';
-                verifiedUser = null;
-            }
-        }
-    });
-
     // 금형코드 자동완성 (부분검색)
     const moldInput = document.getElementById('moldCode');
     moldInput.addEventListener('input', onMoldInput);
@@ -459,6 +485,11 @@ function bindEvents() {
         });
     });
     
+    // 로그인 ID 4자리 자동 확인
+    document.getElementById('loginIdInput').addEventListener('input', (e) => {
+        if (e.target.value.length === 4) checkUserId();
+    });
+
     // PIN 입력 자동 확인
     document.getElementById('pinInput').addEventListener('input', (e) => {
         if (e.target.value.length === 4) verifyPin();
@@ -472,15 +503,46 @@ function bindEvents() {
 
 // ============ PIN 인증 ============
 let pendingUser = null;
-function openPinModal(user) {
-    pendingUser = user;
-    document.getElementById('pinUserInfo').textContent = `${user.부서} · ${user.직위} · ${user.성명}`;
+
+function openLoginPin() {
+    pendingUser = null;
+    document.getElementById('pinStep1').style.display = 'block';
+    document.getElementById('pinStep2').style.display = 'none';
+    document.getElementById('loginIdInput').value = '';
     document.getElementById('pinInput').value = '';
     document.getElementById('pinModal').classList.add('show');
+    setTimeout(() => document.getElementById('loginIdInput').focus(), 100);
+}
+
+function checkUserId() {
+    const id = document.getElementById('loginIdInput').value.trim();
+    if (id.length !== 4) {
+        toast('사원ID 4자리 입력', 'error');
+        return;
+    }
+    const user = userDB.find(u => u.ID === id);
+    if (!user) {
+        toast('등록되지 않은 사원ID', 'error');
+        document.getElementById('loginIdInput').value = '';
+        return;
+    }
+    pendingUser = user;
+    document.getElementById('pinUserInfo').textContent = `${user.부서} · ${user.직위} · ${user.성명}`;
+    document.getElementById('pinStep1').style.display = 'none';
+    document.getElementById('pinStep2').style.display = 'block';
+    document.getElementById('pinInput').value = '';
     setTimeout(() => document.getElementById('pinInput').focus(), 100);
 }
 
+function backToStep1() {
+    pendingUser = null;
+    document.getElementById('pinStep2').style.display = 'none';
+    document.getElementById('pinStep1').style.display = 'block';
+    setTimeout(() => document.getElementById('loginIdInput').focus(), 100);
+}
+
 function verifyPin() {
+    if (!pendingUser) return;
     const pin = document.getElementById('pinInput').value;
     if (pin !== pendingUser.ID) {
         toast('PIN이 일치하지 않습니다', 'error');
@@ -493,10 +555,9 @@ function verifyPin() {
         dept: pendingUser.부서,
         position: pendingUser.직위
     };
-    document.getElementById('userName').value = verifiedUser.name;
-    document.getElementById('userDept').value = verifiedUser.dept;
     localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
     document.getElementById('pinModal').classList.remove('show');
+    renderUserBox();
     toast(`${verifiedUser.name}님 환영합니다`, 'success');
 }
 
@@ -637,7 +698,11 @@ async function generateRepairNo() {
 
 // ============ 등록 ============
 async function submitRequest() {
-    if (!verifiedUser) { toast('의뢰자 PIN 인증 필요', 'error'); return; }
+    if (!verifiedUser) {
+        toast('PIN 인증이 필요합니다', 'error');
+        openLoginPin();
+        return;
+    }
     const moldCode = document.getElementById('moldCode').value.trim();
     if (!moldCode) { toast('금형을 선택하세요', 'error'); return; }
     if (!selectedDefectType) { toast('불량유형을 선택하세요', 'error'); return; }
@@ -812,14 +877,8 @@ function openSettings() {
 
 function verifySettingsPin() {
     const pin = document.getElementById('settingsPinInput').value;
-    // 관리자 PIN OR 부장/차장/팀장 직위 PIN 허용
-    let ok = (pin === ADMIN_PIN);
-    if (!ok) {
-        const u = userDB.find(x => x.ID === pin);
-        if (u && /부장|차장|팀장|이사|대표|상무/.test(u.직위)) ok = true;
-    }
-    if (!ok) {
-        toast('PIN 불일치 (관리자/팀장급)', 'error');
+    if (pin !== getAdminPin()) {
+        toast('관리자 PIN 불일치', 'error');
         document.getElementById('settingsPinInput').value = '';
         return;
     }
@@ -835,6 +894,7 @@ function loadSettingsUI() {
     document.getElementById('cfgNtfyTopic').value = cfg.topic;
     document.getElementById('cfgNtfyPrio').value = cfg.prio;
     document.getElementById('cfgNtfyTitle').value = cfg.title;
+    document.getElementById('cfgAdminPin').value = '';
 }
 
 function saveSettings() {
@@ -849,7 +909,20 @@ function saveSettings() {
     if (!isAscii(cfg.topic)) { toast('Topic은 영문/숫자만', 'error'); return; }
     if (!isAscii(cfg.title)) { toast('헤더는 영문/숫자만', 'error'); return; }
     localStorage.setItem(LK_NTFY, JSON.stringify(cfg));
-    toast('설정 저장 완료', 'success');
+
+    // 관리자 PIN 변경 (입력값이 있을 때만)
+    const newPin = document.getElementById('cfgAdminPin').value.trim();
+    if (newPin) {
+        if (!/^\d{4}$/.test(newPin)) {
+            toast('관리자 PIN은 숫자 4자리', 'error');
+            return;
+        }
+        localStorage.setItem(LK_ADMIN_PIN, newPin);
+        document.getElementById('cfgAdminPin').value = '';
+        toast('설정 + 관리자 PIN 변경 완료', 'success');
+    } else {
+        toast('설정 저장 완료', 'success');
+    }
 }
 
 function isAscii(s) {
