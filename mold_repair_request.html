@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리의뢰 v1.6</title>
+<title>금형 수리의뢰 v1.7</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -110,7 +110,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div class="header-row">
         <div>
             <h1>🔧 금형 수리의뢰</h1>
-            <div class="subtitle">Mold Repair Request · v1.6</div>
+            <div class="subtitle">Mold Repair Request · v1.7</div>
         </div>
         <button class="icon-btn" onclick="openSettings()" title="알림 설정">⚙️</button>
     </div>
@@ -138,23 +138,23 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
         <label class="required">금형 코드</label>
         <div style="display: flex; gap: 8px; align-items: stretch;">
             <div class="autocomplete-wrap" style="flex:1;">
-                <input type="text" id="moldCode" placeholder="금형코드/품번/소재/기종/재번/고객사 부분검색" autocomplete="off">
+                <input type="text" id="moldCode" placeholder="소재/두께/폭/피치/재번/기종/고객사 부분검색" autocomplete="off">
                 <div class="autocomplete-list" id="acList"></div>
             </div>
             <button class="btn btn-mold-search" onclick="openMoldSearch()">🔍 검색</button>
         </div>
     </div>
     <div class="field">
-        <label>금형명</label>
+        <label>금형 정보 (재번·기종·매핑)</label>
         <input type="text" id="moldName" readonly>
     </div>
     <div class="row">
         <div class="field">
-            <label>품번</label>
+            <label>매핑 기종</label>
             <input type="text" id="itemCode" readonly>
         </div>
         <div class="field">
-            <label>품명</label>
+            <label>고객사 / 매핑</label>
             <input type="text" id="itemName" readonly>
         </div>
     </div>
@@ -214,7 +214,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <button class="btn btn-primary" onclick="submitRequest()">📨 수리의뢰 등록</button>
 
-<footer>금형 수리의뢰 시스템 · Rev 1.6 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리의뢰 시스템 · Rev 1.7 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -225,7 +225,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
             <h2 style="font-size: 16px;">금형 검색</h2>
             <button class="modal-close" onclick="closeMoldSearch()">✕</button>
         </div>
-        <input type="text" class="search-input" id="moldSearchInput" placeholder="금형코드/품번/소재/기종/재번/고객사" oninput="filterMolds()">
+        <input type="text" class="search-input" id="moldSearchInput" placeholder="소재/두께/폭/피치/재번/기종/매핑/고객사" oninput="filterMolds()">
         <div class="mold-list" id="moldList"></div>
     </div>
 </div>
@@ -358,28 +358,40 @@ async function sha256hex(s) {
     return Array.from(new Uint8Array(h)).map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
-// 금형마스터 컬럼명 호환 헬퍼 (snake_case / UPPER 둘 다 지원)
-function pick(o, ...keys) {
-    for (const k of keys) {
-        if (o[k] !== undefined && o[k] !== null && o[k] !== '') return String(o[k]);
-        const U = k.toUpperCase();
-        if (o[U] !== undefined && o[U] !== null && o[U] !== '') return String(o[U]);
-    }
-    return '';
+// 금형마스터 (mm_mold_master) 컬럼 헬퍼
+// 실제 컬럼: vendor / material / thick / width / pitch / mold_no / model_code / mapping / memo
+function fmtNum(v) {
+    const n = parseFloat(v);
+    if (isNaN(n)) return String(v || '');
+    return n === Math.floor(n) ? String(n) : String(n);
 }
-function moldCode(m)     { return pick(m, 'mold_code', 'mold_no', 'moldcode'); }
-function moldName(m)     { return pick(m, 'mold_name', 'name'); }
-function moldItem(m)     { return pick(m, 'item_code', 'part_no', 'partno'); }
-function moldItemName(m) { return pick(m, 'item_name', 'part_name'); }
-function moldMaterial(m) { return pick(m, 'material', 'mtl_type', 'material_type', 'mtl'); }
-function moldMapping(m)  { return pick(m, 'mapping_model', 'customer_model', 'model_name', 'model'); }
-function moldSerial(m)   { return pick(m, 'mold_serial', 'serial_no', 'mold_no_serial', 'serial'); }
-function moldCustomer(m) { return pick(m, 'customer', 'customer_name', 'vendor', 'vendor_name'); }
-function moldAllSearchText(m) {
+// 금형코드는 동적 조합 (예: SPCC-0.6T-86W-P84) - mold_master.html의 makeCode와 동일
+function makeMoldCode(m) {
+    const mat = m.material, t = m.thick, w = m.width, p = m.pitch;
+    if (!mat || t == null || w == null || p == null || t === '' || w === '' || p === '') return '';
+    return String(mat).trim().toUpperCase() + '-' + fmtNum(t) + 'T-' + fmtNum(w) + 'W-P' + fmtNum(p);
+}
+// 검색용 통합 텍스트 (모든 필드 합침)
+function moldSearchText(m) {
     return [
-        moldCode(m), moldName(m), moldItem(m), moldItemName(m),
-        moldMaterial(m), moldMapping(m), moldSerial(m), moldCustomer(m)
-    ].filter(Boolean).join(' ').toLowerCase();
+        makeMoldCode(m),
+        m.material, m.mold_no, m.model_code, m.mapping, m.vendor, m.memo,
+        m.thick, m.width, m.pitch
+    ].filter(v => v !== null && v !== undefined && v !== '').join(' ').toLowerCase();
+}
+// 금형 요약 표시용 (1줄)
+function moldSummary(m) {
+    const code = makeMoldCode(m) || '(코드 없음)';
+    return code;
+}
+// 부가 정보 태그
+function moldTags(m, q) {
+    const tags = [];
+    if (m.vendor)     tags.push(`<span style="color:#ddd6fe;">🏢 ${highlight(m.vendor, q)}</span>`);
+    if (m.mold_no)    tags.push(`<span style="color:#bbf7d0;">재번:${highlight(m.mold_no, q)}</span>`);
+    if (m.model_code) tags.push(`<span style="color:#bfdbfe;">기종:${highlight(m.model_code, q)}</span>`);
+    if (m.mapping)    tags.push(`<span style="color:#fde68a;">매핑:${highlight(m.mapping, q)}</span>`);
+    return tags;
 }
 
 const DEFAULT_NTFY = {
@@ -471,14 +483,13 @@ function logoutUser() {
 
 async function loadMoldMaster() {
     try {
-        const url = `${SB_URL}/rest/v1/mm_mold_master?select=*&order=mold_code.asc&limit=2000`;
+        const url = `${SB_URL}/rest/v1/mm_mold_master?select=*&order=vendor.asc,material.asc,thick.asc,width.asc,pitch.asc&limit=5000`;
         const res = await fetch(url, { headers: sbHeaders() });
         if (res.ok) {
             moldList = await res.json();
             console.log(`금형 마스터 ${moldList.length}건 로드`);
         } else {
-            console.warn('mm_mold_master 조회 실패. 대체 컬럼명 시도...');
-            // 대체: ICOM_ITEM_MASTER 같은 구조라면 mold_code 컬럼 시도
+            console.warn('mm_mold_master 조회 실패 (' + res.status + ')');
             moldList = [];
         }
     } catch (e) {
@@ -501,7 +512,7 @@ function bindEvents() {
     // 입력값이 변경되면 연관 필드 초기화 (선택된 금형이 아닐 경우)
     moldInput.addEventListener('input', () => {
         const v = moldInput.value.trim();
-        const matched = moldList.find(m => moldCode(m) === v);
+        const matched = moldList.find(m => makeMoldCode(m) === v);
         if (!matched) {
             document.getElementById('moldName').value = '';
             document.getElementById('itemCode').value = '';
@@ -617,7 +628,7 @@ function closeMoldSearch() {
 function filterMolds() {
     const q = document.getElementById('moldSearchInput').value.trim().toLowerCase();
     if (!q) { renderMoldList(moldList); return; }
-    const filtered = moldList.filter(m => moldAllSearchText(m).includes(q));
+    const filtered = moldList.filter(m => moldSearchText(m).includes(q));
     renderMoldList(filtered);
 }
 
@@ -627,30 +638,45 @@ function renderMoldList(list) {
         box.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">금형이 없습니다</div>';
         return;
     }
+    // 고객사(vendor) 별 그룹핑 - mold_master.html 패턴
+    const groups = {};
+    list.forEach(m => {
+        const v = m.vendor || '(미지정)';
+        if (!groups[v]) groups[v] = [];
+        groups[v].push(m);
+    });
+    const vendorOrder = Object.keys(groups).sort((a, b) => {
+        if (a === '(미지정)') return 1;
+        if (b === '(미지정)') return -1;
+        return a.localeCompare(b, 'ko');
+    });
+    
     box.innerHTML = '';
-    list.slice(0, 100).forEach(m => {
-        const code = moldCode(m);
-        const name = moldName(m);
-        const item = moldItem(m);
-        const iname = moldItemName(m);
-        const mat = moldMaterial(m);
-        const mapping = moldMapping(m);
-        const serial = moldSerial(m);
-        const cust = moldCustomer(m);
-        const tags = [];
-        if (mat) tags.push(`<span style="color:#fbbf24;">소재 ${mat}</span>`);
-        if (mapping) tags.push(`<span style="color:#bfdbfe;">기종 ${mapping}</span>`);
-        if (serial) tags.push(`<span style="color:#bbf7d0;">재번 ${serial}</span>`);
-        if (cust) tags.push(`<span style="color:#ddd6fe;">고객 ${cust}</span>`);
-        const row = document.createElement('div');
-        row.className = 'mold-row';
-        row.innerHTML = `
-            <div class="code">${code}</div>
-            <div class="name">${name || '-'} ${item ? '· '+item : ''} ${iname ? '· '+iname : ''}</div>
-            ${tags.length ? '<div class="name" style="margin-top:3px; font-size:10px;">'+tags.join(' · ')+'</div>' : ''}
-        `;
-        row.addEventListener('click', () => selectMold(m));
-        box.appendChild(row);
+    let totalShown = 0;
+    vendorOrder.forEach(v => {
+        if (totalShown >= 100) return;
+        const items = groups[v];
+        const head = document.createElement('div');
+        head.style.cssText = 'background:#1e3a8a; color:#bfdbfe; padding:6px 10px; font-size:12px; font-weight:700; border-radius:6px; margin:8px 0 4px 0; display:flex; justify-content:space-between;';
+        head.innerHTML = `<span>🏢 ${v}</span><span style="background:#0f172a; color:#7dd3fc; padding:0 8px; border-radius:8px;">${items.length}건</span>`;
+        box.appendChild(head);
+        
+        items.slice(0, 100 - totalShown).forEach(m => {
+            const code = makeMoldCode(m) || '(코드 없음)';
+            const meta = [];
+            if (m.mold_no)    meta.push(`<span style="color:#bbf7d0;">재번 ${m.mold_no}</span>`);
+            if (m.model_code) meta.push(`<span style="color:#bfdbfe;">기종 ${m.model_code}</span>`);
+            if (m.mapping)    meta.push(`<span style="color:#fde68a;">매핑 ${m.mapping}</span>`);
+            const row = document.createElement('div');
+            row.className = 'mold-row';
+            row.innerHTML = `
+                <div class="code">${code}</div>
+                ${meta.length ? '<div class="name" style="margin-top:3px;">'+meta.join(' · ')+'</div>' : ''}
+            `;
+            row.addEventListener('click', () => selectMold(m));
+            box.appendChild(row);
+            totalShown++;
+        });
     });
     if (list.length > 100) {
         const more = document.createElement('div');
@@ -661,11 +687,29 @@ function renderMoldList(list) {
 }
 
 function selectMold(m) {
-    document.getElementById('moldCode').value = moldCode(m);
-    document.getElementById('moldName').value = moldName(m);
-    document.getElementById('itemCode').value = moldItem(m);
-    document.getElementById('itemName').value = moldItemName(m);
+    applyMold(m);
     closeMoldSearch();
+}
+
+function pickMold(m) {
+    applyMold(m);
+    document.getElementById('acList').classList.remove('show');
+}
+
+// 선택된 금형 → 폼에 적용 (mm_mold_master 실제 컬럼 매핑)
+function applyMold(m) {
+    const code = makeMoldCode(m) || (m.mold_no || '');
+    // 표시할 "금형 정보" = 재번/기종/매핑 조합
+    const nameParts = [];
+    if (m.mold_no)    nameParts.push('재번 ' + m.mold_no);
+    if (m.model_code) nameParts.push('기종 ' + m.model_code);
+    if (m.mapping)    nameParts.push(m.mapping);
+    document.getElementById('moldCode').value = code;
+    document.getElementById('moldName').value = nameParts.join(' · ');
+    document.getElementById('itemCode').value = m.model_code || '';
+    // 고객사 우선, 없으면 매핑
+    document.getElementById('itemName').value = m.vendor ? (m.vendor + (m.mapping ? ' / ' + m.mapping : '')) : (m.mapping || '');
+    window._selectedMold = m;
 }
 
 // ============ 사진 압축 ============
@@ -829,8 +873,8 @@ function onMoldInput() {
     const box = document.getElementById('acList');
     if (!q) { box.classList.remove('show'); acCurrent = []; return; }
 
-    // 모든 검색 가능 컬럼(코드/명/품번/품명/소재/매핑/재번/고객사)에서 부분 일치
-    acCurrent = moldList.filter(m => moldAllSearchText(m).includes(q)).slice(0, 20);
+    // 동적 코드 + 모든 필드(소재/재번/기종/매핑/고객사/메모)에서 부분 일치
+    acCurrent = moldList.filter(m => moldSearchText(m).includes(q)).slice(0, 30);
 
     if (!acCurrent.length) {
         box.innerHTML = '<div class="ac-empty">일치하는 금형 없음</div>';
@@ -840,26 +884,14 @@ function onMoldInput() {
 
     acIndex = -1;
     box.innerHTML = '';
-    acCurrent.forEach((m, i) => {
-        const code = moldCode(m);
-        const name = moldName(m);
-        const item = moldItem(m);
-        const iname = moldItemName(m);
-        const mat = moldMaterial(m);
-        const mapping = moldMapping(m);
-        const serial = moldSerial(m);
-        const cust = moldCustomer(m);
-        const tags = [];
-        if (mat) tags.push(`<span style="color:#fbbf24;">소재:${highlight(mat, q)}</span>`);
-        if (mapping) tags.push(`<span style="color:#bfdbfe;">기종:${highlight(mapping, q)}</span>`);
-        if (serial) tags.push(`<span style="color:#bbf7d0;">재번:${highlight(serial, q)}</span>`);
-        if (cust) tags.push(`<span style="color:#ddd6fe;">고객:${highlight(cust, q)}</span>`);
+    acCurrent.forEach((m) => {
+        const code = makeMoldCode(m) || '(코드 없음)';
+        const tags = moldTags(m, q);
         const div = document.createElement('div');
         div.className = 'ac-item';
         div.innerHTML = `
             <div class="ac-code">${highlight(code, q)}</div>
-            <div class="ac-info">${highlight(name, q) || '-'} ${item ? '· '+highlight(item, q) : ''} ${iname ? '· '+highlight(iname, q) : ''}</div>
-            ${tags.length ? '<div class="ac-info" style="margin-top:3px; font-size:10px;">'+tags.join(' · ')+'</div>' : ''}
+            ${tags.length ? '<div class="ac-info" style="margin-top:3px;">'+tags.join(' · ')+'</div>' : ''}
         `;
         div.addEventListener('mousedown', (e) => { e.preventDefault(); pickMold(m); });
         box.appendChild(div);
@@ -900,14 +932,6 @@ function onMoldKey(e) {
 function updateAcActive(items) {
     items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
     if (acIndex >= 0) items[acIndex].scrollIntoView({ block: 'nearest' });
-}
-
-function pickMold(m) {
-    document.getElementById('moldCode').value = moldCode(m);
-    document.getElementById('moldName').value = moldName(m);
-    document.getElementById('itemCode').value = moldItem(m);
-    document.getElementById('itemName').value = moldItemName(m);
-    document.getElementById('acList').classList.remove('show');
 }
 
 // ============ 설정 (PIN 보호) ============
@@ -1043,7 +1067,7 @@ function buildNtfyForRequest(payload) {
     const lines = [
         `[${payload.repair_no}]`,
         `금형: ${payload.mold_code}${payload.mold_name ? ' ('+payload.mold_name+')' : ''}`,
-        `품번: ${payload.item_code || '-'}`,
+        `기종/고객: ${payload.item_code || '-'}${payload.item_name ? ' / '+payload.item_name : ''}`,
         `설비: ${payload.machine_code || '-'} / SHOT: ${payload.shot_count || '-'}`,
         `불량: ${payload.defect_type}${payload.defect_part ? ' / '+payload.defect_part : ''}`,
         `긴급도: ${payload.urgency === 'urgent' ? '🚨 긴급' : payload.urgency === 'low' ? '낮음' : '보통'}`,
