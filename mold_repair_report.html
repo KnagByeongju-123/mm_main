@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리보고서 v1.3</title>
+<title>금형 수리보고서 v1.4</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -62,6 +62,11 @@ tr:hover { background: #0f172a; cursor: pointer; }
 .badge.cancelled { background: #4b5563; color: #d1d5db; }
 
 .empty { padding: 30px; text-align: center; color: #64748b; }
+
+.btn-icon { background: transparent; border: 1px solid #475569; color: #e2e8f0; width: 30px; height: 30px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-right: 3px; transition: all 0.15s; vertical-align: middle; }
+.btn-icon:hover { transform: scale(1.08); }
+.btn-icon.btn-edit:hover { border-color: #2563eb; background: #1e3a8a; }
+.btn-icon.btn-del:hover { border-color: #dc2626; background: #7f1d1d; }
 
 /* 보고서 출력 */
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: flex-start; justify-content: center; padding: 12px; overflow-y: auto; }
@@ -182,7 +187,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
         <div style="flex:1;">
             <h1>📊 금형 수리보고서</h1>
-            <div class="subtitle">Mold Repair Report · v1.3</div>
+            <div class="subtitle">Mold Repair Report · v1.4</div>
         </div>
         <button onclick="openFooterSettings()" title="바닥글 설정" style="background:rgba(255,255,255,0.15); color:white; border:none; width:38px; height:38px; border-radius:8px; cursor:pointer; font-size:18px;">⚙️</button>
     </div>
@@ -246,6 +251,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
                     <th>수리완료</th>
                     <th>리드타임</th>
                     <th>비용(원)</th>
+                    <th style="width:100px;">작업</th>
                 </tr>
             </thead>
             <tbody id="dataBody"></tbody>
@@ -253,7 +259,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<footer>금형 수리보고서 시스템 · Rev 1.3 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리보고서 시스템 · Rev 1.4 · 태진다이텍 품질관리팀</footer>
 </div>
 
 <!-- 보고서 모달 -->
@@ -316,23 +322,145 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
+<!-- 수정 모달 -->
+<div class="modal" id="editModal">
+    <div class="modal-content" style="max-width:520px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h2 style="font-size:16px;">✏️ 의뢰 수정 <span id="editTitleNo" style="color:#60a5fa; font-size:13px;"></span></h2>
+            <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('show')">✕</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <div>
+                <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">상태</label>
+                <select id="edStatus" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+                    <option value="requested">의뢰됨</option>
+                    <option value="in_progress">진행중</option>
+                    <option value="completed">완료</option>
+                    <option value="cancelled">취소</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">긴급도</label>
+                <select id="edUrgency" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+                    <option value="urgent">🚨 긴급</option>
+                    <option value="normal">보통</option>
+                    <option value="low">낮음</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">불량유형 / 발생부위</label>
+            <div style="display:grid; grid-template-columns: 1fr 2fr; gap:8px;">
+                <select id="edDefectType" style="padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+                    <option value="">선택</option>
+                    <option value="파손">파손</option>
+                    <option value="마모">마모</option>
+                    <option value="치수">치수NG</option>
+                    <option value="기타">기타</option>
+                </select>
+                <input type="text" id="edDefectPart" placeholder="발생부위" style="padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+            </div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">현상 상세</label>
+            <textarea id="edDefectDesc" rows="3" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px; font-family:inherit; resize:vertical;"></textarea>
+        </div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">조치내용 (수리)</label>
+            <textarea id="edRepairAction" rows="3" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px; font-family:inherit; resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:14px;">
+            <div>
+                <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">발생설비</label>
+                <input type="text" id="edMachine" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+            </div>
+            <div>
+                <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">SHOT수</label>
+                <input type="number" id="edShot" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+            </div>
+        </div>
+
+        <div style="background:#0f172a; border-left:3px solid #f59e0b; padding:8px 12px; border-radius:6px; font-size:11px; color:#fde68a; margin-bottom:12px;">
+            ⚠️ 이 화면에서는 핵심 메타정보만 수정합니다. 사진/부품 등 상세는 의뢰/완료 페이지에서 수정하세요.
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="saveEditRecord()">💾 저장</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('editModal').classList.remove('show')" style="background:#334155;color:#e2e8f0;">취소</button>
+        </div>
+    </div>
+</div>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal" id="deleteModal">
+    <div class="modal-content" style="max-width:420px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h2 style="font-size:16px; color:#fca5a5;">🗑️ 삭제 확인</h2>
+            <button class="modal-close" onclick="document.getElementById('deleteModal').classList.remove('show')">✕</button>
+        </div>
+
+        <div style="background:#7f1d1d; border-left:4px solid #dc2626; padding:12px; border-radius:6px; margin-bottom:14px;">
+            <div style="font-size:13px; color:#fecaca; font-weight:700; margin-bottom:6px;">⚠️ 이 작업은 되돌릴 수 없습니다</div>
+            <div style="font-size:12px; color:#fecaca;" id="delTargetInfo"></div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">관리자 PIN 4자리 (2580 또는 보안마스터 관리자)</label>
+            <input type="password" id="delPinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off" style="width:100%; padding:10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:18px; text-align:center; letter-spacing:8px;">
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="confirmDelete()" style="background:#dc2626; color:white; flex:2;">🗑️ 영구 삭제</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('deleteModal').classList.remove('show')" style="background:#334155;color:#e2e8f0; flex:1;">취소</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const SB_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
+const LK_AUTH = 'mm_user_session';
 
-const sbHeaders = () => ({
+function getSession() {
+    try {
+        const s = JSON.parse(localStorage.getItem(LK_AUTH) || 'null');
+        if (s && s.exp && s.exp > Date.now()) return s;
+    } catch (e) {}
+    return null;
+}
+
+async function sha256hex(s) {
+    const b = new TextEncoder().encode(s);
+    const h = await crypto.subtle.digest('SHA-256', b);
+    return Array.from(new Uint8Array(h)).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+const sbHeaders = (extra) => Object.assign({
     'apikey': SB_KEY,
     'Authorization': 'Bearer ' + SB_KEY,
     'Content-Type': 'application/json'
-});
+}, extra || {});
 
 let allData = [];
 
 window.addEventListener('DOMContentLoaded', () => {
     setMonth();
     loadData();
+    // 삭제 PIN 4자리 입력 시 자동 확인
+    const delPin = document.getElementById('delPinInput');
+    if (delPin) {
+        delPin.addEventListener('input', (e) => {
+            if (e.target.value.length === 4) confirmDelete();
+        });
+    }
 });
 
 function setMonth() {
@@ -405,7 +533,7 @@ function renderStats() {
 function renderTable() {
     const body = document.getElementById('dataBody');
     if (!allData.length) {
-        body.innerHTML = '<tr><td colspan="12" class="empty">데이터가 없습니다</td></tr>';
+        body.innerHTML = '<tr><td colspan="13" class="empty">데이터가 없습니다</td></tr>';
         return;
     }
     body.innerHTML = '';
@@ -424,8 +552,18 @@ function renderTable() {
             <td>${r.repair_end_dt ? r.repair_end_dt.slice(0, 16).replace('T', ' ') : '-'}</td>
             <td>${leadTime(r)}</td>
             <td style="text-align:right;">${(r.repair_cost || 0).toLocaleString()}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn-icon btn-edit" data-act="edit" title="수정">✏️</button>
+                <button class="btn-icon btn-del" data-act="del" title="삭제">🗑️</button>
+            </td>
         `;
-        tr.addEventListener('click', () => openReport(r));
+        // 행 본체 클릭 → 보고서 보기 (작업 버튼은 별개)
+        tr.querySelectorAll('td').forEach((td, idx) => {
+            if (idx < 12) td.addEventListener('click', () => openReport(r));
+        });
+        // 액션 버튼
+        tr.querySelector('.btn-edit').addEventListener('click', (e) => { e.stopPropagation(); openEditModal(r); });
+        tr.querySelector('.btn-del').addEventListener('click', (e) => { e.stopPropagation(); deleteRecord(r); });
         body.appendChild(tr);
     });
 }
@@ -684,6 +822,121 @@ function waitForImages(container) {
 
 function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============ 수정 ============
+let _editTarget = null;
+
+function openEditModal(r) {
+    _editTarget = r;
+    document.getElementById('editTitleNo').textContent = '(' + r.repair_no + ')';
+    document.getElementById('edStatus').value = r.status || 'requested';
+    document.getElementById('edUrgency').value = r.urgency || 'normal';
+    document.getElementById('edDefectType').value = r.defect_type || '';
+    document.getElementById('edDefectPart').value = r.defect_part || '';
+    document.getElementById('edDefectDesc').value = r.defect_desc || '';
+    document.getElementById('edRepairAction').value = r.repair_action || '';
+    document.getElementById('edMachine').value = r.machine_code || '';
+    document.getElementById('edShot').value = r.shot_count || '';
+    document.getElementById('editModal').classList.add('show');
+}
+
+async function saveEditRecord() {
+    if (!_editTarget) return;
+    const payload = {
+        status: document.getElementById('edStatus').value,
+        urgency: document.getElementById('edUrgency').value,
+        defect_type: document.getElementById('edDefectType').value || null,
+        defect_part: document.getElementById('edDefectPart').value.trim() || null,
+        defect_desc: document.getElementById('edDefectDesc').value.trim() || null,
+        repair_action: document.getElementById('edRepairAction').value.trim() || null,
+        machine_code: document.getElementById('edMachine').value.trim() || null,
+        shot_count: parseInt(document.getElementById('edShot').value) || null,
+        updated_at: new Date().toISOString()
+    };
+
+    try {
+        const url = `${SB_URL}/rest/v1/mm_mold_repair?id=eq.${_editTarget.id}`;
+        const res = await fetch(url, {
+            method: 'PATCH',
+            headers: sbHeaders({ 'Prefer': 'return=representation' }),
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(err);
+        }
+        toast('✅ 수정 완료', 'success');
+        document.getElementById('editModal').classList.remove('show');
+        _editTarget = null;
+        await loadData();
+    } catch (e) {
+        console.error(e);
+        toast('수정 실패: ' + e.message, 'error');
+    }
+}
+
+// ============ 삭제 ============
+let _deleteTarget = null;
+
+function deleteRecord(r) {
+    _deleteTarget = r;
+    const info = `의뢰번호: <b>${r.repair_no}</b><br>금형: ${r.mold_code || '-'}<br>의뢰자: ${r.request_user || '-'} (${r.request_date || '-'})<br>상태: ${statusLabel(r.status)}`;
+    document.getElementById('delTargetInfo').innerHTML = info;
+    document.getElementById('delPinInput').value = '';
+    document.getElementById('deleteModal').classList.add('show');
+    setTimeout(() => document.getElementById('delPinInput').focus(), 100);
+}
+
+async function confirmDelete() {
+    if (!_deleteTarget) return;
+    const pin = document.getElementById('delPinInput').value;
+    if (!/^\d{4}$/.test(pin)) {
+        toast('PIN 4자리 입력', 'error');
+        return;
+    }
+
+    // PIN 검증: 마스터 PIN(2580) 또는 보안마스터의 관리자 직위
+    try {
+        const h = await sha256hex(pin);
+        let authorized = (h === MASTER_PIN_HASH);
+
+        if (!authorized) {
+            // 보안마스터에서 직위 확인 (팀장 이상)
+            const url = `${SB_URL}/rest/v1/mm_user_pin?select=position,blocked&pin_hash=eq.${h}&limit=1`;
+            const res = await fetch(url, { headers: sbHeaders() });
+            if (res.ok) {
+                const rows = await res.json();
+                if (rows.length && !rows[0].blocked && /부장|차장|팀장|이사|대표|상무|관리자/.test(rows[0].position || '')) {
+                    authorized = true;
+                }
+            }
+        }
+
+        if (!authorized) {
+            toast('🚫 권한 없음 (관리자 PIN 또는 팀장급 이상)', 'error');
+            document.getElementById('delPinInput').value = '';
+            return;
+        }
+
+        // 실제 삭제
+        const url = `${SB_URL}/rest/v1/mm_mold_repair?id=eq.${_deleteTarget.id}`;
+        const res = await fetch(url, {
+            method: 'DELETE',
+            headers: sbHeaders()
+        });
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(err);
+        }
+        toast(`🗑️ ${_deleteTarget.repair_no} 삭제 완료`, 'success');
+        document.getElementById('deleteModal').classList.remove('show');
+        _deleteTarget = null;
+        await loadData();
+    } catch (e) {
+        console.error(e);
+        toast('삭제 실패: ' + e.message, 'error');
+    }
 }
 
 // ============ CSV 다운로드 ============
