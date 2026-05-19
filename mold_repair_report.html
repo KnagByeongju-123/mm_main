@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리보고서 v1.0</title>
+<title>금형 수리보고서 v1.1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -62,32 +64,62 @@ tr:hover { background: #0f172a; cursor: pointer; }
 .empty { padding: 30px; text-align: center; color: #64748b; }
 
 /* 보고서 출력 */
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; padding: 12px; overflow-y: auto; }
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: flex-start; justify-content: center; padding: 12px; overflow-y: auto; }
 .modal.show { display: flex; }
-.modal-content { background: white; color: #1f2937; border-radius: 12px; padding: 24px; width: 100%; max-width: 800px; max-height: 95vh; overflow-y: auto; }
-.modal-close { position: sticky; top: 0; float: right; background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; z-index: 10; }
+.modal-content { background: #1e293b; color: #e2e8f0; border-radius: 12px; padding: 16px; width: 100%; max-width: 900px; max-height: 95vh; overflow-y: auto; }
+.modal-close { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 700; }
 
-/* 보고서 시트 */
+/* A4 보고서 시트 (210mm × 297mm) */
+.report-sheet {
+    background: white; color: #000;
+    width: 210mm; min-height: 297mm;
+    padding: 15mm 15mm 20mm 15mm; /* 상우하좌 - 하단은 바닥글 공간 */
+    margin: 12px auto;
+    box-shadow: 0 0 12px rgba(0,0,0,0.5);
+    position: relative;
+    font-family: 'Malgun Gothic', sans-serif;
+    box-sizing: border-box;
+}
 .report { font-family: 'Malgun Gothic', sans-serif; color: #000; }
-.report h2 { text-align: center; font-size: 22px; margin: 10px 0 16px 0; letter-spacing: 4px; border-bottom: 3px double #000; padding-bottom: 10px; }
-.report .meta { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 12px; color: #555; }
-.report table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
-.report th, .report td { border: 1px solid #555; padding: 6px 8px; }
-.report th { background: #e5e7eb; font-weight: 700; width: 110px; text-align: center; }
-.report .section-title { background: #1f2937; color: white; padding: 6px 10px; font-weight: 700; font-size: 13px; margin: 14px 0 6px 0; }
-.report .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 12px 0; }
+.report h2 { text-align: center; font-size: 20px; margin: 0 0 12px 0; letter-spacing: 4px; border-bottom: 3px double #000; padding-bottom: 8px; }
+.report .meta { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; color: #555; }
+.report table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+.report th, .report td { border: 1px solid #555; padding: 5px 7px; vertical-align: top; }
+.report th { background: #e5e7eb; font-weight: 700; width: 95px; text-align: center; }
+.report .section-title { background: #1f2937; color: white; padding: 5px 10px; font-weight: 700; font-size: 12px; margin: 10px 0 5px 0; }
+.report .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 4px 0 8px 0; }
 .report .photos img { width: 100%; border: 1px solid #999; aspect-ratio: 4/3; object-fit: cover; }
-.report .sign-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 16px; }
+.report .sign-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 12px; }
 .report .sign-box { border: 1px solid #555; }
-.report .sign-box .sh { background: #e5e7eb; padding: 4px; text-align: center; font-size: 11px; font-weight: 700; }
-.report .sign-box .sb { height: 50px; padding: 4px; text-align: center; font-size: 11px; }
+.report .sign-box .sh { background: #e5e7eb; padding: 3px; text-align: center; font-size: 10px; font-weight: 700; }
+.report .sign-box .sb { height: 45px; padding: 3px; text-align: center; font-size: 10px; }
+
+/* A4 바닥글 (좌/중/우) */
+.report-footer {
+    position: absolute;
+    left: 15mm; right: 15mm; bottom: 8mm;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    font-size: 9px; color: #555;
+    border-top: 1px solid #ccc;
+    padding-top: 4px;
+}
+.report-footer > div:nth-child(1) { text-align: left; }
+.report-footer > div:nth-child(2) { text-align: center; }
+.report-footer > div:nth-child(3) { text-align: right; }
+
+/* 화면용 액션 바 */
+.report-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.report-actions .left { display: flex; gap: 6px; }
 
 @media print {
+    @page { size: A4; margin: 0; }
+    body { background: white; padding: 0; }
     body * { visibility: hidden; }
-    .modal, .modal * { visibility: visible; }
-    .modal { position: absolute; background: white; inset: 0; padding: 0; }
-    .modal-content { box-shadow: none; max-height: none; max-width: none; }
-    .modal-close { display: none; }
+    #reportModal, #reportModal * { visibility: visible; }
+    #reportModal { position: absolute; background: white; inset: 0; padding: 0; overflow: visible; display: block; }
+    #reportModal .modal-content { box-shadow: none; max-height: none; max-width: none; padding: 0; background: white; border-radius: 0; }
+    .report-actions, .modal-close { display: none !important; }
+    .report-sheet { box-shadow: none; margin: 0; width: 210mm; min-height: 297mm; page-break-after: always; }
 }
 
 .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; border: 1px solid #475569; color: #e2e8f0; padding: 12px 20px; border-radius: 8px; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
@@ -102,8 +134,13 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 <div class="container">
 
 <header>
-    <h1>📊 금형 수리보고서</h1>
-    <div class="subtitle">Mold Repair Report · v1.0</div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+        <div style="flex:1;">
+            <h1>📊 금형 수리보고서</h1>
+            <div class="subtitle">Mold Repair Report · v1.1</div>
+        </div>
+        <button onclick="openFooterSettings()" title="바닥글 설정" style="background:rgba(255,255,255,0.15); color:white; border:none; width:38px; height:38px; border-radius:8px; cursor:pointer; font-size:18px;">⚙️</button>
+    </div>
 </header>
 
 <!-- 필터 -->
@@ -171,16 +208,66 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<footer>금형 수리보고서 시스템 · Rev 1.0 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리보고서 시스템 · Rev 1.1 · 태진다이텍 품질관리팀</footer>
 </div>
 
 <!-- 보고서 모달 -->
 <div class="modal" id="reportModal">
     <div class="modal-content">
-        <button class="modal-close" onclick="document.getElementById('reportModal').classList.remove('show')">✕ 닫기</button>
-        <button class="btn btn-primary" style="float:right; margin-right:6px;" onclick="window.print()">🖨️ 인쇄</button>
-        <div style="clear:both;"></div>
-        <div class="report" id="reportContent"></div>
+        <div class="report-actions">
+            <div class="left">
+                <button class="btn btn-success" onclick="downloadReportPDF()">📥 PDF 다운로드</button>
+                <button class="btn btn-primary" onclick="window.print()">🖨️ 인쇄</button>
+            </div>
+            <button class="modal-close" onclick="document.getElementById('reportModal').classList.remove('show')">✕ 닫기</button>
+        </div>
+        <!-- A4 보고서 본체 -->
+        <div class="report-sheet" id="reportSheet">
+            <div class="report" id="reportContent"></div>
+            <div class="report-footer" id="reportFooter">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 바닥글 설정 모달 -->
+<div class="modal" id="footerSettingsModal">
+    <div class="modal-content" style="max-width:480px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h2 style="font-size:16px;">⚙️ 바닥글 설정</h2>
+            <button class="modal-close" onclick="document.getElementById('footerSettingsModal').classList.remove('show')">✕</button>
+        </div>
+        <div style="font-size:12px; color:#94a3b8; margin-bottom:12px;">A4 보고서 하단에 인쇄될 텍스트를 설정합니다. 비워두면 표시되지 않습니다.</div>
+
+        <div style="margin-bottom:10px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">좌측</label>
+            <input type="text" id="cfgFooterLeft" placeholder="예: 양식번호 QM-F-001 Rev.3" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+        </div>
+        <div style="margin-bottom:10px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">중앙</label>
+            <input type="text" id="cfgFooterCenter" placeholder="예: 태진다이텍 품질관리팀" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+        </div>
+        <div style="margin-bottom:14px;">
+            <label style="font-size:12px; color:#94a3b8; font-weight:600; display:block; margin-bottom:4px;">우측</label>
+            <input type="text" id="cfgFooterRight" placeholder="예: {date} / {repair_no}" style="width:100%; padding:8px 10px; border-radius:6px; border:1px solid #475569; background:#0f172a; color:#e2e8f0; font-size:13px;">
+        </div>
+
+        <div style="background:#0f172a; border-left:3px solid #2563eb; padding:8px 12px; border-radius:6px; font-size:11px; color:#bfdbfe; margin-bottom:12px;">
+            💡 사용 가능한 치환자:<br>
+            <code style="color:#fbbf24;">{date}</code> 인쇄일 ·
+            <code style="color:#fbbf24;">{datetime}</code> 인쇄일시 ·
+            <code style="color:#fbbf24;">{repair_no}</code> 의뢰번호 ·
+            <code style="color:#fbbf24;">{mold_code}</code> 금형코드 ·
+            <code style="color:#fbbf24;">{page}</code> 페이지
+        </div>
+
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" onclick="saveFooterSettings()">💾 저장</button>
+            <button class="btn btn-secondary" onclick="resetFooterSettings()" style="background:#475569;color:#e2e8f0;">초기값</button>
+        </div>
     </div>
 </div>
 
@@ -368,7 +455,137 @@ function openReport(r) {
             <div class="sign-box"><div class="sh">팀장 승인</div><div class="sb"></div></div>
         </div>
     `;
+    window._currentReport = r;
+    renderReportFooter(r);
     document.getElementById('reportModal').classList.add('show');
+}
+
+// ============ 바닥글 설정 ============
+const LK_FOOTER = 'MR_REPORT_FOOTER';
+const DEFAULT_FOOTER = {
+    left: '양식번호 QM-F-MR-001 Rev.1',
+    center: '태진다이텍 품질관리팀',
+    right: '{date} / {repair_no}'
+};
+
+function getFooterCfg() {
+    try {
+        const cfg = JSON.parse(localStorage.getItem(LK_FOOTER) || '{}');
+        return { ...DEFAULT_FOOTER, ...cfg };
+    } catch (e) {
+        return { ...DEFAULT_FOOTER };
+    }
+}
+
+function interpolateFooter(text, r) {
+    if (!text) return '';
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ko-KR');
+    const dtStr = now.toLocaleString('ko-KR');
+    return text
+        .replace(/\{date\}/g, dateStr)
+        .replace(/\{datetime\}/g, dtStr)
+        .replace(/\{repair_no\}/g, (r && r.repair_no) || '')
+        .replace(/\{mold_code\}/g, (r && r.mold_code) || '')
+        .replace(/\{page\}/g, '1');
+}
+
+function renderReportFooter(r) {
+    const cfg = getFooterCfg();
+    const wrap = document.getElementById('reportFooter');
+    wrap.innerHTML = `
+        <div>${escapeHtml(interpolateFooter(cfg.left, r))}</div>
+        <div>${escapeHtml(interpolateFooter(cfg.center, r))}</div>
+        <div>${escapeHtml(interpolateFooter(cfg.right, r))}</div>
+    `;
+}
+
+function openFooterSettings() {
+    const cfg = getFooterCfg();
+    document.getElementById('cfgFooterLeft').value = cfg.left;
+    document.getElementById('cfgFooterCenter').value = cfg.center;
+    document.getElementById('cfgFooterRight').value = cfg.right;
+    document.getElementById('footerSettingsModal').classList.add('show');
+}
+
+function saveFooterSettings() {
+    const cfg = {
+        left: document.getElementById('cfgFooterLeft').value,
+        center: document.getElementById('cfgFooterCenter').value,
+        right: document.getElementById('cfgFooterRight').value
+    };
+    localStorage.setItem(LK_FOOTER, JSON.stringify(cfg));
+    document.getElementById('footerSettingsModal').classList.remove('show');
+    toast('바닥글 설정 저장 완료', 'success');
+    // 현재 열린 보고서가 있으면 즉시 갱신
+    if (window._currentReport) renderReportFooter(window._currentReport);
+}
+
+function resetFooterSettings() {
+    if (!confirm('바닥글 설정을 초기값으로 되돌리시겠습니까?')) return;
+    localStorage.removeItem(LK_FOOTER);
+    const cfg = getFooterCfg();
+    document.getElementById('cfgFooterLeft').value = cfg.left;
+    document.getElementById('cfgFooterCenter').value = cfg.center;
+    document.getElementById('cfgFooterRight').value = cfg.right;
+    toast('초기값으로 복원', 'success');
+}
+
+// ============ PDF 다운로드 (A4) ============
+async function downloadReportPDF() {
+    const sheet = document.getElementById('reportSheet');
+    if (!sheet || !window._currentReport) { toast('보고서를 먼저 여세요', 'error'); return; }
+    if (!window.html2canvas || !window.jspdf) { toast('PDF 라이브러리 로드 실패 (인터넷 연결 확인)', 'error'); return; }
+
+    toast('PDF 생성 중...', 'success');
+
+    try {
+        // 고해상도 캡처 (scale 2 = 2배 선명)
+        const canvas = await html2canvas(sheet, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+        // A4 크기: 210 × 297mm
+        const pageWidth = 210;
+        const pageHeight = 297;
+
+        // 이미지 비율 계산
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        if (imgHeight <= pageHeight) {
+            // 한 페이지에 들어가는 경우
+            pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+        } else {
+            // 여러 페이지로 분할
+            let remainingHeight = imgHeight;
+            let positionY = 0;
+            let pageNum = 0;
+            while (remainingHeight > 0) {
+                if (pageNum > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, positionY, imgWidth, imgHeight);
+                remainingHeight -= pageHeight;
+                positionY -= pageHeight;
+                pageNum++;
+                if (pageNum > 10) break; // 안전장치
+            }
+        }
+
+        const r = window._currentReport;
+        const filename = `${r.repair_no || '수리보고서'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        pdf.save(filename);
+        toast('PDF 다운로드 완료', 'success');
+    } catch (e) {
+        console.error(e);
+        toast('PDF 생성 실패: ' + e.message, 'error');
+    }
 }
 
 function escapeHtml(s) {
