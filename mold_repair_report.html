@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리보고서 v1.2</title>
+<title>금형 수리보고서 v1.3</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -82,18 +82,61 @@ tr:hover { background: #0f172a; cursor: pointer; }
 }
 .report-sheet, .report-sheet * { color: #000; } /* 모달 회색 색상 상속 차단 */
 .report { font-family: 'Malgun Gothic', sans-serif; color: #000; }
-.report h2 { text-align: center; font-size: 20px; margin: 0 0 12px 0; letter-spacing: 4px; border-bottom: 3px double #000; padding-bottom: 8px; color: #000; }
-.report .meta { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; color: #333; }
+.report .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: 10px; margin-bottom: 10px; color: #333; }
 .report table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; color: #000; }
 .report th, .report td { border: 1px solid #333; padding: 5px 7px; vertical-align: top; color: #000; }
 .report th { background: #e5e7eb; font-weight: 700; width: 95px; text-align: center; color: #000; }
 .report .section-title { background: #1f2937; color: #fff !important; padding: 5px 10px; font-weight: 700; font-size: 12px; margin: 10px 0 5px 0; }
 .report .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 4px 0 8px 0; }
 .report .photos img { width: 100%; border: 1px solid #666; aspect-ratio: 4/3; object-fit: cover; }
-.report .sign-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 12px; }
-.report .sign-box { border: 1px solid #333; }
-.report .sign-box .sh { background: #e5e7eb; padding: 3px; text-align: center; font-size: 10px; font-weight: 700; color: #000; }
-.report .sign-box .sb { height: 45px; padding: 3px; text-align: center; font-size: 10px; color: #000; }
+
+/* 상단 헤더: 제목 + 결재란 */
+.report .header-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: stretch;
+    gap: 10mm;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 3px double #000;
+}
+.report .title-block { display: flex; align-items: center; justify-content: center; }
+.report .title-block h2 {
+    text-align: center; font-size: 22px; margin: 0;
+    letter-spacing: 6px; border: none; padding: 0;
+}
+/* 결재란 (우상단) */
+.report .approval-table {
+    border-collapse: collapse;
+    margin: 0;
+    table-layout: fixed;
+}
+.report .approval-table th,
+.report .approval-table td {
+    border: 1px solid #000;
+    padding: 0;
+    text-align: center;
+    vertical-align: middle;
+    color: #000;
+}
+.report .approval-table th {
+    background: #e5e7eb;
+    font-size: 11px;
+    font-weight: 700;
+    height: 18px;
+    width: 26mm;
+}
+.report .approval-side {
+    background: #d1d5db !important;
+    width: 8mm !important;
+    font-size: 11px;
+    line-height: 1.1;
+}
+.report .approval-cell {
+    height: 26mm;
+    width: 26mm;
+    background: #fff;
+}
 
 /* A4 바닥글 (좌/중/우) */
 .report-footer {
@@ -139,7 +182,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
         <div style="flex:1;">
             <h1>📊 금형 수리보고서</h1>
-            <div class="subtitle">Mold Repair Report · v1.2</div>
+            <div class="subtitle">Mold Repair Report · v1.3</div>
         </div>
         <button onclick="openFooterSettings()" title="바닥글 설정" style="background:rgba(255,255,255,0.15); color:white; border:none; width:38px; height:38px; border-radius:8px; cursor:pointer; font-size:18px;">⚙️</button>
     </div>
@@ -210,7 +253,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<footer>금형 수리보고서 시스템 · Rev 1.2 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리보고서 시스템 · Rev 1.3 · 태진다이텍 품질관리팀</footer>
 </div>
 
 <!-- 보고서 모달 -->
@@ -412,20 +455,42 @@ function openReport(r) {
         : '<div style="font-size:11px;color:#888;padding:6px;">사용 부품 없음</div>';
     
     document.getElementById('reportContent').innerHTML = `
-        <h2>금 형 수 리 보 고 서</h2>
+        <!-- 상단: 제목 + 우측 결재란 -->
+        <div class="header-row">
+            <div class="title-block">
+                <h2>금 형 수 리 보 고 서</h2>
+            </div>
+            <table class="approval-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="approval-side">결<br>재</th>
+                        <th>담당</th><th>검토</th><th>승인</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="approval-cell"></td>
+                        <td class="approval-cell"></td>
+                        <td class="approval-cell"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
         <div class="meta">
             <span>의뢰번호: <b>${r.repair_no}</b></span>
+            <span>작성자: ${r.repair_user || r.request_user || '-'}</span>
             <span>출력일: ${new Date().toLocaleString('ko-KR')}</span>
             <span>상태: <b>${statusLabel(r.status)}</b></span>
         </div>
-        
+
         <div class="section-title">1. 기본 정보</div>
         <table>
             <tr><th>금형코드</th><td>${r.mold_code || '-'}</td><th>금형명</th><td>${r.mold_name || '-'}</td></tr>
             <tr><th>품번</th><td>${r.item_code || '-'}</td><th>품명</th><td>${r.item_name || '-'}</td></tr>
             <tr><th>발생설비</th><td>${r.machine_code || '-'}</td><th>SHOT수</th><td>${r.shot_count ? r.shot_count.toLocaleString() : '-'}</td></tr>
         </table>
-        
+
         <div class="section-title">2. 의뢰 내용</div>
         <table>
             <tr><th>의뢰일</th><td>${r.request_date || '-'}</td><th>긴급도</th><td>${urgencyLabel(r.urgency)}</td></tr>
@@ -434,7 +499,7 @@ function openReport(r) {
             <tr><th>현상 상세</th><td colspan="3" style="white-space:pre-wrap; min-height:50px;">${escapeHtml(r.defect_desc || '')}</td></tr>
         </table>
         ${reqPhotos ? `<div class="section-title">2-1. 의뢰 사진</div><div class="photos">${reqPhotos}</div>` : ''}
-        
+
         <div class="section-title">3. 수리 내용</div>
         <table>
             <tr><th>수리자</th><td>${r.repair_user || '-'}</td><th>수리유형</th><td>${r.repair_type || '-'}</td></tr>
@@ -444,18 +509,11 @@ function openReport(r) {
             <tr><th>원인 분석</th><td colspan="3" style="white-space:pre-wrap; min-height:50px;">${escapeHtml(r.cause_analysis || '')}</td></tr>
             <tr><th>재발방지</th><td colspan="3" style="white-space:pre-wrap; min-height:50px;">${escapeHtml(r.prevention || '')}</td></tr>
         </table>
-        
+
         <div class="section-title">4. 사용 부품 / 비용</div>
         ${partsTable}
-        
+
         ${repPhotos ? `<div class="section-title">5. 수리 사진</div><div class="photos">${repPhotos}</div>` : ''}
-        
-        <div class="sign-row">
-            <div class="sign-box"><div class="sh">의뢰자</div><div class="sb">${r.request_user || ''}</div></div>
-            <div class="sign-box"><div class="sh">수리자</div><div class="sb">${r.repair_user || ''}</div></div>
-            <div class="sign-box"><div class="sh">품질확인</div><div class="sb"></div></div>
-            <div class="sign-box"><div class="sh">팀장 승인</div><div class="sb"></div></div>
-        </div>
     `;
     window._currentReport = r;
     renderReportFooter(r);
@@ -539,55 +597,89 @@ async function downloadReportPDF() {
     if (!sheet || !window._currentReport) { toast('보고서를 먼저 여세요', 'error'); return; }
     if (!window.html2canvas || !window.jspdf) { toast('PDF 라이브러리 로드 실패 (인터넷 연결 확인)', 'error'); return; }
 
-    toast('PDF 생성 중...', 'success');
+    toast('PDF 생성 중... (사진이 많으면 10초 정도)', 'success');
+
+    // PDF 생성 중 사용자가 다른 동작 못하게 잠시 차단
+    const btn = event && event.currentTarget;
+    if (btn) btn.disabled = true;
 
     try {
-        // 고해상도 캡처 (scale 2 = 2배 선명)
+        // 사진(이미지)들이 모두 로드된 후 캡처 (base64는 즉시 가능하지만 안전장치)
+        await waitForImages(sheet);
+
+        // 고해상도 캡처
         const canvas = await html2canvas(sheet, {
             scale: 2,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: '#ffffff',
-            logging: false
+            logging: false,
+            windowWidth: sheet.scrollWidth,
+            windowHeight: sheet.scrollHeight
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 
-        // A4 크기: 210 × 297mm
-        const pageWidth = 210;
-        const pageHeight = 297;
+        // A4 크기 (mm)
+        const pageWidthMm = 210;
+        const pageHeightMm = 297;
 
-        // 이미지 비율 계산
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        // 캔버스 → PDF 비율
+        const pxPerMm = canvas.width / pageWidthMm; // 가로 기준 비율
+        const pageHeightPx = Math.floor(pageHeightMm * pxPerMm);
 
-        if (imgHeight <= pageHeight) {
-            // 한 페이지에 들어가는 경우
-            pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-        } else {
-            // 여러 페이지로 분할
-            let remainingHeight = imgHeight;
-            let positionY = 0;
-            let pageNum = 0;
-            while (remainingHeight > 0) {
-                if (pageNum > 0) pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', 0, positionY, imgWidth, imgHeight);
-                remainingHeight -= pageHeight;
-                positionY -= pageHeight;
-                pageNum++;
-                if (pageNum > 10) break; // 안전장치
-            }
+        const totalHeight = canvas.height;
+        let renderedHeight = 0;
+        let pageIdx = 0;
+
+        while (renderedHeight < totalHeight) {
+            // 현재 페이지에 들어갈 영역 잘라내기
+            const sliceHeight = Math.min(pageHeightPx, totalHeight - renderedHeight);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = sliceHeight;
+            const ctx = sliceCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+            ctx.drawImage(canvas, 0, renderedHeight, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+            const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+            const sliceHeightMm = (sliceHeight / canvas.width) * pageWidthMm;
+
+            if (pageIdx > 0) pdf.addPage();
+            pdf.addImage(sliceData, 'JPEG', 0, 0, pageWidthMm, sliceHeightMm);
+
+            renderedHeight += sliceHeight;
+            pageIdx++;
+            if (pageIdx > 20) break; // 안전장치
         }
 
         const r = window._currentReport;
-        const filename = `${r.repair_no || '수리보고서'}_${new Date().toISOString().slice(0,10)}.pdf`;
+        const filename = `${(r.repair_no || '수리보고서').replace(/[\\\/:*?"<>|]/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
         pdf.save(filename);
-        toast('PDF 다운로드 완료', 'success');
+        toast('✅ PDF 다운로드 완료 (' + pageIdx + '페이지)', 'success');
     } catch (e) {
         console.error(e);
         toast('PDF 생성 실패: ' + e.message, 'error');
+    } finally {
+        if (btn) btn.disabled = false;
     }
+}
+
+// 시트 내 모든 이미지가 로드될 때까지 대기
+function waitForImages(container) {
+    const imgs = Array.from(container.querySelectorAll('img'));
+    if (!imgs.length) return Promise.resolve();
+    return Promise.all(imgs.map(img => {
+        if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
+        return new Promise(resolve => {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+            // 5초 타임아웃
+            setTimeout(resolve, 5000);
+        });
+    }));
 }
 
 function escapeHtml(s) {
