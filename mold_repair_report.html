@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리보고서 v1.1</title>
+<title>금형 수리보고서 v1.2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -80,29 +80,31 @@ tr:hover { background: #0f172a; cursor: pointer; }
     font-family: 'Malgun Gothic', sans-serif;
     box-sizing: border-box;
 }
+.report-sheet, .report-sheet * { color: #000; } /* 모달 회색 색상 상속 차단 */
 .report { font-family: 'Malgun Gothic', sans-serif; color: #000; }
-.report h2 { text-align: center; font-size: 20px; margin: 0 0 12px 0; letter-spacing: 4px; border-bottom: 3px double #000; padding-bottom: 8px; }
-.report .meta { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; color: #555; }
-.report table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
-.report th, .report td { border: 1px solid #555; padding: 5px 7px; vertical-align: top; }
-.report th { background: #e5e7eb; font-weight: 700; width: 95px; text-align: center; }
-.report .section-title { background: #1f2937; color: white; padding: 5px 10px; font-weight: 700; font-size: 12px; margin: 10px 0 5px 0; }
+.report h2 { text-align: center; font-size: 20px; margin: 0 0 12px 0; letter-spacing: 4px; border-bottom: 3px double #000; padding-bottom: 8px; color: #000; }
+.report .meta { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 10px; color: #333; }
+.report table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; color: #000; }
+.report th, .report td { border: 1px solid #333; padding: 5px 7px; vertical-align: top; color: #000; }
+.report th { background: #e5e7eb; font-weight: 700; width: 95px; text-align: center; color: #000; }
+.report .section-title { background: #1f2937; color: #fff !important; padding: 5px 10px; font-weight: 700; font-size: 12px; margin: 10px 0 5px 0; }
 .report .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 4px 0 8px 0; }
-.report .photos img { width: 100%; border: 1px solid #999; aspect-ratio: 4/3; object-fit: cover; }
+.report .photos img { width: 100%; border: 1px solid #666; aspect-ratio: 4/3; object-fit: cover; }
 .report .sign-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 12px; }
-.report .sign-box { border: 1px solid #555; }
-.report .sign-box .sh { background: #e5e7eb; padding: 3px; text-align: center; font-size: 10px; font-weight: 700; }
-.report .sign-box .sb { height: 45px; padding: 3px; text-align: center; font-size: 10px; }
+.report .sign-box { border: 1px solid #333; }
+.report .sign-box .sh { background: #e5e7eb; padding: 3px; text-align: center; font-size: 10px; font-weight: 700; color: #000; }
+.report .sign-box .sb { height: 45px; padding: 3px; text-align: center; font-size: 10px; color: #000; }
 
 /* A4 바닥글 (좌/중/우) */
 .report-footer {
     position: absolute;
     left: 15mm; right: 15mm; bottom: 8mm;
     display: grid; grid-template-columns: 1fr 1fr 1fr;
-    font-size: 9px; color: #555;
-    border-top: 1px solid #ccc;
+    font-size: 9px; color: #333;
+    border-top: 1px solid #666;
     padding-top: 4px;
 }
+.report-footer > div { color: #333; }
 .report-footer > div:nth-child(1) { text-align: left; }
 .report-footer > div:nth-child(2) { text-align: center; }
 .report-footer > div:nth-child(3) { text-align: right; }
@@ -137,7 +139,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
         <div style="flex:1;">
             <h1>📊 금형 수리보고서</h1>
-            <div class="subtitle">Mold Repair Report · v1.1</div>
+            <div class="subtitle">Mold Repair Report · v1.2</div>
         </div>
         <button onclick="openFooterSettings()" title="바닥글 설정" style="background:rgba(255,255,255,0.15); color:white; border:none; width:38px; height:38px; border-radius:8px; cursor:pointer; font-size:18px;">⚙️</button>
     </div>
@@ -208,7 +210,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<footer>금형 수리보고서 시스템 · Rev 1.1 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리보고서 시스템 · Rev 1.2 · 태진다이텍 품질관리팀</footer>
 </div>
 
 <!-- 보고서 모달 -->
