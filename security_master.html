@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🛡 보안 마스터 · msm</title>
+<title>🛡 보안 마스터 v1.8 · msm</title>
 
 <link rel="stylesheet" href="data:text/css,">
 
@@ -258,7 +258,7 @@ body.locked .entry-lock{display:flex}
 <!-- 헤더 -->
 <div class="hdr">
   <a class="back" href="index.html">←</a>
-  <div class="title">🛡 보안 마스터 <span id="verTag" style="font-size:11px;color:#94a3b8;font-weight:500;cursor:pointer" onclick="showChangelog()">Rev 1.7</span></div>
+  <div class="title">🛡 보안 마스터 <span id="verTag" style="font-size:11px;color:#94a3b8;font-weight:500;cursor:pointer" onclick="showChangelog()">Rev 1.8</span></div>
   <div class="cnt-badge" id="cntBadge">0건</div>
 </div>
 
@@ -451,10 +451,10 @@ body.locked .entry-lock{display:flex}
       <label>공장</label>
       <select id="edFactory">
         <option value="">선택안함</option>
-        <option value="본사">🔧 본사 (금형조립)</option>
-        <option value="1공장">⚙️ 1공장 (프레스양산)</option>
-        <option value="2공장">💎 2공장 (샌딩)</option>
-        <option value="3공장">🌀 3공장 (바렐)</option>
+        <option value="본사">본사</option>
+        <option value="1공장">1공장</option>
+        <option value="2공장">2공장</option>
+        <option value="3공장">3공장</option>
         <option value="기타">기타</option>
       </select>
     </div>
@@ -1429,7 +1429,10 @@ function showChangelog(){
   const log =
     '🛡 보안 마스터 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'Rev 1.7 (현재)\n' +
+    'Rev 1.8 (현재)\n' +
+    '• 공장 옵션 이모지·설명 제거 (텍스트만):\n' +
+    '  본사 / 1공장 / 2공장 / 3공장 / 기타\n\n' +
+    'Rev 1.7\n' +
     '• 공장 이모지 정비: ⚙️(프레스) 💎(샌딩) 🌀(바렐)\n\n' +
     'Rev 1.6\n' +
     '• 공장별 작업 명시: 본사(금형조립), 1공장(프레스),\n' +
