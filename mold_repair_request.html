@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리의뢰 v1.2</title>
+<title>금형 수리의뢰 v1.4</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -110,7 +110,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div class="header-row">
         <div>
             <h1>🔧 금형 수리의뢰</h1>
-            <div class="subtitle">Mold Repair Request · v1.2</div>
+            <div class="subtitle">Mold Repair Request · v1.4</div>
         </div>
         <button class="icon-btn" onclick="openSettings()" title="알림 설정">⚙️</button>
     </div>
@@ -214,7 +214,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <button class="btn btn-primary" onclick="submitRequest()">📨 수리의뢰 등록</button>
 
-<footer>금형 수리의뢰 시스템 · Rev 1.2 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리의뢰 시스템 · Rev 1.4 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -230,31 +230,17 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<!-- 로그인 PIN 모달 (사원ID + PIN) -->
+<!-- 로그인 PIN 모달 (PIN 4자리만 입력) -->
 <div class="modal" id="pinModal">
     <div class="modal-content" style="max-width: 340px;">
         <div class="modal-header">
             <h2 style="font-size: 16px;">🔓 의뢰자 인증</h2>
             <button class="modal-close" onclick="document.getElementById('pinModal').classList.remove('show')">✕</button>
         </div>
-
-        <!-- 1단계: 사원ID 입력 -->
-        <div id="pinStep1">
-            <p style="font-size:13px; color:#94a3b8; margin-bottom:10px;">사원ID 4자리를 입력하세요</p>
-            <input type="text" class="search-input pin-input" id="loginIdInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
-            <button class="btn btn-primary" onclick="checkUserId()">다음</button>
-        </div>
-
-        <!-- 2단계: PIN 입력 -->
-        <div id="pinStep2" style="display:none;">
-            <p style="font-size:13px; color:#94a3b8; margin-bottom:6px;" id="pinUserInfo"></p>
-            <p style="font-size:11px; color:#fbbf24; margin-bottom:10px;">PIN을 입력하세요</p>
-            <input type="password" class="search-input pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
-            <div style="display:flex; gap:6px;">
-                <button class="btn btn-secondary" style="flex:1;" onclick="backToStep1()">← 뒤로</button>
-                <button class="btn btn-primary" style="flex:2;" onclick="verifyPin()">확인</button>
-            </div>
-        </div>
+        <p style="font-size:13px; color:#94a3b8; margin-bottom:6px;">본인 PIN 4자리를 입력하세요</p>
+        <p style="font-size:11px; color:#fbbf24; margin-bottom:10px;">PIN은 보안마스터에서 등록·변경됩니다</p>
+        <input type="password" class="search-input pin-input" id="pinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric" autocomplete="off">
+        <button class="btn btn-primary" onclick="verifyPin()">확인</button>
     </div>
 </div>
 
@@ -342,6 +328,10 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 const SB_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 
+// 보안마스터 (security_master.html) 공용
+const TBL_USER_PIN = 'mm_user_pin';
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf'; // 마스터 PIN(어디서나 통과)
+
 // 설정 저장 키
 const LK_NTFY = 'MR_NTFY_CFG';
 const LK_ADMIN_PIN = 'MR_ADMIN_PIN';
@@ -349,6 +339,13 @@ const DEFAULT_ADMIN_PIN = '7575'; // 최초 기본값 (설정에서 변경 가�
 
 function getAdminPin() {
     return localStorage.getItem(LK_ADMIN_PIN) || DEFAULT_ADMIN_PIN;
+}
+
+// SHA-256 (보안마스터와 동일 방식)
+async function sha256hex(s) {
+    const b = new TextEncoder().encode(s);
+    const h = await crypto.subtle.digest('SHA-256', b);
+    return Array.from(new Uint8Array(h)).map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
 const DEFAULT_NTFY = {
@@ -367,7 +364,6 @@ const sbHeaders = () => ({
 });
 
 // ============ 상태 ============
-let userDB = [];
 let moldList = [];
 let selectedDefectType = '';
 let selectedUrgency = 'normal';
@@ -377,7 +373,6 @@ let verifiedUser = null;
 // ============ 초기화 ============
 window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('requestDate').value = new Date().toISOString().split('T')[0];
-    await loadUserDB();
     await loadMoldMaster();
     bindEvents();
 
@@ -401,11 +396,12 @@ function renderUserBox() {
             </div>`;
         return;
     }
+    const sub = [verifiedUser.factory, verifiedUser.dept, verifiedUser.position].filter(Boolean).join(' · ');
     box.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <div style="font-size:16px; font-weight:700; color:#bbf7d0;">✓ ${verifiedUser.name}</div>
-                <div style="font-size:12px; color:#94a3b8; margin-top:3px;">${verifiedUser.dept} · ${verifiedUser.position || ''}</div>
+                <div style="font-size:12px; color:#94a3b8; margin-top:3px;">${sub || '-'}</div>
             </div>
             <button class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;" onclick="logoutUser()">변경</button>
         </div>`;
@@ -415,16 +411,6 @@ function logoutUser() {
     verifiedUser = null;
     localStorage.removeItem('MR_LAST_USER');
     renderUserBox();
-}
-
-async function loadUserDB() {
-    try {
-        const res = await fetch('사원DB.json');
-        userDB = await res.json();
-    } catch (e) {
-        console.warn('사원DB.json 로드 실패. 빈 DB로 진행', e);
-        userDB = [];
-    }
 }
 
 async function loadMoldMaster() {
@@ -485,12 +471,7 @@ function bindEvents() {
         });
     });
     
-    // 로그인 ID 4자리 자동 확인
-    document.getElementById('loginIdInput').addEventListener('input', (e) => {
-        if (e.target.value.length === 4) checkUserId();
-    });
-
-    // PIN 입력 자동 확인
+    // PIN 입력 자동 확인 (4자리 입력 즉시)
     document.getElementById('pinInput').addEventListener('input', (e) => {
         if (e.target.value.length === 4) verifyPin();
     });
@@ -501,64 +482,68 @@ function bindEvents() {
     });
 }
 
-// ============ PIN 인증 ============
-let pendingUser = null;
-
+// ============ PIN 인증 (보안마스터 mm_user_pin 기반) ============
 function openLoginPin() {
-    pendingUser = null;
-    document.getElementById('pinStep1').style.display = 'block';
-    document.getElementById('pinStep2').style.display = 'none';
-    document.getElementById('loginIdInput').value = '';
     document.getElementById('pinInput').value = '';
     document.getElementById('pinModal').classList.add('show');
-    setTimeout(() => document.getElementById('loginIdInput').focus(), 100);
-}
-
-function checkUserId() {
-    const id = document.getElementById('loginIdInput').value.trim();
-    if (id.length !== 4) {
-        toast('사원ID 4자리 입력', 'error');
-        return;
-    }
-    const user = userDB.find(u => u.ID === id);
-    if (!user) {
-        toast('등록되지 않은 사원ID', 'error');
-        document.getElementById('loginIdInput').value = '';
-        return;
-    }
-    pendingUser = user;
-    document.getElementById('pinUserInfo').textContent = `${user.부서} · ${user.직위} · ${user.성명}`;
-    document.getElementById('pinStep1').style.display = 'none';
-    document.getElementById('pinStep2').style.display = 'block';
-    document.getElementById('pinInput').value = '';
     setTimeout(() => document.getElementById('pinInput').focus(), 100);
 }
 
-function backToStep1() {
-    pendingUser = null;
-    document.getElementById('pinStep2').style.display = 'none';
-    document.getElementById('pinStep1').style.display = 'block';
-    setTimeout(() => document.getElementById('loginIdInput').focus(), 100);
-}
-
-function verifyPin() {
-    if (!pendingUser) return;
+async function verifyPin() {
     const pin = document.getElementById('pinInput').value;
-    if (pin !== pendingUser.ID) {
-        toast('PIN이 일치하지 않습니다', 'error');
-        document.getElementById('pinInput').value = '';
+    if (!/^\d{4}$/.test(pin)) {
+        toast('PIN 4자리 숫자', 'error');
         return;
     }
-    verifiedUser = {
-        id: pendingUser.ID,
-        name: pendingUser.성명,
-        dept: pendingUser.부서,
-        position: pendingUser.직위
-    };
-    localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
-    document.getElementById('pinModal').classList.remove('show');
-    renderUserBox();
-    toast(`${verifiedUser.name}님 환영합니다`, 'success');
+    try {
+        const h = await sha256hex(pin);
+
+        // 🔑 마스터 PIN: 어디서나 통과 (가상 관리자)
+        if (h === MASTER_PIN_HASH) {
+            verifiedUser = {
+                id: 'MASTER',
+                name: '관리자',
+                dept: '관리',
+                position: '마스터',
+                factory: ''
+            };
+            localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
+            document.getElementById('pinModal').classList.remove('show');
+            renderUserBox();
+            toast('🔑 마스터 인증 완료', 'success');
+            return;
+        }
+
+        const url = `${SB_URL}/rest/v1/${TBL_USER_PIN}?select=id,name,factory,dept,position,blocked,blocked_reason&pin_hash=eq.${h}&limit=1`;
+        const res = await fetch(url, { headers: sbHeaders() });
+        if (!res.ok) throw new Error('서버 응답 오류 (' + res.status + ')');
+        const rows = await res.json();
+        if (!rows.length) {
+            toast('등록되지 않은 PIN', 'error');
+            document.getElementById('pinInput').value = '';
+            return;
+        }
+        const u = rows[0];
+        if (u.blocked) {
+            toast('🚫 차단된 사용자입니다' + (u.blocked_reason ? ' (' + u.blocked_reason + ')' : ''), 'error');
+            document.getElementById('pinInput').value = '';
+            return;
+        }
+        verifiedUser = {
+            id: u.id,
+            name: u.name,
+            dept: u.dept || '',
+            position: u.position || '',
+            factory: u.factory || ''
+        };
+        localStorage.setItem('MR_LAST_USER', JSON.stringify(verifiedUser));
+        document.getElementById('pinModal').classList.remove('show');
+        renderUserBox();
+        toast(`${verifiedUser.name}님 환영합니다`, 'success');
+    } catch (e) {
+        console.error(e);
+        toast('인증 실패: ' + e.message, 'error');
+    }
 }
 
 // ============ 금형 검색 ============
@@ -720,7 +705,7 @@ async function submitRequest() {
         item_code: document.getElementById('itemCode').value,
         item_name: document.getElementById('itemName').value,
         request_date: document.getElementById('requestDate').value,
-        request_user_id: verifiedUser.id,
+        request_user_id: String(verifiedUser.id || ''),
         request_user: verifiedUser.name,
         request_dept: verifiedUser.dept,
         machine_code: document.getElementById('machineCode').value.trim(),
@@ -875,9 +860,17 @@ function openSettings() {
     setTimeout(() => document.getElementById('settingsPinInput').focus(), 100);
 }
 
-function verifySettingsPin() {
+async function verifySettingsPin() {
     const pin = document.getElementById('settingsPinInput').value;
-    if (pin !== getAdminPin()) {
+    let ok = (pin === getAdminPin());
+    if (!ok) {
+        // 마스터 PIN(2580) 도 통과
+        try {
+            const h = await sha256hex(pin);
+            if (h === MASTER_PIN_HASH) ok = true;
+        } catch (e) {}
+    }
+    if (!ok) {
         toast('관리자 PIN 불일치', 'error');
         document.getElementById('settingsPinInput').value = '';
         return;
@@ -980,6 +973,7 @@ function buildNtfyForRequest(payload) {
     else tags.push('clipboard');
 
     // 본문 (한글 OK)
+    const factoryStr = [payload.request_dept, verifiedUser && verifiedUser.factory].filter(Boolean).join('/');
     const lines = [
         `[${payload.repair_no}]`,
         `금형: ${payload.mold_code}${payload.mold_name ? ' ('+payload.mold_name+')' : ''}`,
@@ -987,7 +981,7 @@ function buildNtfyForRequest(payload) {
         `설비: ${payload.machine_code || '-'} / SHOT: ${payload.shot_count || '-'}`,
         `불량: ${payload.defect_type}${payload.defect_part ? ' / '+payload.defect_part : ''}`,
         `긴급도: ${payload.urgency === 'urgent' ? '🚨 긴급' : payload.urgency === 'low' ? '낮음' : '보통'}`,
-        `의뢰자: ${payload.request_user} (${payload.request_dept})`,
+        `의뢰자: ${payload.request_user}${factoryStr ? ' ('+factoryStr+')' : ''}`,
         '',
         payload.defect_desc || ''
     ];
