@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리의뢰 v1.4</title>
+<title>금형 수리의뢰 v1.5</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -110,7 +110,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div class="header-row">
         <div>
             <h1>🔧 금형 수리의뢰</h1>
-            <div class="subtitle">Mold Repair Request · v1.4</div>
+            <div class="subtitle">Mold Repair Request · v1.5</div>
         </div>
         <button class="icon-btn" onclick="openSettings()" title="알림 설정">⚙️</button>
     </div>
@@ -214,7 +214,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <button class="btn btn-primary" onclick="submitRequest()">📨 수리의뢰 등록</button>
 
-<footer>금형 수리의뢰 시스템 · Rev 1.4 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리의뢰 시스템 · Rev 1.5 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -332,6 +332,16 @@ const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL_USER_PIN = 'mm_user_pin';
 const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf'; // 마스터 PIN(어디서나 통과)
 
+// index.html 로그인 세션 (msm 전체 공용)
+const LK_AUTH = 'mm_user_session';
+function getSession() {
+    try {
+        const s = JSON.parse(localStorage.getItem(LK_AUTH) || 'null');
+        if (s && s.exp && s.exp > Date.now()) return s;
+    } catch (e) {}
+    return null;
+}
+
 // 설정 저장 키
 const LK_NTFY = 'MR_NTFY_CFG';
 const LK_ADMIN_PIN = 'MR_ADMIN_PIN';
@@ -376,7 +386,21 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadMoldMaster();
     bindEvents();
 
-    // 최근 의뢰자 복원 (있으면 그대로 사용)
+    // 1순위: msm 통합 로그인 세션 (index.html에서 인증한 상태)
+    const sess = getSession();
+    if (sess) {
+        verifiedUser = {
+            id: sess.role === 'admin' ? 'MASTER' : sess.id,
+            name: sess.role === 'admin' ? '관리자' : sess.name,
+            dept: sess.dept || (sess.role === 'admin' ? '관리' : ''),
+            position: sess.position || (sess.role === 'admin' ? '마스터' : ''),
+            factory: sess.factory || ''
+        };
+        renderUserBox();
+        return;
+    }
+
+    // 2순위: 이전 PIN 인증 정보 (호환)
     const lastUser = localStorage.getItem('MR_LAST_USER');
     if (lastUser) {
         try {
@@ -392,18 +416,26 @@ function renderUserBox() {
         box.innerHTML = `
             <div style="font-size:11px; color:#64748b; text-align:center; padding:12px 0;">
                 🔒 의뢰 등록을 위해 PIN 인증이 필요합니다<br>
+                <div style="font-size:11px; color:#fbbf24; margin-top:6px;">메인(index)에서 로그인하면 자동 적용됩니다</div>
                 <button class="btn" style="background:#dc2626;color:white;margin-top:10px;padding:8px 18px;font-size:13px;" onclick="openLoginPin()">🔓 PIN 인증하기</button>
             </div>`;
         return;
     }
+    const fromSession = !!getSession();
     const sub = [verifiedUser.factory, verifiedUser.dept, verifiedUser.position].filter(Boolean).join(' · ');
+    const badge = fromSession
+        ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#1e3a8a;color:#bfdbfe;margin-left:6px;">로그인 세션</span>'
+        : '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#78350f;color:#fde68a;margin-left:6px;">PIN 인증</span>';
+    const btn = fromSession
+        ? '<a href="index.html" class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;text-decoration:none;">로그아웃</a>'
+        : '<button class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;" onclick="logoutUser()">변경</button>';
     box.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
-                <div style="font-size:16px; font-weight:700; color:#bbf7d0;">✓ ${verifiedUser.name}</div>
+                <div style="font-size:16px; font-weight:700; color:#bbf7d0;">✓ ${verifiedUser.name}${badge}</div>
                 <div style="font-size:12px; color:#94a3b8; margin-top:3px;">${sub || '-'}</div>
             </div>
-            <button class="btn" style="background:#334155;color:#e2e8f0;padding:6px 12px;font-size:12px;" onclick="logoutUser()">변경</button>
+            ${btn}
         </div>`;
 }
 
