@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리보고서 v1.4</title>
+<title>금형 수리보고서 v1.5</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -96,51 +96,45 @@ tr:hover { background: #0f172a; cursor: pointer; }
 .report .photos img { width: 100%; border: 1px solid #666; aspect-ratio: 4/3; object-fit: cover; }
 
 /* 상단 헤더: 제목 + 결재란 */
-.report .header-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: stretch;
-    gap: 10mm;
-    margin-bottom: 8px;
+/* 보고서 제목 */
+.report .report-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    margin: 0 0 10px 0;
     padding-bottom: 8px;
     border-bottom: 3px double #000;
+    color: #000;
 }
-.report .title-block { display: flex; align-items: center; justify-content: center; }
-.report .title-block h2 {
-    text-align: center; font-size: 22px; margin: 0;
-    letter-spacing: 6px; border: none; padding: 0;
-}
-/* 결재란 (우상단) */
-.report .approval-table {
+
+/* 하단 결재란 (작성/검토/확인/승인) - 가로 100% */
+.report .approval-table-bottom {
+    width: 100%;
     border-collapse: collapse;
-    margin: 0;
+    margin-top: 14px;
     table-layout: fixed;
 }
-.report .approval-table th,
-.report .approval-table td {
+.report .approval-table-bottom th,
+.report .approval-table-bottom td {
     border: 1px solid #000;
     padding: 0;
     text-align: center;
     vertical-align: middle;
     color: #000;
+    width: 25%;
 }
-.report .approval-table th {
+.report .approval-table-bottom th {
     background: #e5e7eb;
     font-size: 11px;
     font-weight: 700;
-    height: 18px;
-    width: 26mm;
+    height: 20px;
+    letter-spacing: 2px;
 }
-.report .approval-side {
-    background: #d1d5db !important;
-    width: 8mm !important;
-    font-size: 11px;
-    line-height: 1.1;
-}
-.report .approval-cell {
-    height: 26mm;
-    width: 26mm;
+.report .approval-table-bottom .approval-cell {
+    height: 22mm;
     background: #fff;
+    font-size: 11px;
 }
 
 /* A4 바닥글 (좌/중/우) */
@@ -187,7 +181,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
         <div style="flex:1;">
             <h1>📊 금형 수리보고서</h1>
-            <div class="subtitle">Mold Repair Report · v1.4</div>
+            <div class="subtitle">Mold Repair Report · v1.5</div>
         </div>
         <button onclick="openFooterSettings()" title="바닥글 설정" style="background:rgba(255,255,255,0.15); color:white; border:none; width:38px; height:38px; border-radius:8px; cursor:pointer; font-size:18px;">⚙️</button>
     </div>
@@ -259,7 +253,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
-<footer>금형 수리보고서 시스템 · Rev 1.4 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리보고서 시스템 · Rev 1.5 · 태진다이텍 품질관리팀</footer>
 </div>
 
 <!-- 보고서 모달 -->
@@ -593,27 +587,7 @@ function openReport(r) {
         : '<div style="font-size:11px;color:#888;padding:6px;">사용 부품 없음</div>';
     
     document.getElementById('reportContent').innerHTML = `
-        <!-- 상단: 제목 + 우측 결재란 -->
-        <div class="header-row">
-            <div class="title-block">
-                <h2>금 형 수 리 보 고 서</h2>
-            </div>
-            <table class="approval-table">
-                <thead>
-                    <tr>
-                        <th rowspan="2" class="approval-side">결<br>재</th>
-                        <th>담당</th><th>검토</th><th>승인</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="approval-cell"></td>
-                        <td class="approval-cell"></td>
-                        <td class="approval-cell"></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <h2 class="report-title">금 형 수 리 보 고 서</h2>
 
         <div class="meta">
             <span>의뢰번호: <b>${r.repair_no}</b></span>
@@ -652,6 +626,26 @@ function openReport(r) {
         ${partsTable}
 
         ${repPhotos ? `<div class="section-title">5. 수리 사진</div><div class="photos">${repPhotos}</div>` : ''}
+
+        <!-- 하단 결재란 (작성/검토/확인/승인) -->
+        <table class="approval-table-bottom">
+            <thead>
+                <tr>
+                    <th>작성</th>
+                    <th>검토</th>
+                    <th>확인</th>
+                    <th>승인</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="approval-cell">${r.repair_user || r.request_user || ''}</td>
+                    <td class="approval-cell"></td>
+                    <td class="approval-cell"></td>
+                    <td class="approval-cell"></td>
+                </tr>
+            </tbody>
+        </table>
     `;
     window._currentReport = r;
     renderReportFooter(r);
