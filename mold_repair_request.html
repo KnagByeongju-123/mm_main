@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리의뢰 v1.0</title>
+<title>금형 수리의뢰 v1.1</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -36,7 +36,30 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-primary { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; width: 100%; }
 .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(220,38,38,0.4); }
 .btn-secondary { background: #334155; color: #e2e8f0; }
-.btn-mold-search { background: #2563eb; color: white; padding: 10px 14px; font-size: 13px; }
+.btn-mold-search { background: #2563eb; color: white; padding: 10px 14px; font-size: 13px; white-space: nowrap; min-width: 80px; }
+
+/* 자동완성 드롭다운 */
+.autocomplete-wrap { position: relative; }
+.autocomplete-list {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: #1e293b; border: 1px solid #475569; border-top: none;
+    border-radius: 0 0 8px 8px; max-height: 280px; overflow-y: auto;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4); display: none;
+}
+.autocomplete-list.show { display: block; }
+.ac-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #334155; }
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover, .ac-item.active { background: #334155; }
+.ac-item .ac-code { font-weight: 700; color: #60a5fa; font-size: 13px; }
+.ac-item .ac-info { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.ac-item mark { background: #fbbf24; color: #000; padding: 0 2px; border-radius: 2px; }
+.ac-empty { padding: 14px; text-align: center; color: #64748b; font-size: 12px; }
+
+/* 헤더 우상단 설정 버튼 */
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.header-row > div:first-child { flex: 1; }
+.icon-btn { background: rgba(255,255,255,0.15); color: white; border: none; width: 38px; height: 38px; border-radius: 8px; cursor: pointer; font-size: 18px; flex-shrink: 0; }
+.icon-btn:hover { background: rgba(255,255,255,0.25); }
 
 .urgency-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .urgency-btn { padding: 10px; border-radius: 8px; border: 2px solid #475569; background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 13px; font-weight: 700; }
@@ -84,8 +107,13 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 <div class="container">
 
 <header>
-    <h1>🔧 금형 수리의뢰</h1>
-    <div class="subtitle">Mold Repair Request · v1.0</div>
+    <div class="header-row">
+        <div>
+            <h1>🔧 금형 수리의뢰</h1>
+            <div class="subtitle">Mold Repair Request · v1.1</div>
+        </div>
+        <button class="icon-btn" onclick="openSettings()" title="알림 설정">⚙️</button>
+    </div>
 </header>
 
 <!-- 의뢰자 정보 -->
@@ -118,8 +146,11 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     <div class="card-title">금형 정보</div>
     <div class="field">
         <label class="required">금형 코드</label>
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="moldCode" readonly placeholder="검색 버튼으로 선택">
+        <div style="display: flex; gap: 8px; align-items: stretch;">
+            <div class="autocomplete-wrap" style="flex:1;">
+                <input type="text" id="moldCode" placeholder="금형코드 입력 (부분검색)" autocomplete="off">
+                <div class="autocomplete-list" id="acList"></div>
+            </div>
             <button class="btn btn-mold-search" onclick="openMoldSearch()">🔍 검색</button>
         </div>
     </div>
@@ -193,7 +224,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <button class="btn btn-primary" onclick="submitRequest()">📨 수리의뢰 등록</button>
 
-<footer>금형 수리의뢰 시스템 · Rev 1.0 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리의뢰 시스템 · Rev 1.1 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -222,12 +253,94 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
     </div>
 </div>
 
+<!-- 설정 모달 -->
+<div class="modal" id="settingsModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 style="font-size: 16px;">🔔 알림 설정</h2>
+            <button class="modal-close" onclick="document.getElementById('settingsModal').classList.remove('show')">✕</button>
+        </div>
+
+        <div class="info-box">의뢰 등록 시 ntfy.sh로 푸시 알림을 발송합니다.<br>제목/태그는 영문(ASCII)만, 본문은 한글 가능합니다.</div>
+
+        <div class="field">
+            <label>ntfy 사용</label>
+            <select id="cfgNtfyEnabled">
+                <option value="1">사용</option>
+                <option value="0">사용 안함</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>ntfy 서버 URL</label>
+            <input type="text" id="cfgNtfyUrl" placeholder="https://ntfy.sh">
+        </div>
+
+        <div class="field">
+            <label>ntfy Topic (ASCII)</label>
+            <input type="text" id="cfgNtfyTopic" placeholder="taejin-mold-repair">
+        </div>
+
+        <div class="field">
+            <label>알림 우선순위 분기</label>
+            <select id="cfgNtfyPrio">
+                <option value="auto">자동 (긴급=high / 보통=default / 낮음=low)</option>
+                <option value="high">항상 high</option>
+                <option value="default">항상 default</option>
+                <option value="low">항상 low</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label>알림 헤더 텍스트 (ASCII)</label>
+            <input type="text" id="cfgNtfyTitle" placeholder="Mold Repair Request">
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top: 10px;">
+            <button class="btn btn-primary" onclick="saveSettings()">💾 저장</button>
+            <button class="btn btn-secondary" onclick="testNtfy()" style="background:#2563eb;color:white;">📨 테스트 전송</button>
+        </div>
+
+        <div style="margin-top: 14px; padding: 10px; background: #0f172a; border-radius: 8px; font-size: 11px; color: #94a3b8;">
+            <b style="color:#fbbf24;">📱 모바일 수신 방법</b><br>
+            1. ntfy 앱 설치 (App Store / Play Store)<br>
+            2. 앱에서 위 Topic 구독<br>
+            3. 동일 Topic 구독자는 모두 받음
+        </div>
+    </div>
+</div>
+
+<!-- 설정 PIN 모달 -->
+<div class="modal" id="settingsPinModal">
+    <div class="modal-content" style="max-width: 320px;">
+        <div class="modal-header">
+            <h2 style="font-size: 16px;">🔒 설정 접근</h2>
+            <button class="modal-close" onclick="document.getElementById('settingsPinModal').classList.remove('show')">✕</button>
+        </div>
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">관리자 PIN을 입력하세요</p>
+        <input type="password" class="search-input pin-input" id="settingsPinInput" placeholder="● ● ● ●" maxlength="4" inputmode="numeric">
+        <button class="btn btn-primary" onclick="verifySettingsPin()">확인</button>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ============ 설정 ============
 const SB_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SB_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+
+// 설정 저장 키
+const LK_NTFY = 'MR_NTFY_CFG';
+const ADMIN_PIN = '0000'; // 관리자 PIN (원하면 사원DB 직위로 분기 가능)
+
+const DEFAULT_NTFY = {
+    enabled: '1',
+    url: 'https://ntfy.sh',
+    topic: 'taejin-mold-repair',
+    prio: 'auto',
+    title: 'Mold Repair Request'
+};
 
 const sbHeaders = () => ({
     'apikey': SB_KEY,
@@ -306,6 +419,27 @@ function bindEvents() {
             }
         }
     });
+
+    // 금형코드 자동완성 (부분검색)
+    const moldInput = document.getElementById('moldCode');
+    moldInput.addEventListener('input', onMoldInput);
+    moldInput.addEventListener('focus', onMoldInput);
+    moldInput.addEventListener('blur', () => {
+        // 클릭 이벤트 처리되도록 약간 지연
+        setTimeout(() => document.getElementById('acList').classList.remove('show'), 200);
+    });
+    // 화살표/엔터 키 이동
+    moldInput.addEventListener('keydown', onMoldKey);
+    // 입력값이 변경되면 연관 필드 초기화 (선택된 금형이 아닐 경우)
+    moldInput.addEventListener('input', () => {
+        const v = moldInput.value.trim();
+        const matched = moldList.find(m => (m.mold_code || m.MOLD_CODE || '') === v);
+        if (!matched) {
+            document.getElementById('moldName').value = '';
+            document.getElementById('itemCode').value = '';
+            document.getElementById('itemName').value = '';
+        }
+    });
     
     // 불량유형
     document.querySelectorAll('.defect-btn').forEach(btn => {
@@ -328,6 +462,11 @@ function bindEvents() {
     // PIN 입력 자동 확인
     document.getElementById('pinInput').addEventListener('input', (e) => {
         if (e.target.value.length === 4) verifyPin();
+    });
+
+    // 설정 PIN 입력 자동 확인
+    document.getElementById('settingsPinInput').addEventListener('input', (e) => {
+        if (e.target.value.length === 4) verifySettingsPin();
     });
 }
 
@@ -539,6 +678,16 @@ async function submitRequest() {
             const err = await res.text();
             throw new Error(err);
         }
+
+        // ntfy 푸시 알림 발송 (실패해도 등록 자체는 성공)
+        try {
+            const ntfyMsg = buildNtfyForRequest(payload);
+            await sendNtfy(ntfyMsg);
+        } catch (ntfyErr) {
+            console.warn('ntfy 전송 실패:', ntfyErr);
+            toast(`등록 완료 (알림 실패): ${repairNo}`, 'success');
+        }
+
         toast(`등록 완료: ${repairNo}`, 'success');
         setTimeout(() => {
             // 폼 초기화 (의뢰자/날짜는 유지)
@@ -561,7 +710,224 @@ async function submitRequest() {
     }
 }
 
-// ============ 토스트 ============
+// ============ 금형코드 자동완성 ============
+let acIndex = -1;
+let acCurrent = [];
+
+function onMoldInput() {
+    const q = document.getElementById('moldCode').value.trim().toLowerCase();
+    const box = document.getElementById('acList');
+    if (!q) { box.classList.remove('show'); acCurrent = []; return; }
+
+    acCurrent = moldList.filter(m => {
+        const code = (m.mold_code || m.MOLD_CODE || '').toLowerCase();
+        const name = (m.mold_name || m.MOLD_NAME || '').toLowerCase();
+        const item = (m.item_code || m.ITEM_CODE || '').toLowerCase();
+        return code.includes(q) || name.includes(q) || item.includes(q);
+    }).slice(0, 20);
+
+    if (!acCurrent.length) {
+        box.innerHTML = '<div class="ac-empty">일치하는 금형 없음</div>';
+        box.classList.add('show');
+        return;
+    }
+
+    acIndex = -1;
+    box.innerHTML = '';
+    acCurrent.forEach((m, i) => {
+        const code = m.mold_code || m.MOLD_CODE || '';
+        const name = m.mold_name || m.MOLD_NAME || '';
+        const item = m.item_code || m.ITEM_CODE || '';
+        const iname = m.item_name || m.ITEM_NAME || '';
+        const div = document.createElement('div');
+        div.className = 'ac-item';
+        div.innerHTML = `
+            <div class="ac-code">${highlight(code, q)}</div>
+            <div class="ac-info">${highlight(name, q)} ${item ? '· '+highlight(item, q) : ''} ${iname ? '· '+iname : ''}</div>
+        `;
+        div.addEventListener('mousedown', (e) => { e.preventDefault(); pickMold(m); });
+        box.appendChild(div);
+    });
+    box.classList.add('show');
+}
+
+function highlight(text, q) {
+    if (!text) return '';
+    if (!q) return text;
+    const idx = text.toLowerCase().indexOf(q);
+    if (idx < 0) return text;
+    return text.substring(0, idx) + '<mark>' + text.substring(idx, idx + q.length) + '</mark>' + text.substring(idx + q.length);
+}
+
+function onMoldKey(e) {
+    const box = document.getElementById('acList');
+    if (!box.classList.contains('show')) return;
+    const items = box.querySelectorAll('.ac-item');
+    if (!items.length) return;
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        acIndex = Math.min(acIndex + 1, items.length - 1);
+        updateAcActive(items);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        acIndex = Math.max(acIndex - 1, 0);
+        updateAcActive(items);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (acIndex >= 0 && acCurrent[acIndex]) pickMold(acCurrent[acIndex]);
+    } else if (e.key === 'Escape') {
+        box.classList.remove('show');
+    }
+}
+
+function updateAcActive(items) {
+    items.forEach((el, i) => el.classList.toggle('active', i === acIndex));
+    if (acIndex >= 0) items[acIndex].scrollIntoView({ block: 'nearest' });
+}
+
+function pickMold(m) {
+    document.getElementById('moldCode').value = m.mold_code || m.MOLD_CODE || '';
+    document.getElementById('moldName').value = m.mold_name || m.MOLD_NAME || '';
+    document.getElementById('itemCode').value = m.item_code || m.ITEM_CODE || '';
+    document.getElementById('itemName').value = m.item_name || m.ITEM_NAME || '';
+    document.getElementById('acList').classList.remove('show');
+}
+
+// ============ 설정 (PIN 보호) ============
+function getNtfyConfig() {
+    try {
+        const cfg = JSON.parse(localStorage.getItem(LK_NTFY) || '{}');
+        return { ...DEFAULT_NTFY, ...cfg };
+    } catch (e) {
+        return { ...DEFAULT_NTFY };
+    }
+}
+
+function openSettings() {
+    document.getElementById('settingsPinInput').value = '';
+    document.getElementById('settingsPinModal').classList.add('show');
+    setTimeout(() => document.getElementById('settingsPinInput').focus(), 100);
+}
+
+function verifySettingsPin() {
+    const pin = document.getElementById('settingsPinInput').value;
+    // 관리자 PIN OR 부장/차장/팀장 직위 PIN 허용
+    let ok = (pin === ADMIN_PIN);
+    if (!ok) {
+        const u = userDB.find(x => x.ID === pin);
+        if (u && /부장|차장|팀장|이사|대표|상무/.test(u.직위)) ok = true;
+    }
+    if (!ok) {
+        toast('PIN 불일치 (관리자/팀장급)', 'error');
+        document.getElementById('settingsPinInput').value = '';
+        return;
+    }
+    document.getElementById('settingsPinModal').classList.remove('show');
+    loadSettingsUI();
+    document.getElementById('settingsModal').classList.add('show');
+}
+
+function loadSettingsUI() {
+    const cfg = getNtfyConfig();
+    document.getElementById('cfgNtfyEnabled').value = cfg.enabled;
+    document.getElementById('cfgNtfyUrl').value = cfg.url;
+    document.getElementById('cfgNtfyTopic').value = cfg.topic;
+    document.getElementById('cfgNtfyPrio').value = cfg.prio;
+    document.getElementById('cfgNtfyTitle').value = cfg.title;
+}
+
+function saveSettings() {
+    const cfg = {
+        enabled: document.getElementById('cfgNtfyEnabled').value,
+        url: document.getElementById('cfgNtfyUrl').value.trim() || DEFAULT_NTFY.url,
+        topic: document.getElementById('cfgNtfyTopic').value.trim() || DEFAULT_NTFY.topic,
+        prio: document.getElementById('cfgNtfyPrio').value,
+        title: document.getElementById('cfgNtfyTitle').value.trim() || DEFAULT_NTFY.title
+    };
+    // ASCII 검증
+    if (!isAscii(cfg.topic)) { toast('Topic은 영문/숫자만', 'error'); return; }
+    if (!isAscii(cfg.title)) { toast('헤더는 영문/숫자만', 'error'); return; }
+    localStorage.setItem(LK_NTFY, JSON.stringify(cfg));
+    toast('설정 저장 완료', 'success');
+}
+
+function isAscii(s) {
+    return /^[\x20-\x7E]*$/.test(s);
+}
+
+async function testNtfy() {
+    saveSettings();
+    const cfg = getNtfyConfig();
+    if (cfg.enabled !== '1') { toast('ntfy 사용 안함 상태', 'error'); return; }
+    try {
+        const res = await sendNtfy({
+            title: cfg.title + ' [TEST]',
+            tags: ['hammer_and_wrench', 'test'],
+            priority: 'default',
+            message: '[테스트] 금형 수리의뢰 알림 채널이 정상 동작합니다.'
+        });
+        if (res) toast('테스트 전송 성공', 'success');
+    } catch (e) {
+        toast('전송 실패: ' + e.message, 'error');
+    }
+}
+
+// ============ ntfy 발송 ============
+async function sendNtfy({ title, tags, priority, message }) {
+    const cfg = getNtfyConfig();
+    if (cfg.enabled !== '1') return false;
+    const url = `${cfg.url.replace(/\/$/, '')}/${cfg.topic}`;
+    const headers = {
+        'Title': cfg.title || title,
+        'Priority': priority || 'default',
+        'Tags': (tags || []).join(',')
+    };
+    // 한글 본문은 UTF-8 그대로 가능
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: message
+    });
+    if (!res.ok) throw new Error('ntfy ' + res.status);
+    return true;
+}
+
+function buildNtfyForRequest(payload) {
+    const cfg = getNtfyConfig();
+    // priority 결정
+    let prio = cfg.prio;
+    if (prio === 'auto') {
+        prio = payload.urgency === 'urgent' ? 'high' : payload.urgency === 'low' ? 'low' : 'default';
+    }
+    // tags (영문만)
+    const tags = ['hammer_and_wrench'];
+    if (payload.urgency === 'urgent') tags.push('rotating_light');
+    else if (payload.urgency === 'low') tags.push('memo');
+    else tags.push('clipboard');
+
+    // 본문 (한글 OK)
+    const lines = [
+        `[${payload.repair_no}]`,
+        `금형: ${payload.mold_code}${payload.mold_name ? ' ('+payload.mold_name+')' : ''}`,
+        `품번: ${payload.item_code || '-'}`,
+        `설비: ${payload.machine_code || '-'} / SHOT: ${payload.shot_count || '-'}`,
+        `불량: ${payload.defect_type}${payload.defect_part ? ' / '+payload.defect_part : ''}`,
+        `긴급도: ${payload.urgency === 'urgent' ? '🚨 긴급' : payload.urgency === 'low' ? '낮음' : '보통'}`,
+        `의뢰자: ${payload.request_user} (${payload.request_dept})`,
+        '',
+        payload.defect_desc || ''
+    ];
+
+    return {
+        title: cfg.title,  // ASCII
+        tags: tags,         // ASCII
+        priority: prio,
+        message: lines.join('\n')
+    };
+}
+
+
 function toast(msg, type = '') {
     const t = document.getElementById('toast');
     t.textContent = msg;
