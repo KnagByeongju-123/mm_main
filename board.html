@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>수정요청 게시판 v1.1</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Noto Sans KR',sans-serif;background:#f0f2f5;color:#212121;padding-bottom:80px}
+    .hdr{background:linear-gradient(135deg,#4527a0,#7b1fa2);color:#fff;padding:14px 16px;text-align:center;position:relative}
+    .hdr h1{font-size:17px;font-weight:800}.hdr p{font-size:10px;opacity:.7;margin-top:2px}
+    .hdr .home-btn{position:absolute;left:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:16px;cursor:pointer}
+    .tabs{display:flex;background:#fff;border-bottom:2px solid #e0e0e0;position:sticky;top:0;z-index:50}
+    .tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;color:#888;transition:all .15s}
+    .tab.on{color:#4527a0;border-bottom-color:#7b1fa2}
+    .pnl{display:none;padding:12px}.pnl.on{display:block}
+    .card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .card-tit{font-size:14px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .fg{margin-bottom:12px}
+    .fg label{display:block;font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
+    .fg select,.fg input,.fg textarea{width:100%;padding:10px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;background:#fff}
+    .fg select{appearance:auto}.fg textarea{resize:vertical;min-height:80px}
+    .btn{padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;transition:transform .1s}
+    .btn:active{transform:scale(.97)}
+    .btn-primary{background:linear-gradient(135deg,#4527a0,#7b1fa2);color:#fff;box-shadow:0 2px 8px rgba(69,39,160,.25)}
+    .btn-blue{background:linear-gradient(135deg,#1565c0,#42a5f5);color:#fff}
+    .btn-green{background:linear-gradient(135deg,#2e7d32,#66bb6a);color:#fff}
+    .btn-gray{background:#f5f5f5;color:#555;border:1px solid #ddd}
+    .btn-sm{padding:8px 12px;font-size:12px;width:auto;border-radius:8px}
+    .btn-row{display:flex;gap:8px}.btn-row .btn{flex:1}
+    /* 게시글 카드 */
+    .post{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);overflow:hidden}
+    .post-hdr{padding:12px 14px 8px;display:flex;align-items:flex-start;gap:8px}
+    .post-badge{flex-shrink:0;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+    .pb-req{background:#ffebee;color:#c62828}.pb-bug{background:#fff3e0;color:#e65100}
+    .pb-idea{background:#e3f2fd;color:#1565c0}.pb-notice{background:#e8f5e9;color:#2e7d32}.pb-etc{background:#f5f5f5;color:#888}
+    .post-info{flex:1;min-width:0}
+    .post-title{font-size:14px;font-weight:700;color:#212121;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .post-meta{font-size:10px;color:#999;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .post-status{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700}
+    .ps-wait{background:#fff3e0;color:#e65100}.ps-prog{background:#e3f2fd;color:#1565c0}
+    .ps-done{background:#e8f5e9;color:#2e7d32}.ps-hold{background:#f5f5f5;color:#888}
+    .post-body{padding:0 14px 10px;font-size:13px;color:#444;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+    .post-module{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#f3e5f5;color:#7b1fa2}
+    .post-footer{padding:8px 14px;border-top:1px solid #f0f0f0;display:flex;gap:6px;align-items:center}
+    .post-footer button{padding:5px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+    .pf-reply{background:#f3e5f5;color:#7b1fa2}.pf-status{background:#e3f2fd;color:#1565c0}.pf-del{background:#ffebee;color:#c62828}
+    /* 댓글 */
+    .replies{padding:0 14px 10px}
+    .reply{padding:8px 10px;background:#fafafa;border-radius:8px;margin-top:6px;font-size:12px}
+    .reply-hdr{display:flex;justify-content:space-between;margin-bottom:3px}
+    .reply-author{font-weight:700;color:#4527a0;font-size:11px}
+    .reply-time{font-size:10px;color:#bbb}
+    .reply-body{color:#444;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+    .reply-input{display:flex;gap:6px;margin-top:8px;padding:0 14px 12px}
+    .reply-input input{flex:1;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+    .reply-input button{padding:8px 14px;border:none;border-radius:8px;background:#7b1fa2;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+    /* 필터 */
+    .filter-row{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px}
+    .fchip{padding:6px 10px;border-radius:16px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid #ddd;background:#fafafa;color:#666;white-space:nowrap;flex-shrink:0}
+    .fchip.on{border-color:#7b1fa2;background:#f3e5f5;color:#7b1fa2}
+    .empty{text-align:center;padding:32px 16px;color:#bbb;font-size:13px}
+    .empty .em-icon{font-size:36px;margin-bottom:8px}
+    .cnt-badge{background:#7b1fa2;color:#fff;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:700;margin-left:4px}
+    /* 상태변경 팝업 */
+    .popup-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
+    .popup-overlay.show{display:flex}
+    .popup-box{background:#fff;border-radius:16px;padding:16px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+    .loading-msg{text-align:center;padding:20px;color:#7b1fa2;font-size:13px;font-weight:600}
+    .spin-sm{display:inline-block;width:16px;height:16px;border:3px solid #e0e0e0;border-top-color:#7b1fa2;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:8px 18px;border-radius:18px;font-size:12px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}.toast.show{opacity:1}
+  </style>
+</head>
+<body>
+<div class="hdr">
+  <button class="home-btn" onclick="location.href='index.html'">🏠</button>
+  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.1</span></h1>
+  <p>시스템 개선요청 · 버그신고 · 공지사항</p>
+</div>
+
+<div class="tabs">
+  <div class="tab on" onclick="swTab(0)">📋 목록</div>
+  <div class="tab" onclick="swTab(1)">✏️ 작성</div>
+  <div class="tab" onclick="swTab(2)">⚙ 설정</div>
+</div>
+
+<!-- ===== 목록 ===== -->
+<div class="pnl on" id="pnl0">
+  <div class="filter-row">
+    <span class="fchip on" data-f="all" onclick="setFilter(this)">전체</span>
+    <span class="fchip" data-f="대기" onclick="setFilter(this)">🟠 대기</span>
+    <span class="fchip" data-f="진행중" onclick="setFilter(this)">🔵 진행</span>
+    <span class="fchip" data-f="완료" onclick="setFilter(this)">🟢 완료</span>
+    <span class="fchip" data-f="보류" onclick="setFilter(this)">⚪ 보류</span>
+  </div>
+  <div class="filter-row">
+    <span class="fchip on" data-c="all" onclick="setCatFilter(this)">전체</span>
+    <span class="fchip" data-c="수정요청" onclick="setCatFilter(this)">🔧 수정요청</span>
+    <span class="fchip" data-c="버그" onclick="setCatFilter(this)">🐛 버그</span>
+    <span class="fchip" data-c="개선" onclick="setCatFilter(this)">💡 개선</span>
+    <span class="fchip" data-c="공지" onclick="setCatFilter(this)">📢 공지</span>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
+    <input type="text" id="searchInput" placeholder="검색..." oninput="renderList()" style="flex:1;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit">
+    <button class="btn btn-sm" onclick="loadPosts()" style="background:#f3e5f5;color:#7b1fa2;border:1px solid #ce93d8;flex-shrink:0">🔄</button>
+  </div>
+  <div id="postList"><div class="loading-msg"><span class="spin-sm"></span>불러오는 중...</div></div>
+</div>
+
+<!-- ===== 작성 ===== -->
+<div class="pnl" id="pnl1">
+  <div class="card">
+    <div class="card-tit">✏️ 새 글 작성</div>
+    <div class="fg">
+      <label>분류</label>
+      <select id="newCat">
+        <option value="수정요청">🔧 수정요청</option>
+        <option value="버그">🐛 버그</option>
+        <option value="개선">💡 개선</option>
+        <option value="공지">📢 공지</option>
+        <option value="기타">📎 기타</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>대상 모듈</label>
+      <select id="newModule">
+        <option value="">선택 (선택사항)</option>
+        <option value="불량관리">불량관리 (defect)</option>
+        <option value="로트추적">로트추적 (lot_tracking)</option>
+        <option value="소모품">소모품 (mask)</option>
+        <option value="공정점검">공정점검 (line_patrol)</option>
+        <option value="출하의뢰">출하의뢰 (request_outgoing)</option>
+        <option value="프레스로트">프레스로트 (lot_tracking_tj)</option>
+        <option value="설비점검">설비점검 (P_machine_check)</option>
+        <option value="검사체크">검사체크 (QC_machine_check)</option>
+        <option value="메인화면">메인화면 (index)</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>제목</label>
+      <input type="text" id="newTitle" placeholder="요청 제목을 입력하세요">
+    </div>
+    <div class="fg">
+      <label>내용</label>
+      <textarea id="newContent" placeholder="상세 내용을 입력하세요&#10;&#10;예) 불량관리 통계 탭에서 날짜 필터가 작동하지 않습니다.&#10;기대동작: 날짜 범위에 맞는 데이터만 표시&#10;현재동작: 전체 데이터가 표시됨" rows="6"></textarea>
+    </div>
+    <div class="fg">
+      <label>작성자</label>
+      <input type="text" id="newAuthor" placeholder="이름">
+    </div>
+    <button class="btn btn-primary" onclick="submitPost()">📤 등록</button>
+  </div>
+</div>
+
+<!-- ===== 설정 ===== -->
+<div class="pnl" id="pnl2">
+  <div class="card">
+    <div class="card-tit">⚙ 기본 설정</div>
+    <div class="fg">
+      <label>내 이름 (자동입력용)</label>
+      <input type="text" id="cfgMyName" placeholder="이름 입력" oninput="saveMyName()">
+    </div>
+  </div>
+  <div class="card" style="border-left:3px solid #7b1fa2">
+    <div class="card-tit">🗄 Supabase</div>
+    <p style="font-size:11px;color:#888;margin-bottom:8px">게시판 데이터는 기존 Supabase 프로젝트에 저장됩니다.<br>처음 사용 시 아래 "테이블 생성" 버튼을 눌러주세요.</p>
+    <button class="btn btn-sm" onclick="createTable()" style="width:100%;background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🚀 게시판 테이블 생성</button>
+    <div id="cfgStatus" style="font-size:11px;margin-top:6px;color:#555"></div>
+  </div>
+  <div class="card">
+    <div class="card-tit">📊 통계</div>
+    <div id="statsInfo" class="empty">로드 필요</div>
+    <button class="btn btn-sm btn-gray" onclick="loadStats()" style="margin-top:6px;width:100%">📊 통계 조회</button>
+  </div>
+</div>
+
+<!-- 상태변경 팝업 -->
+<div class="popup-overlay" id="statusPopup">
+  <div class="popup-box">
+    <div class="card-tit" style="justify-content:space-between"><span>📌 상태 변경</span><button onclick="closeStatusPopup()" style="border:none;background:#f5f5f5;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✕</button></div>
+    <input type="hidden" id="statusPostId">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+      <button class="btn btn-sm" onclick="changeStatus('대기')" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80">🟠 대기</button>
+      <button class="btn btn-sm" onclick="changeStatus('진행중')" style="background:#e3f2fd;color:#1565c0;border:1px solid #90caf9">🔵 진행중</button>
+      <button class="btn btn-sm" onclick="changeStatus('완료')" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7">🟢 완료</button>
+      <button class="btn btn-sm" onclick="changeStatus('보류')" style="background:#f5f5f5;color:#888;border:1px solid #ddd">⚪ 보류</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Supabase =====
+const SB_URL='https://xrmwfsuitikqibwqxede.supabase.co';
+const SB_KEY='sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+
+function sbH(){return{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'}}
+function sbU(t,q){return SB_URL+'/rest/v1/'+t+(q?'?'+q:'')}
+
+async function sbSelect(t,f,o,l){
+  const p=new URLSearchParams();
+  if(f)Object.entries(f).forEach(([k,v])=>{if(v!==undefined&&v!==null&&v!=='')p.append(k,v)});
+  if(o)p.append('order',o);if(l)p.append('limit',l);p.append('select','*');
+  const r=await fetch(sbU(t,p.toString()),{headers:sbH()});
+  if(!r.ok)throw new Error(r.status+' '+await r.text());return r.json();
+}
+async function sbInsert(t,d){
+  const r=await fetch(sbU(t),{method:'POST',headers:sbH(),body:JSON.stringify(Array.isArray(d)?d:[d])});
+  if(!r.ok)throw new Error(r.status);return r.json();
+}
+async function sbUpdate(t,f,d){
+  const p=new URLSearchParams();Object.entries(f).forEach(([k,v])=>p.append(k,v));
+  const r=await fetch(sbU(t,p.toString()),{method:'PATCH',headers:sbH(),body:JSON.stringify(d)});
+  if(!r.ok)throw new Error(r.status);return r.json();
+}
+async function sbDelete(t,f){
+  const p=new URLSearchParams();Object.entries(f).forEach(([k,v])=>p.append(k,v));
+  const r=await fetch(sbU(t,p.toString()),{method:'DELETE',headers:sbH()});
+  if(!r.ok)throw new Error(r.status);return true;
+}
+async function sbRpc(fn,body){
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:sbH(),body:JSON.stringify(body||{})});
+  if(!r.ok)throw new Error(r.status);
+}
+
+// ===== 상태 =====
+let posts=[];
+let curStatusFilter='all';
+let curCatFilter='all';
+
+// ===== 탭 =====
+function swTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===n));
+  document.querySelectorAll('.pnl').forEach((p,i)=>p.classList.toggle('on',i===n));
+  if(n===0)loadPosts();
+  if(n===1){
+    const saved=localStorage.getItem('BOARD_MY_NAME')||'';
+    if(saved)document.getElementById('newAuthor').value=saved;
+  }
+  if(n===2){
+    document.getElementById('cfgMyName').value=localStorage.getItem('BOARD_MY_NAME')||'';
+  }
+}
+
+// ===== 필터 =====
+function setFilter(el){
+  document.querySelectorAll('[data-f]').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');curStatusFilter=el.dataset.f;renderList();
+}
+function setCatFilter(el){
+  document.querySelectorAll('[data-c]').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');curCatFilter=el.dataset.c;renderList();
+}
+
+// ===== 로드 =====
+async function loadPosts(){
+  const el=document.getElementById('postList');
+  el.innerHTML='<div class="loading-msg"><span class="spin-sm"></span>불러오는 중...</div>';
+  try{
+    posts=await sbSelect('board_post',{},'created_at.desc',200);
+    renderList();
+  }catch(e){
+    el.innerHTML='<div class="empty"><div class="em-icon">⚠️</div>로드 실패: '+e.message+'<br><br><span style="font-size:10px;color:#888">설정 탭에서 테이블 생성을 먼저 해주세요</span></div>';
+  }
+}
+
+function renderList(){
+  const el=document.getElementById('postList');
+  const q=(document.getElementById('searchInput').value||'').trim().toLowerCase();
+  let list=posts;
+  if(curStatusFilter!=='all')list=list.filter(p=>p.status===curStatusFilter);
+  if(curCatFilter!=='all')list=list.filter(p=>p.category===curCatFilter);
+  if(q)list=list.filter(p=>(p.title||'').toLowerCase().includes(q)||(p.content||'').toLowerCase().includes(q)||(p.author||'').toLowerCase().includes(q)||(p.module||'').toLowerCase().includes(q));
+
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="em-icon">📭</div>게시글이 없습니다</div>';
+    return;
+  }
+
+  el.innerHTML=list.map(p=>{
+    const catIcon={수정요청:'🔧',버그:'🐛',개선:'💡',공지:'📢',기타:'📎'}[p.category]||'📎';
+    const catCls={수정요청:'pb-req',버그:'pb-bug',개선:'pb-idea',공지:'pb-notice'}[p.category]||'pb-etc';
+    const stCls={대기:'ps-wait',진행중:'ps-prog',완료:'ps-done',보류:'ps-hold'}[p.status]||'ps-wait';
+    const stIcon={대기:'🟠',진행중:'🔵',완료:'🟢',보류:'⚪'}[p.status]||'🟠';
+    const date=p.created_at?p.created_at.substring(0,10):'';
+    const time=p.created_at?p.created_at.substring(11,16):'';
+    const replies=p.replies?JSON.parse(p.replies):[];
+    const expanded=p._expanded;
+
+    let html='<div class="post" id="post-'+p.id+'">';
+    html+='<div class="post-hdr" onclick="togglePost('+p.id+')">';
+    html+='<div class="post-badge '+catCls+'">'+catIcon+'</div>';
+    html+='<div class="post-info">';
+    html+='<div class="post-title">'+esc(p.title||'(제목없음)')+'</div>';
+    html+='<div class="post-meta">';
+    html+='<span class="post-status '+stCls+'">'+stIcon+' '+(p.status||'대기')+'</span>';
+    if(p.module)html+='<span class="post-module">'+esc(p.module)+'</span>';
+    html+='<span>'+esc(p.author||'익명')+'</span>';
+    html+='<span>'+date+' '+time+'</span>';
+    if(replies.length)html+='<span class="cnt-badge">💬'+replies.length+'</span>';
+    html+='</div></div></div>';
+
+    // 내용 (토글)
+    html+='<div class="post-body" style="display:'+(expanded?'block':'none')+'">'+esc(p.content||'')+'</div>';
+
+    // 댓글 (토글)
+    if(expanded&&replies.length){
+      html+='<div class="replies">';
+      replies.forEach(r=>{
+        html+='<div class="reply"><div class="reply-hdr"><span class="reply-author">'+esc(r.author||'익명')+'</span><span class="reply-time">'+esc(r.time||'')+'</span></div><div class="reply-body">'+esc(r.text||'')+'</div></div>';
+      });
+      html+='</div>';
+    }
+
+    // 댓글입력 (토글)
+    if(expanded){
+      html+='<div class="reply-input"><input type="text" id="reply-'+p.id+'" placeholder="댓글 입력..."><button onclick="addReply('+p.id+')">등록</button></div>';
+    }
+
+    // 푸터
+    html+='<div class="post-footer" style="display:'+(expanded?'flex':'none')+'">';
+    html+='<button class="pf-status" onclick="openStatusPopup('+p.id+')">📌 상태</button>';
+    html+='<span style="flex:1"></span>';
+    html+='<button class="pf-del" onclick="deletePost('+p.id+')">🗑</button>';
+    html+='</div>';
+
+    html+='</div>';
+    return html;
+  }).join('');
+}
+
+function togglePost(id){
+  const p=posts.find(x=>x.id===id);
+  if(p){p._expanded=!p._expanded;renderList()}
+}
+
+// ===== 작성 =====
+async function submitPost(){
+  const cat=document.getElementById('newCat').value;
+  const module=document.getElementById('newModule').value;
+  const title=document.getElementById('newTitle').value.trim();
+  const content=document.getElementById('newContent').value.trim();
+  const author=document.getElementById('newAuthor').value.trim();
+  if(!title){showToast('제목을 입력하세요');return}
+  if(!content){showToast('내용을 입력하세요');return}
+  const name=author||'익명';
+  localStorage.setItem('BOARD_MY_NAME',name);
+
+  try{
+    await sbInsert('board_post',{
+      category:cat,
+      module:module||null,
+      title:title,
+      content:content,
+      author:name,
+      status:'대기',
+      replies:'[]'
+    });
+    showToast('✅ 등록 완료');
+    document.getElementById('newTitle').value='';
+    document.getElementById('newContent').value='';
+    swTab(0);
+  }catch(e){showToast('등록 실패: '+e.message)}
+}
+
+// ===== 댓글 =====
+async function addReply(postId){
+  const inp=document.getElementById('reply-'+postId);
+  const text=(inp?inp.value:'').trim();
+  if(!text){showToast('댓글을 입력하세요');return}
+  const author=localStorage.getItem('BOARD_MY_NAME')||'익명';
+  const now=new Date();
+  const timeStr=now.toISOString().substring(0,16).replace('T',' ');
+
+  const p=posts.find(x=>x.id===postId);
+  if(!p)return;
+  const replies=p.replies?JSON.parse(p.replies):[];
+  replies.push({author,text,time:timeStr});
+
+  try{
+    await sbUpdate('board_post',{id:'eq.'+postId},{replies:JSON.stringify(replies)});
+    p.replies=JSON.stringify(replies);
+    renderList();
+    showToast('💬 댓글 등록');
+  }catch(e){showToast('실패: '+e.message)}
+}
+
+// ===== 상태 변경 =====
+function openStatusPopup(id){
+  document.getElementById('statusPostId').value=id;
+  document.getElementById('statusPopup').classList.add('show');
+}
+function closeStatusPopup(){document.getElementById('statusPopup').classList.remove('show')}
+
+async function changeStatus(status){
+  const id=document.getElementById('statusPostId').value;
+  if(!id)return;
+  try{
+    await sbUpdate('board_post',{id:'eq.'+id},{status});
+    const p=posts.find(x=>x.id==id);
+    if(p)p.status=status;
+    closeStatusPopup();
+    renderList();
+    showToast('📌 '+status+'로 변경');
+  }catch(e){showToast('실패: '+e.message)}
+}
+
+// ===== 삭제 =====
+async function deletePost(id){
+  if(!confirm('이 글을 삭제할까요?'))return;
+  try{
+    await sbDelete('board_post',{id:'eq.'+id});
+    posts=posts.filter(p=>p.id!==id);
+    renderList();
+    showToast('🗑 삭제됨');
+  }catch(e){showToast('실패: '+e.message)}
+}
+
+// ===== 테이블 생성 =====
+async function createTable(){
+  const st=document.getElementById('cfgStatus');
+  st.textContent='생성 중...';st.style.color='#1565c0';
+  const sql=`
+CREATE TABLE IF NOT EXISTS board_post (
+  id BIGSERIAL PRIMARY KEY,
+  category TEXT DEFAULT '수정요청',
+  module TEXT,
+  title TEXT NOT NULL,
+  content TEXT,
+  author TEXT DEFAULT '익명',
+  status TEXT DEFAULT '대기',
+  replies JSONB DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE board_post ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "board_all" ON board_post;
+CREATE POLICY "board_all" ON board_post FOR ALL USING (true) WITH CHECK (true);
+  `;
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/rpc/exec_sql',{method:'POST',headers:sbH(),body:JSON.stringify({query:sql})});
+    if(!r.ok){
+      // RPC 없으면 직접 안내
+      st.innerHTML='⚠ Supabase Dashboard → SQL Editor에서 아래 SQL을 실행하세요:<br><textarea style="width:100%;height:120px;font-size:10px;margin-top:6px;font-family:monospace" readonly>'+sql.trim()+'</textarea>';
+      st.style.color='#e65100';
+      return;
+    }
+    st.textContent='✅ 테이블 생성 완료';st.style.color='#2e7d32';
+  }catch(e){
+    st.innerHTML='⚠ Supabase Dashboard → SQL Editor에서 실행:<br><textarea style="width:100%;height:120px;font-size:10px;margin-top:6px;font-family:monospace" readonly>'+sql.trim()+'</textarea>';
+    st.style.color='#e65100';
+  }
+}
+
+// ===== 통계 =====
+async function loadStats(){
+  const el=document.getElementById('statsInfo');
+  try{
+    const all=await sbSelect('board_post',{},'',500);
+    const wait=all.filter(p=>p.status==='대기').length;
+    const prog=all.filter(p=>p.status==='진행중').length;
+    const done=all.filter(p=>p.status==='완료').length;
+    const hold=all.filter(p=>p.status==='보류').length;
+    el.innerHTML='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">'+
+      '<div style="padding:10px;background:#fff3e0;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#e65100">'+wait+'</div><div style="font-size:10px;color:#888">대기</div></div>'+
+      '<div style="padding:10px;background:#e3f2fd;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#1565c0">'+prog+'</div><div style="font-size:10px;color:#888">진행</div></div>'+
+      '<div style="padding:10px;background:#e8f5e9;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#2e7d32">'+done+'</div><div style="font-size:10px;color:#888">완료</div></div>'+
+      '<div style="padding:10px;background:#f5f5f5;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#888">'+hold+'</div><div style="font-size:10px;color:#888">보류</div></div>'+
+    '</div><div style="text-align:center;font-size:11px;color:#888;margin-top:8px">총 '+all.length+'건</div>';
+  }catch(e){el.innerHTML='<div class="empty">조회 실패: '+e.message+'</div>'}
+}
+
+// ===== 설정 =====
+function saveMyName(){
+  localStorage.setItem('BOARD_MY_NAME',document.getElementById('cfgMyName').value.trim());
+}
+
+// ===== 유틸 =====
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+let tt;function showToast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2000)}
+
+// ===== 초기화 =====
+loadPosts();
+</script>
+</body>
+</html>

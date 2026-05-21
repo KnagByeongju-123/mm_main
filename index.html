@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v1.8</title>
+<title>스마트팩토리 v1.9</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -102,6 +102,7 @@ html, body {
 .acc.c-f2:hover, .acc.c-f2:focus-within { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.4); }
 .acc.c-imp:hover, .acc.c-imp:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
 .acc.c-master:hover, .acc.c-master:focus-within { background: rgba(253,186,116,0.08); border-color: rgba(253,186,116,0.4); }
+.acc.c-board:hover, .acc.c-board:focus-within { background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.4); }
 
 .acc[open] {
   border-color: rgba(56,189,248,0.5);
@@ -113,6 +114,7 @@ html, body {
 .acc.c-f2[open] { box-shadow: 0 4px 20px rgba(147,197,253,0.22); border-color: rgba(147,197,253,0.55); }
 .acc.c-imp[open] { box-shadow: 0 4px 20px rgba(196,181,253,0.22); border-color: rgba(196,181,253,0.55); }
 .acc.c-master[open] { box-shadow: 0 4px 20px rgba(253,186,116,0.22); border-color: rgba(253,186,116,0.55); }
+.acc.c-board[open] { box-shadow: 0 4px 20px rgba(244,114,182,0.22); border-color: rgba(244,114,182,0.55); }
 
 .acc summary {
   list-style: none; cursor: pointer;
@@ -139,6 +141,7 @@ html, body {
 .acc.c-f2[open] .icon     { box-shadow: 0 0 16px rgba(147,197,253,0.4); }
 .acc.c-imp[open] .icon    { box-shadow: 0 0 16px rgba(196,181,253,0.4); }
 .acc.c-master[open] .icon { box-shadow: 0 0 16px rgba(253,186,116,0.4); }
+.acc.c-board[open] .icon  { box-shadow: 0 0 16px rgba(244,114,182,0.4); }
 
 .acc .title {
   flex: 1; font-size: 19px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.3px;
@@ -150,6 +153,7 @@ html, body {
 .acc.c-f2[open] .title     { color: #bfdbfe; }
 .acc.c-imp[open] .title    { color: #ddd6fe; }
 .acc.c-master[open] .title { color: #fed7aa; }
+.acc.c-board[open] .title  { color: #fbcfe8; }
 
 .acc .count {
   font-size: 14px; color: #7dd3fc; font-weight: 700;
@@ -173,6 +177,7 @@ html, body {
 .acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
 .acc.c-imp .icon    { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
+.acc.c-board .icon  { background: linear-gradient(135deg, rgba(244,114,182,0.2), rgba(236,72,153,0.3)); color: #f9a8d4; }
 
 .acc-body {
   padding: 4px 8px 10px 8px;
@@ -288,7 +293,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v1.8</span></h1>
+  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v1.9</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -408,7 +413,22 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v1.8 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
+  <!-- 수정요청 게시판 (PIN 인증 없이 누구나 접근) -->
+  <details class="acc c-board">
+    <summary><div class="icon">📝</div><div class="title" data-i18n="board">수정요청 게시판</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="board.html">
+        <div class="s-icon">💬</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_board">수정요청 · 버그신고 · 공지</div>
+          <div class="s-desc" data-i18n="menu_board_desc">누구나 자유롭게 작성 가능 (PIN 불필요)</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+
+  <div class="footer">v1.9 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
 </div>
 
 <script>
@@ -478,6 +498,9 @@ const I18N = {
     menu_security_desc: 'PIN 관리 / 로그인 위치 / 차단 / 알림',
     menu_mold_master: '금형마스터',
     menu_mold_master_desc: '소재 / 매핑기종 / 금형재번 / 고객사',
+    board: '수정요청 게시판',
+    menu_board: '수정요청 · 버그신고 · 공지',
+    menu_board_desc: '누구나 자유롭게 작성 가능 (PIN 불필요)',
     footer_mod: 'Tryout 모듈'
   },
   de: {
@@ -526,6 +549,9 @@ const I18N = {
     menu_security_desc: 'PIN-Verwaltung / Login-Standorte / Sperren / Benachrichtigungen',
     menu_mold_master: 'Formen-Master',
     menu_mold_master_desc: 'Material / Mapping-Modell / Formnummer / Kunde',
+    board: 'Anfrage-Forum',
+    menu_board: 'Änderungsanfragen · Fehler · Hinweise',
+    menu_board_desc: 'Für alle zugänglich (keine PIN erforderlich)',
     footer_mod: 'Tryout-Modul'
   },
   kk: {
@@ -574,6 +600,9 @@ const I18N = {
     menu_security_desc: 'PIN кодын басқару / Кіру орны / Бұғаттау / Хабарламалар',
     menu_mold_master: 'Қалып шебері',
     menu_mold_master_desc: 'Материал / Сәйкес модель / Қалып нөмірі / Тапсырыс беруші',
+    board: 'Өтінім тақтасы',
+    menu_board: 'Өтінім · Қате · Хабарлама',
+    menu_board_desc: 'Барлығына ашық (PIN қажет емес)',
     footer_mod: 'Tryout модулі'
   }
 };
