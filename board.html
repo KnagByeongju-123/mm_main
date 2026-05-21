@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>수정요청 게시판 v1.1</title>
+  <title>수정요청 게시판 v1.4</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
@@ -42,10 +42,9 @@
     .ps-wait{background:#fff3e0;color:#e65100}.ps-prog{background:#e3f2fd;color:#1565c0}
     .ps-done{background:#e8f5e9;color:#2e7d32}.ps-hold{background:#f5f5f5;color:#888}
     .post-body{padding:0 14px 10px;font-size:13px;color:#444;line-height:1.6;white-space:pre-wrap;word-break:break-word}
-    .post-module{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;background:#f3e5f5;color:#7b1fa2}
     .post-footer{padding:8px 14px;border-top:1px solid #f0f0f0;display:flex;gap:6px;align-items:center}
     .post-footer button{padding:5px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
-    .pf-reply{background:#f3e5f5;color:#7b1fa2}.pf-status{background:#e3f2fd;color:#1565c0}.pf-del{background:#ffebee;color:#c62828}
+    .pf-reply{background:#f3e5f5;color:#7b1fa2}.pf-status{background:#e3f2fd;color:#1565c0}.pf-del{background:#ffebee;color:#c62828}.pf-edit{background:#e8f5e9;color:#2e7d32;margin-left:6px}
     /* 댓글 */
     .replies{padding:0 14px 10px}
     .reply{padding:8px 10px;background:#fafafa;border-radius:8px;margin-top:6px;font-size:12px}
@@ -76,7 +75,7 @@
 <body>
 <div class="hdr">
   <button class="home-btn" onclick="location.href='index.html'">🏠</button>
-  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.1</span></h1>
+  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.4</span></h1>
   <p>시스템 개선요청 · 버그신고 · 공지사항</p>
 </div>
 
@@ -124,22 +123,6 @@
       </select>
     </div>
     <div class="fg">
-      <label>대상 모듈</label>
-      <select id="newModule">
-        <option value="">선택 (선택사항)</option>
-        <option value="불량관리">불량관리 (defect)</option>
-        <option value="로트추적">로트추적 (lot_tracking)</option>
-        <option value="소모품">소모품 (mask)</option>
-        <option value="공정점검">공정점검 (line_patrol)</option>
-        <option value="출하의뢰">출하의뢰 (request_outgoing)</option>
-        <option value="프레스로트">프레스로트 (lot_tracking_tj)</option>
-        <option value="설비점검">설비점검 (P_machine_check)</option>
-        <option value="검사체크">검사체크 (QC_machine_check)</option>
-        <option value="메인화면">메인화면 (index)</option>
-        <option value="기타">기타</option>
-      </select>
-    </div>
-    <div class="fg">
       <label>제목</label>
       <input type="text" id="newTitle" placeholder="요청 제목을 입력하세요">
     </div>
@@ -150,6 +133,11 @@
     <div class="fg">
       <label>작성자</label>
       <input type="text" id="newAuthor" placeholder="이름">
+    </div>
+    <div class="fg">
+      <label>🔑 본인 수정용 PIN (4자리, 선택사항)</label>
+      <input type="password" id="newOwnerPin" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="비워두면 수정 불가" autocomplete="off">
+      <div style="font-size:10px;color:#888;margin-top:3px">💡 이 폰에서만 본인 수정 가능 (다른 폰에서는 불가)</div>
     </div>
     <button class="btn btn-primary" onclick="submitPost()">📤 등록</button>
   </div>
@@ -175,6 +163,13 @@
     <div id="statsInfo" class="empty">로드 필요</div>
     <button class="btn btn-sm btn-gray" onclick="loadStats()" style="margin-top:6px;width:100%">📊 통계 조회</button>
   </div>
+  <div class="card" style="border-left:3px solid #2e7d32">
+    <div class="card-tit">🔑 내가 작성한 글 PIN 관리</div>
+    <p style="font-size:11px;color:#888;margin-bottom:8px">이 폰에 저장된 본인 수정용 PIN 해시 목록입니다.<br>다른 폰으로 바꾸거나 PIN을 잊으면 마스터에게 문의하세요.</p>
+    <div id="myPinList" style="font-size:11px;margin-bottom:8px;color:#555"></div>
+    <button class="btn btn-sm btn-gray" onclick="renderMyPins()" style="width:100%;margin-bottom:6px">🔄 새로고침</button>
+    <button class="btn btn-sm" onclick="clearAllMyPins()" style="width:100%;background:#ffebee;color:#c62828;border:1px solid #ef9a9a">🗑 모든 PIN 초기화</button>
+  </div>
 </div>
 
 <!-- 상태변경 팝업 -->
@@ -187,6 +182,36 @@
       <button class="btn btn-sm" onclick="changeStatus('진행중')" style="background:#e3f2fd;color:#1565c0;border:1px solid #90caf9">🔵 진행중</button>
       <button class="btn btn-sm" onclick="changeStatus('완료')" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7">🟢 완료</button>
       <button class="btn btn-sm" onclick="changeStatus('보류')" style="background:#f5f5f5;color:#888;border:1px solid #ddd">⚪ 보류</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수정 팝업 -->
+<div class="popup-overlay" id="editPopup">
+  <div class="popup-box">
+    <div class="card-tit" style="justify-content:space-between"><span>✏️ 게시글 수정</span><button onclick="closeEditPopup()" style="border:none;background:#f5f5f5;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✕</button></div>
+    <input type="hidden" id="editPostId">
+    <div class="fg" style="margin-top:10px">
+      <label>분류</label>
+      <select id="editCat">
+        <option value="수정요청">🔧 수정요청</option>
+        <option value="버그">🐛 버그</option>
+        <option value="개선">💡 개선</option>
+        <option value="공지">📢 공지</option>
+        <option value="기타">📎 기타</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>제목</label>
+      <input type="text" id="editTitle">
+    </div>
+    <div class="fg">
+      <label>내용</label>
+      <textarea id="editContent" rows="6"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-gray" onclick="closeEditPopup()">취소</button>
+      <button class="btn btn-primary" onclick="saveEdit()">💾 저장</button>
     </div>
   </div>
 </div>
@@ -243,6 +268,7 @@ function swTab(n){
   }
   if(n===2){
     document.getElementById('cfgMyName').value=localStorage.getItem('BOARD_MY_NAME')||'';
+    renderMyPins();
   }
 }
 
@@ -274,7 +300,7 @@ function renderList(){
   let list=posts;
   if(curStatusFilter!=='all')list=list.filter(p=>p.status===curStatusFilter);
   if(curCatFilter!=='all')list=list.filter(p=>p.category===curCatFilter);
-  if(q)list=list.filter(p=>(p.title||'').toLowerCase().includes(q)||(p.content||'').toLowerCase().includes(q)||(p.author||'').toLowerCase().includes(q)||(p.module||'').toLowerCase().includes(q));
+  if(q)list=list.filter(p=>(p.title||'').toLowerCase().includes(q)||(p.content||'').toLowerCase().includes(q)||(p.author||'').toLowerCase().includes(q));
 
   if(!list.length){
     el.innerHTML='<div class="empty"><div class="em-icon">📭</div>게시글이 없습니다</div>';
@@ -298,7 +324,6 @@ function renderList(){
     html+='<div class="post-title">'+esc(p.title||'(제목없음)')+'</div>';
     html+='<div class="post-meta">';
     html+='<span class="post-status '+stCls+'">'+stIcon+' '+(p.status||'대기')+'</span>';
-    if(p.module)html+='<span class="post-module">'+esc(p.module)+'</span>';
     html+='<span>'+esc(p.author||'익명')+'</span>';
     html+='<span>'+date+' '+time+'</span>';
     if(replies.length)html+='<span class="cnt-badge">💬'+replies.length+'</span>';
@@ -324,8 +349,13 @@ function renderList(){
     // 푸터
     html+='<div class="post-footer" style="display:'+(expanded?'flex':'none')+'">';
     html+='<button class="pf-status" onclick="openStatusPopup('+p.id+')">📌 상태</button>';
+    // 본인 PIN 해시가 이 폰에 있는 경우에만 수정 버튼 노출
+    const hasOwnerPin=!!localStorage.getItem('BOARD_POST_PIN_'+p.id);
+    if(hasOwnerPin){
+      html+='<button class="pf-edit" onclick="openEditPopup('+p.id+')" title="본인 PIN 필요">✏️ 수정</button>';
+    }
     html+='<span style="flex:1"></span>';
-    html+='<button class="pf-del" onclick="deletePost('+p.id+')">🗑</button>';
+    html+='<button class="pf-del" onclick="deletePost('+p.id+')" title="마스터 PIN 필요">🔒 🗑</button>';
     html+='</div>';
 
     html+='</div>';
@@ -341,28 +371,34 @@ function togglePost(id){
 // ===== 작성 =====
 async function submitPost(){
   const cat=document.getElementById('newCat').value;
-  const module=document.getElementById('newModule').value;
   const title=document.getElementById('newTitle').value.trim();
   const content=document.getElementById('newContent').value.trim();
   const author=document.getElementById('newAuthor').value.trim();
+  const ownerPin=document.getElementById('newOwnerPin').value.trim();
   if(!title){showToast('제목을 입력하세요');return}
   if(!content){showToast('내용을 입력하세요');return}
+  if(ownerPin && !/^\d{4}$/.test(ownerPin)){showToast('PIN은 4자리 숫자로 입력하세요');return}
   const name=author||'익명';
   localStorage.setItem('BOARD_MY_NAME',name);
 
   try{
-    await sbInsert('board_post',{
+    const res=await sbInsert('board_post',{
       category:cat,
-      module:module||null,
       title:title,
       content:content,
       author:name,
       status:'대기',
       replies:'[]'
     });
-    showToast('✅ 등록 완료');
+    // 본인 수정용 PIN 해시를 localStorage에 저장 (해당 폰에서만 수정 가능)
+    if(ownerPin && res && res[0] && res[0].id){
+      const h=await sha256(ownerPin);
+      localStorage.setItem('BOARD_POST_PIN_'+res[0].id,h);
+    }
+    showToast(ownerPin?'✅ 등록 완료 (본인 수정 가능)':'✅ 등록 완료');
     document.getElementById('newTitle').value='';
     document.getElementById('newContent').value='';
+    document.getElementById('newOwnerPin').value='';
     swTab(0);
   }catch(e){showToast('등록 실패: '+e.message)}
 }
@@ -409,12 +445,83 @@ async function changeStatus(status){
   }catch(e){showToast('실패: '+e.message)}
 }
 
+// ===== 마스터 PIN 검증 (SHA-256) =====
+const MASTER_PIN_HASH='ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
+async function sha256(text){
+  const buf=new TextEncoder().encode(text);
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function verifyMasterPin(){
+  const pin=prompt('🔐 삭제는 마스터 PIN이 필요합니다.\n4자리 PIN을 입력하세요:');
+  if(pin===null)return false;
+  if(!/^\d{4}$/.test(pin)){showToast('4자리 숫자를 입력하세요');return false}
+  try{
+    const h=await sha256(pin);
+    if(h!==MASTER_PIN_HASH){showToast('❌ PIN 불일치');return false}
+    return true;
+  }catch(e){showToast('PIN 검증 오류: '+e.message);return false}
+}
+
+// ===== 본인 PIN 검증 (작성자만 수정 가능) =====
+// 작성 시 이 폰에 저장된 PIN 해시와 일치하거나, 마스터 PIN이면 통과
+async function verifyOwnerPin(postId){
+  const stored=localStorage.getItem('BOARD_POST_PIN_'+postId);
+  if(!stored){
+    showToast('❌ 이 폰에서 작성한 글이 아닙니다');
+    return false;
+  }
+  const pin=prompt('🔑 작성 시 입력한 4자리 PIN을 입력하세요:\n(마스터 PIN도 가능)');
+  if(pin===null)return false;
+  if(!/^\d{4}$/.test(pin)){showToast('4자리 숫자를 입력하세요');return false}
+  try{
+    const h=await sha256(pin);
+    if(h===stored)return true;
+    if(h===MASTER_PIN_HASH)return true; // 마스터 PIN으로도 통과
+    showToast('❌ PIN 불일치');
+    return false;
+  }catch(e){showToast('PIN 검증 오류: '+e.message);return false}
+}
+
+// ===== 수정 모달 =====
+async function openEditPopup(id){
+  if(!await verifyOwnerPin(id))return;
+  const p=posts.find(x=>x.id==id);
+  if(!p){showToast('게시글을 찾을 수 없습니다');return}
+  document.getElementById('editPostId').value=id;
+  document.getElementById('editCat').value=p.category||'수정요청';
+  document.getElementById('editTitle').value=p.title||'';
+  document.getElementById('editContent').value=p.content||'';
+  document.getElementById('editPopup').classList.add('show');
+}
+function closeEditPopup(){document.getElementById('editPopup').classList.remove('show')}
+
+async function saveEdit(){
+  const id=document.getElementById('editPostId').value;
+  const cat=document.getElementById('editCat').value;
+  const title=document.getElementById('editTitle').value.trim();
+  const content=document.getElementById('editContent').value.trim();
+  if(!id)return;
+  if(!title){showToast('제목을 입력하세요');return}
+  if(!content){showToast('내용을 입력하세요');return}
+  try{
+    await sbUpdate('board_post',{id:'eq.'+id},{category:cat,title:title,content:content});
+    const p=posts.find(x=>x.id==id);
+    if(p){p.category=cat;p.title=title;p.content=content}
+    closeEditPopup();
+    renderList();
+    showToast('✏️ 수정 완료');
+  }catch(e){showToast('수정 실패: '+e.message)}
+}
+
 // ===== 삭제 =====
 async function deletePost(id){
+  if(!await verifyMasterPin())return;
   if(!confirm('이 글을 삭제할까요?'))return;
   try{
     await sbDelete('board_post',{id:'eq.'+id});
     posts=posts.filter(p=>p.id!==id);
+    localStorage.removeItem('BOARD_POST_PIN_'+id);
     renderList();
     showToast('🗑 삭제됨');
   }catch(e){showToast('실패: '+e.message)}
@@ -428,7 +535,6 @@ async function createTable(){
 CREATE TABLE IF NOT EXISTS board_post (
   id BIGSERIAL PRIMARY KEY,
   category TEXT DEFAULT '수정요청',
-  module TEXT,
   title TEXT NOT NULL,
   content TEXT,
   author TEXT DEFAULT '익명',
@@ -476,6 +582,49 @@ async function loadStats(){
 // ===== 설정 =====
 function saveMyName(){
   localStorage.setItem('BOARD_MY_NAME',document.getElementById('cfgMyName').value.trim());
+}
+
+// 이 폰에 저장된 본인 수정용 PIN 목록 표시
+function renderMyPins(){
+  const el=document.getElementById('myPinList');
+  if(!el)return;
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && k.startsWith('BOARD_POST_PIN_'))keys.push(k.replace('BOARD_POST_PIN_',''));
+  }
+  if(!keys.length){
+    el.innerHTML='<span style="color:#bbb">저장된 본인 PIN이 없습니다</span>';
+    return;
+  }
+  let html='<div style="background:#f9f9f9;padding:8px;border-radius:6px;max-height:200px;overflow-y:auto">';
+  keys.forEach(id=>{
+    const p=posts.find(x=>String(x.id)===id);
+    const title=p?esc(p.title):'(글을 찾을 수 없음 / 삭제됨)';
+    html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #eee">';
+    html+='<span style="flex:1;font-size:11px;color:#444">#'+id+' '+title+'</span>';
+    html+='<button onclick="removeMyPin(\''+id+'\')" style="padding:3px 8px;border:none;border-radius:5px;background:#ffebee;color:#c62828;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">삭제</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function removeMyPin(id){
+  if(!confirm('이 글의 본인 PIN을 폐기하시겠습니까?\n(이후 본인 수정 불가)'))return;
+  localStorage.removeItem('BOARD_POST_PIN_'+id);
+  renderMyPins();renderList();
+  showToast('🗑 PIN 폐기됨');
+}
+function clearAllMyPins(){
+  if(!confirm('이 폰에 저장된 모든 본인 PIN을 폐기하시겠습니까?\n(이후 어떤 글도 본인 수정 불가)'))return;
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k && k.startsWith('BOARD_POST_PIN_'))keys.push(k);
+  }
+  keys.forEach(k=>localStorage.removeItem(k));
+  renderMyPins();renderList();
+  showToast('🗑 모든 PIN 폐기됨 ('+keys.length+'개)');
 }
 
 // ===== 유틸 =====
