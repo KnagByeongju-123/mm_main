@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>수정요청 게시판 v1.4</title>
+  <title>수정요청 게시판 v1.5</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
@@ -75,7 +75,7 @@
 <body>
 <div class="hdr">
   <button class="home-btn" onclick="location.href='index.html'">🏠</button>
-  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.4</span></h1>
+  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.5</span></h1>
   <p>시스템 개선요청 · 버그신고 · 공지사항</p>
 </div>
 
@@ -355,7 +355,11 @@ function renderList(){
       html+='<button class="pf-edit" onclick="openEditPopup('+p.id+')" title="본인 PIN 필요">✏️ 수정</button>';
     }
     html+='<span style="flex:1"></span>';
-    html+='<button class="pf-del" onclick="deletePost('+p.id+')" title="마스터 PIN 필요">🔒 🗑</button>';
+    if(hasOwnerPin){
+      html+='<button class="pf-del" onclick="deletePost('+p.id+')" title="본인 PIN으로 삭제">🗑 삭제</button>';
+    }else{
+      html+='<button class="pf-del" onclick="deletePost('+p.id+')" title="마스터 PIN 필요">🔒 🗑</button>';
+    }
     html+='</div>';
 
     html+='</div>';
@@ -515,8 +519,18 @@ async function saveEdit(){
 }
 
 // ===== 삭제 =====
+// 본인 PIN(이 폰에서 작성한 글) OR 마스터 PIN으로 삭제 가능
 async function deletePost(id){
-  if(!await verifyMasterPin())return;
+  const hasOwnerPin=!!localStorage.getItem('BOARD_POST_PIN_'+id);
+  let ok=false;
+  if(hasOwnerPin){
+    // 본인이 작성한 글: 본인 PIN 또는 마스터 PIN
+    ok=await verifyOwnerPin(id);
+  }else{
+    // 다른 폰에서 작성된 글: 마스터 PIN만
+    ok=await verifyMasterPin();
+  }
+  if(!ok)return;
   if(!confirm('이 글을 삭제할까요?'))return;
   try{
     await sbDelete('board_post',{id:'eq.'+id});
