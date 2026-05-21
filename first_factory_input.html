@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>금형부품재고관리 v1.15</title>
+<title>금형부품재고관리 v1.16</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -80,6 +80,20 @@ header h1 .ver {
 .summary-card {
   background: var(--bg-card); padding: 10px; border-radius: 8px;
   text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  position: relative;
+}
+.summary-card.clickable { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+.summary-card.clickable:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(220,53,69,0.25); }
+.summary-card.clickable:active { transform: translateY(0); }
+.summary-card.active {
+  background: rgba(220,53,69,0.18);
+  box-shadow: 0 0 0 2px #dc3545, 0 2px 6px rgba(220,53,69,0.3);
+}
+.summary-card.active::after {
+  content: attr(data-active-label);
+  position: absolute; top: 3px; right: 6px;
+  font-size: 10px; color: #fff; background: #dc3545;
+  padding: 2px 6px; border-radius: 10px; font-weight: 600;
 }
 .summary-card .num { font-size: 20px; font-weight: 700; color: var(--ice); }
 .summary-card .num.warn { color: #dc3545; }
@@ -539,7 +553,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.15</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.16</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -567,7 +581,7 @@ input[type="file"] { display: none; }
 
     <div class="summary">
       <div class="summary-card"><div class="num" id="sumTotal">0</div><div class="label" data-i18n="sum_total">전체 품목</div></div>
-      <div class="summary-card"><div class="num warn" id="sumLow">0</div><div class="label" data-i18n="sum_low">재고부족</div></div>
+      <div class="summary-card clickable" id="cardLow" onclick="toggleLowOnly()" title="재고부족 필터"><div class="num warn" id="sumLow">0</div><div class="label" data-i18n="sum_low">재고부족</div></div>
       <div class="summary-card"><div class="num" id="sumValue">0</div><div class="label" data-i18n="sum_value">재고금액(만)</div></div>
     </div>
 
@@ -661,7 +675,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  금형부품재고관리 v1.15 · msm · 프레스양산
+  금형부품재고관리 v1.16 · msm · 프레스양산
 </div>
 
 <div id="errMsg"></div>
@@ -903,6 +917,9 @@ const I18N = {
     page_title: '금형부품재고관리',
     tab_inv: '재고', tab_hist: '이력', tab_export: '일괄처리',
     sum_total: '전체 품목', sum_low: '재고부족', sum_value: '재고금액(만)',
+    low_only_badge: '✓ 부족만', low_only_title: '재고부족 필터',
+    low_empty: '✅ 재고부족 품목이 없습니다.', view_all: '전체 보기',
+    no_low_alert: '재고부족 품목이 없습니다.',
     loc_filter_pre: '위치', loc_filter_post: '품목만 보기', show_all: '전체보기',
     search_ph: '품명/규격/위치 검색', all: '전체',
     hist_search_ph: '품명 검색 후 선택 또는 검색', search: '검색',
@@ -944,6 +961,9 @@ const I18N = {
     page_title: 'Werk 1 Lagerverwaltung',
     tab_inv: 'Lager', tab_hist: 'Verlauf', tab_export: 'Import/Export',
     sum_total: 'Alle Artikel', sum_low: 'Knapp', sum_value: 'Wert (10k KRW)',
+    low_only_badge: '✓ Nur knapp', low_only_title: 'Nur knappe Artikel',
+    low_empty: '✅ Keine knappen Artikel.', view_all: 'Alle anzeigen',
+    no_low_alert: 'Keine knappen Artikel.',
     loc_filter_pre: 'Standort', loc_filter_post: 'nur anzeigen', show_all: 'Alle anzeigen',
     search_ph: 'Name/Spez./Standort suchen', all: 'Alle',
     hist_search_ph: 'Artikel auswählen oder suchen', search: 'Suchen',
@@ -985,6 +1005,9 @@ const I18N = {
     page_title: '1-зауыт қойма басқару',
     tab_inv: 'Қойма', tab_hist: 'Тарих', tab_export: 'Топтық өңдеу',
     sum_total: 'Барлық тауар', sum_low: 'Аз қалдық', sum_value: 'Құны (10мың вон)',
+    low_only_badge: '✓ Тек аз', low_only_title: 'Аз қалдық сүзгі',
+    low_empty: '✅ Аз қалдық жоқ.', view_all: 'Барлығын көрсету',
+    no_low_alert: 'Аз қалдық жоқ.',
     loc_filter_pre: 'Орын', loc_filter_post: 'тауарларын ғана', show_all: 'Барлығын көрсету',
     search_ph: 'Атау/спец./орын іздеу', all: 'Барлығы',
     hist_search_ph: 'Тауар таңдау немесе іздеу', search: 'Іздеу',
@@ -1050,9 +1073,21 @@ function applyLang(lang){
   document.querySelectorAll('.lang-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.lang === lang);
   });
+  // cardLow의 ::after 라벨도 갱신
+  const cl = document.getElementById('cardLow');
+  if(cl){
+    cl.setAttribute('data-active-label', dict.low_only_badge || '✓ 부족만');
+    cl.setAttribute('title', dict.low_only_title || '재고부족 필터');
+  }
   if(typeof window.onLangChange === 'function'){
     try{ window.onLangChange(lang); }catch(e){}
   }
+}
+
+// i18n 헬퍼: 현재 언어의 키 텍스트 반환
+function t(key, fallback){
+  const dict = I18N[getLang()] || I18N.ko;
+  return dict[key] !== undefined ? dict[key] : (fallback !== undefined ? fallback : key);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1066,7 +1101,12 @@ function showVerInput(){
   alert(
     '📦 금형부품재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.15 (현재)\n' +
+    'v1.16 (현재)\n' +
+    '• 재고부족 카드 클릭 → 재고부족 품목만 필터링\n' +
+    '  - 다시 클릭하면 전체 보기로 복귀\n' +
+    '  - 활성 시 ✓ 부족만 뱃지 표시 (ko/de/kk 다국어)\n' +
+    '  - 부족 0건일 땐 카드 흐림 + 자동 해제\n\n' +
+    'v1.15\n' +
     '• 복사/이동: 품명(name) + 규격(spec) 조합으로 매칭\n' +
     '  - 같은 품명이라도 규격이 다르면 다른 품목으로 처리\n' +
     '  - 예) 20GI-005 / BUTTON,DIE  ≠  20GI-005 / PAD\n' +
@@ -1207,6 +1247,7 @@ function showVerInput(){
   let curStockItem = null;
   let curPhoto = null;
   let locFilter = ''; // QR 스캔 시 위치 필터
+  let lowOnlyFilter = false; // 재고부족만 보기 토글
 
   // ============ Categories ============
   function loadCategories() {
@@ -1543,7 +1584,34 @@ function showVerInput(){
     } else {
       bar.classList.remove('show');
     }
+
+    // 재고부족 카드 active 상태 동기화
+    const cardLow = $('cardLow');
+    if (cardLow) {
+      cardLow.classList.toggle('active', lowOnlyFilter);
+      cardLow.setAttribute('data-active-label', t('low_only_badge', '✓ 부족만'));
+      // 재고부족이 0건이면 흐림 + 활성 자동 해제
+      if (low.length === 0 && lowOnlyFilter) {
+        lowOnlyFilter = false;
+        cardLow.classList.remove('active');
+      }
+      cardLow.style.opacity = (low.length === 0) ? '0.55' : '1';
+    }
   }
+
+  // 재고부족만 보기 토글
+  function toggleLowOnly() {
+    const low = items.filter(i => i.stock < i.min_stock && i.min_stock > 0);
+    if (low.length === 0 && !lowOnlyFilter) {
+      alert(t('no_low_alert', '재고부족 품목이 없습니다.'));
+      return;
+    }
+    lowOnlyFilter = !lowOnlyFilter;
+    const cardLow = $('cardLow');
+    if (cardLow) cardLow.classList.toggle('active', lowOnlyFilter);
+    renderList();
+  }
+  window.toggleLowOnly = toggleLowOnly;
 
   // ============================================================
   // 다중 선택 + 이동 기능
@@ -1840,7 +1908,8 @@ function showVerInput(){
         (i.location || '').toLowerCase().includes(q);
       const mc = !cat || i.category === cat;
       const ml = !locFilter || (i.location || '').toLowerCase() === locFilter.toLowerCase();
-      return mq && mc && ml;
+      const mLow = !lowOnlyFilter || (i.min_stock > 0 && i.stock < i.min_stock);
+      return mq && mc && ml && mLow;
     });
 
     // 위치 필터 카운트 표시
@@ -1861,7 +1930,11 @@ function showVerInput(){
 
     const list = $('itemList');
     if (filtered.length === 0) {
-      if (locFilter) {
+      if (lowOnlyFilter) {
+        list.innerHTML = '<div class="empty-state">' + escapeHtml(t('low_empty', '✅ 재고부족 품목이 없습니다.')) +
+          '<br><button type="button" onclick="toggleLowOnly()" style="margin-top:10px;background:#1a3a5c;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-family:inherit">' +
+          escapeHtml(t('view_all', '전체 보기')) + '</button></div>';
+      } else if (locFilter) {
         list.innerHTML = '<div class="empty-state">📭 위치 <b>' + escapeHtml(locFilter) + '</b>에 등록된 품목이 없습니다.</div>';
       } else {
         list.innerHTML = '<div class="empty-state">📭 등록된 품목이 없습니다.<br>+ 버튼으로 추가하세요.</div>';
