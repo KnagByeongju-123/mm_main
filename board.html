@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>수정요청 게시판 v1.5</title>
+  <title>수정요청 게시판 v1.6</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
     *{box-sizing:border-box;margin:0;padding:0}
@@ -75,7 +75,7 @@
 <body>
 <div class="hdr">
   <button class="home-btn" onclick="location.href='index.html'">🏠</button>
-  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.5</span></h1>
+  <h1>📝 수정요청 게시판 <span style="font-size:10px;opacity:0.7;font-weight:600">v1.6</span></h1>
   <p>시스템 개선요청 · 버그신고 · 공지사항</p>
 </div>
 
@@ -312,8 +312,9 @@ function renderList(){
     const catCls={수정요청:'pb-req',버그:'pb-bug',개선:'pb-idea',공지:'pb-notice'}[p.category]||'pb-etc';
     const stCls={대기:'ps-wait',진행중:'ps-prog',완료:'ps-done',보류:'ps-hold'}[p.status]||'ps-wait';
     const stIcon={대기:'🟠',진행중:'🔵',완료:'🟢',보류:'⚪'}[p.status]||'🟠';
-    const date=p.created_at?p.created_at.substring(0,10):'';
-    const time=p.created_at?p.created_at.substring(11,16):'';
+    const kst=toKST(p.created_at);
+    const date=kst.date;
+    const time=kst.time;
     const replies=p.replies?JSON.parse(p.replies):[];
     const expanded=p._expanded;
 
@@ -336,7 +337,9 @@ function renderList(){
     if(expanded&&replies.length){
       html+='<div class="replies">';
       replies.forEach(r=>{
-        html+='<div class="reply"><div class="reply-hdr"><span class="reply-author">'+esc(r.author||'익명')+'</span><span class="reply-time">'+esc(r.time||'')+'</span></div><div class="reply-body">'+esc(r.text||'')+'</div></div>';
+        // 기존 UTC로 저장된 댓글도 KST로 표시 (날짜 형식이면 변환, 아니면 원본)
+        const rTime=r.time?(toKST(r.time).full||r.time):'';
+        html+='<div class="reply"><div class="reply-hdr"><span class="reply-author">'+esc(r.author||'익명')+'</span><span class="reply-time">'+esc(rTime)+'</span></div><div class="reply-body">'+esc(r.text||'')+'</div></div>';
       });
       html+='</div>';
     }
@@ -413,8 +416,7 @@ async function addReply(postId){
   const text=(inp?inp.value:'').trim();
   if(!text){showToast('댓글을 입력하세요');return}
   const author=localStorage.getItem('BOARD_MY_NAME')||'익명';
-  const now=new Date();
-  const timeStr=now.toISOString().substring(0,16).replace('T',' ');
+  const timeStr=toKST(new Date()).full;
 
   const p=posts.find(x=>x.id===postId);
   if(!p)return;
@@ -643,6 +645,35 @@ function clearAllMyPins(){
 
 // ===== 유틸 =====
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// UTC ISO 문자열 또는 Date를 한국시간(KST, UTC+9)으로 변환
+// 반환: {date:'2026-05-21', time:'18:30', full:'2026-05-21 18:30'}
+function toKST(input){
+  let d;
+  if(input instanceof Date){d=input}
+  else if(typeof input==='string' && input){
+    // Supabase TIMESTAMPTZ는 'YYYY-MM-DD HH:MM:SS+00' 또는 ISO 형식
+    let s=input.trim();
+    // 공백을 T로 (ISO 형식화)
+    s=s.replace(' ','T');
+    // '+00' / '-00' → '+00:00' (Safari 등 호환)
+    s=s.replace(/([+-])(\d{2})$/,'$1$2:00');
+    // 타임존 표시가 없으면 UTC로 강제 해석
+    if(!/[Zz]|[+-]\d{2}:?\d{2}$/.test(s)){
+      s=s+'Z';
+    }
+    d=new Date(s);
+  }else{return{date:'',time:'',full:''}}
+  if(isNaN(d.getTime()))return{date:'',time:'',full:''};
+  // UTC+9 (KST)로 변환
+  const kst=new Date(d.getTime()+9*60*60*1000);
+  const y=kst.getUTCFullYear();
+  const m=String(kst.getUTCMonth()+1).padStart(2,'0');
+  const day=String(kst.getUTCDate()).padStart(2,'0');
+  const hh=String(kst.getUTCHours()).padStart(2,'0');
+  const mm=String(kst.getUTCMinutes()).padStart(2,'0');
+  return{date:y+'-'+m+'-'+day,time:hh+':'+mm,full:y+'-'+m+'-'+day+' '+hh+':'+mm};
+}
 let tt;function showToast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2000)}
 
 // ===== 초기화 =====
