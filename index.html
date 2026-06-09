@@ -179,6 +179,13 @@ html, body {
 .acc.c-master .icon { background: linear-gradient(135deg, rgba(251,146,60,0.2), rgba(249,115,22,0.3)); color: #fdba74; }
 .acc.c-board .icon  { background: linear-gradient(135deg, rgba(244,114,182,0.2), rgba(236,72,153,0.3)); color: #f9a8d4; }
 
+/* 금형부품 발주관리 (인디고) */
+.acc.c-po:hover, .acc.c-po:focus-within { background: rgba(129,140,248,0.08); border-color: rgba(129,140,248,0.4); }
+.acc.c-po[open] { box-shadow: 0 4px 20px rgba(129,140,248,0.22); border-color: rgba(129,140,248,0.55); }
+.acc.c-po[open] .icon { box-shadow: 0 0 16px rgba(129,140,248,0.4); }
+.acc.c-po[open] .title { color: #c7d2fe; }
+.acc.c-po .icon { background: linear-gradient(135deg, rgba(129,140,248,0.2), rgba(99,102,241,0.3)); color: #a5b4fc; }
+
 .acc-body {
   padding: 4px 8px 10px 8px;
   border-top: 1px solid rgba(71,85,105,0.4);
@@ -336,6 +343,19 @@ body.locked { overflow: hidden; }
       </a>
     </div>
   </details>
+  <details class="acc c-po">
+    <summary><div class="icon">📋</div><div class="title" data-i18n="po">금형부품 발주관리</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="purchase_order.html">
+        <div class="s-icon">🚚</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_po">발주 / 외주현황 / 진행보고서</div>
+          <div class="s-desc" data-i18n="menu_po_desc">외주업체별 발주·입고관리 / 이사 보고용 PDF</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
   <details class="acc c-repair">
     <summary><div class="icon">🛠️</div><div class="title" data-i18n="repair">금형수리</div><div class="count">3</div><div class="arrow">›</div></summary>
     <div class="acc-body">
@@ -484,6 +504,9 @@ const I18N = {
     menu_mold_hq_desc: '소모품 입출고 / 재고 조회',
     menu_mold_f1: '금형부품 재고관리',
     menu_mold_f1_desc: '프레스부품 입출고 / 재고 조회',
+    po: '금형부품 발주관리',
+    menu_po: '발주 / 외주현황 / 진행보고서',
+    menu_po_desc: '외주업체별 발주·입고관리 / 이사 보고용 PDF',
     menu_repair_req: '수리의뢰',
     menu_repair_req_desc: '금형 불량 발생 시 수리 의뢰 등록',
     menu_repair_done: '수리완료',
@@ -535,6 +558,9 @@ const I18N = {
     menu_mold_hq_desc: 'Wareneingang/-ausgang / Bestand',
     menu_mold_f1: 'Lagerverwaltung (Formteile)',
     menu_mold_f1_desc: 'Pressteile-Ein-/Ausgang / Bestand',
+    po: 'Bestellverwaltung Formteile',
+    menu_po: 'Bestellung / Lieferanten / Fortschrittsbericht',
+    menu_po_desc: 'Bestell-/Wareneingang je Lieferant / PDF-Bericht',
     menu_repair_req: 'Reparaturauftrag',
     menu_repair_req_desc: 'Reparaturanfrage bei Werkzeugfehler',
     menu_repair_done: 'Reparatur abgeschlossen',
@@ -586,6 +612,9 @@ const I18N = {
     menu_mold_hq_desc: 'Кіріс/шығыс / қалдықты қарау',
     menu_mold_f1: 'Қойма басқару (қалып бөлшектері)',
     menu_mold_f1_desc: 'Баспасөз бөлшектерінің кірісі/шығысы / қалдықты қарау',
+    po: 'Қалып бөлшектерін тапсырыс беру',
+    menu_po: 'Тапсырыс / жеткізушілер / есеп',
+    menu_po_desc: 'Жеткізуші бойынша тапсырыс/қабылдау / PDF есебі',
     menu_repair_req: 'Жөндеу өтінімі',
     menu_repair_req_desc: 'Қалып ақаулығы кезінде жөндеу өтінімін тіркеу',
     menu_repair_done: 'Жөндеу аяқталды',
