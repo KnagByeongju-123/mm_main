@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="theme-color" content="#1e40af">
-<title>금형부품 발주관리 v3.3</title>
+<title>금형부품 발주관리 v3.4</title>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -442,6 +442,28 @@
   .rpt-footer .fpage { text-align:center; font-size:9px; color:#9ca3af; margin-top:2px; }
   .rpt-empty { text-align:center; color:#9ca3af; padding:60px 0; font-size:14px; }
 
+  /* ===== 📷 사진 첨부 ===== */
+  .photo-zone { border:1.5px dashed #93c5fd; background:#f0f7ff; border-radius:8px; padding:10px; }
+  .photo-btns { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .photo-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
+  .photo-thumb { position:relative; width:86px; height:86px; border-radius:8px; overflow:hidden; border:1px solid #cbd5e1; background:#fff; }
+  .photo-thumb img { width:100%; height:100%; object-fit:cover; cursor:pointer; display:block; }
+  .photo-thumb .ph-del { position:absolute; top:2px; right:2px; width:22px; height:22px; border:none; border-radius:50%; background:rgba(220,38,38,.92); color:#fff; font-size:13px; font-weight:700; cursor:pointer; line-height:1; }
+  .photo-thumb .ph-size { position:absolute; left:0; right:0; bottom:0; background:rgba(15,23,42,.65); color:#fff; font-size:9px; text-align:center; padding:1px 0; }
+  .photo-hint { font-size:11px; color:#64748b; margin-top:6px; }
+  .ph-badge { display:inline-block; background:#0ea5e9; color:#fff; border-radius:9px; font-size:10px; font-weight:700; padding:1px 7px; cursor:pointer; }
+  /* 사진 뷰어 */
+  .pv-bg { position:fixed; inset:0; background:rgba(15,23,42,.92); display:none; align-items:center; justify-content:center; z-index:6000; padding:18px; flex-direction:column; gap:10px; }
+  .pv-bg.active { display:flex; }
+  .pv-bg img { max-width:92vw; max-height:78vh; border-radius:10px; box-shadow:0 8px 40px rgba(0,0,0,.6); background:#fff; }
+  .pv-cap { color:#e2e8f0; font-size:13px; text-align:center; }
+  .pv-nav { display:flex; gap:10px; }
+  /* 보고서 사진 */
+  .rpt-photos { display:flex; gap:6px; flex-wrap:wrap; padding:5px 6px; border:1px solid #cbd5e1; border-top:none; background:#f8fafc; }
+  .rpt-photos .rp-item { text-align:center; }
+  .rpt-photos img { width:84px; height:84px; object-fit:cover; border:1px solid #cbd5e1; border-radius:4px; display:block; }
+  .rpt-photos .rp-cap { font-size:9px; color:#475569; margin-top:1px; max-width:84px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
   @media (max-width:1024px){ .rpt-scale { transform:scale(.62); } .rpt-pages { padding:8px; } }
   @media (max-width:768px){ .rpt-scale { transform:scale(.46); } }
   @media (max-width:480px){ .rpt-scale { transform:scale(.42); } }
@@ -450,7 +472,7 @@
 <body>
 
 <h1 style="justify-content:space-between;">
-  <span>📋 금형부품 발주관리 <span style="font-size:12px; padding:3px 10px; background:#2563eb; color:#fff; border-radius:12px;">v3.3</span></span>
+  <span>📋 금형부품 발주관리 <span style="font-size:12px; padding:3px 10px; background:#2563eb; color:#fff; border-radius:12px;">v3.4</span></span>
   <span id="userBadge" style="font-size:12px; font-weight:600; color:#1e40af; background:#dbeafe; border:1px solid #bfdbfe; padding:4px 10px; border-radius:14px;">👤 접속자 확인중…</span>
 </h1>
 
@@ -604,6 +626,11 @@
         <label>금형제번 (부분검색)</label>
         <input type="text" id="rptMold" list="rptMoldList" placeholder="-- 전체 또는 금형 --" autocomplete="off">
         <datalist id="rptMoldList"></datalist>
+      </div>
+      <div style="display:flex; align-items:flex-end; padding-bottom:6px;">
+        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:12px; color:#374151;">
+          <input type="checkbox" id="rptPhotos" checked style="width:15px; height:15px;"> 📷 사진 포함
+        </label>
       </div>
       <button class="btn-w" onclick="buildReportPreview()">🔄 미리보기 갱신</button>
       <button class="btn-d" onclick="genReportPDF()">📄 PDF 저장</button>
@@ -969,6 +996,20 @@
       <div></div>
     </div>
 
+    <div style="margin-top:12px;">
+      <label>📷 부품 사진 <span style="color:#0ea5e9; font-weight:600;">(자동압축 · 최대 4장)</span></label>
+      <div class="photo-zone">
+        <div class="photo-btns">
+          <button type="button" class="btn-s btn-sm" onclick="document.getElementById('ofPhotoCam').click()">📷 사진 촬영</button>
+          <button type="button" class="btn-i btn-sm" onclick="document.getElementById('ofPhotoGal').click()">🖼 갤러리 선택</button>
+          <input type="file" id="ofPhotoCam" accept="image/*" capture="environment" style="display:none" onchange="addOrderPhotos(this)">
+          <input type="file" id="ofPhotoGal" accept="image/*" multiple style="display:none" onchange="addOrderPhotos(this)">
+        </div>
+        <div class="photo-thumbs" id="ofPhotoThumbs"></div>
+        <div class="photo-hint" id="ofPhotoHint">사진 없음 — 부품 식별용 사진을 첨부하세요 (장당 약 30KB로 자동압축)</div>
+      </div>
+    </div>
+
     <div style="margin-top:10px;">
       <label>기타사항</label>
       <textarea id="of_note" rows="2"></textarea>
@@ -978,6 +1019,17 @@
       <button class="btn-g" onclick="closeOrderModal()">취소</button>
       <button class="btn-p" onclick="saveOrder()">💾 저장</button>
     </div>
+  </div>
+</div>
+
+<!-- 사진 뷰어 -->
+<div class="pv-bg" id="photoViewer" onclick="if(event.target===this)closePhotoViewer()">
+  <img id="pvImg" src="" alt="부품 사진">
+  <div class="pv-cap" id="pvCap"></div>
+  <div class="pv-nav">
+    <button class="btn-g btn-sm" onclick="pvMove(-1)">‹ 이전</button>
+    <button class="btn-g btn-sm" onclick="closePhotoViewer()">닫기 ✕</button>
+    <button class="btn-g btn-sm" onclick="pvMove(1)">다음 ›</button>
   </div>
 </div>
 
@@ -1568,12 +1620,17 @@ function renderMain() {
     body.innerHTML = `<tr><td colspan="${COLS.length + 2}" class="empty">데이터 없음. [+ 신규 구매의뢰]로 추가하세요.</td></tr>`;
   } else {
     body.innerHTML = filtered.map((r, i) => {
+      const phCnt = parsePhotos(r.photos).length;
       let html = `<tr><td>${i+1}</td>`;
       COLS.forEach(c => {
         let v = r[c.key];
         if (c.key === 'dim_summary') v = dimSummary(r);
         if (c.key === 'pr_date' || c.key === 'due_date') v = formatDate(v);
-        html += `<td>${escapeHtml(v ?? '')}</td>`;
+        if (c.key === 'part_name' && phCnt) {
+          html += `<td>${escapeHtml(v ?? '')} <span class="ph-badge" onclick="viewOrderPhotos(${r.id})" title="사진 보기">📷${phCnt}</span></td>`;
+        } else {
+          html += `<td>${escapeHtml(v ?? '')}</td>`;
+        }
       });
       html += `<td class="actions" style="white-space:nowrap;">
         <button class="btn-p btn-sm" onclick="openOrderModal(${r.id})">수정</button>
@@ -1602,6 +1659,123 @@ const ORDER_FIELDS = [
   'qty','qty_unit','requester','approver','reviewer','review_date','note'
 ];
 
+/* ===========================================================
+   📷 부품 사진 (장당 ≤30KB 반복압축, 최대 4장, pr_orders.photos)
+   =========================================================== */
+const PHOTO_MAX = 4;
+const PHOTO_TARGET_KB = 30;
+let _orderPhotos = [];   // 현재 모달의 사진 dataURL 배열
+let _pvList = [], _pvIdx = 0, _pvCaption = '';
+
+function dataUrlKB(d) { return Math.round((d.length * 3 / 4) / 1024); }
+
+// 반복압축: 크기/품질을 단계적으로 낮춰 30KB 이하로
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let maxSide = 800, quality = 0.7, out = '';
+      for (let i = 0; i < 12; i++) {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        out = cv.toDataURL('image/jpeg', quality);
+        if (dataUrlKB(out) <= PHOTO_TARGET_KB) break;
+        if (quality > 0.35) quality -= 0.1;
+        else maxSide = Math.round(maxSide * 0.8);
+      }
+      resolve(out);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 로드 실패')); };
+    img.src = url;
+  });
+}
+
+async function addOrderPhotos(input) {
+  const files = Array.from(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+  if (_orderPhotos.length + files.length > PHOTO_MAX) {
+    toast(`사진은 최대 ${PHOTO_MAX}장까지입니다`, 'err');
+    files.length = PHOTO_MAX - _orderPhotos.length;
+    if (files.length <= 0) return;
+  }
+  toast('📷 압축 중...', 'ok');
+  for (const f of files) {
+    try {
+      const d = await compressImage(f);
+      _orderPhotos.push(d);
+    } catch (e) { toast('사진 처리 실패: ' + e.message, 'err'); }
+  }
+  renderOrderPhotoThumbs();
+}
+
+function removeOrderPhoto(i) {
+  _orderPhotos.splice(i, 1);
+  renderOrderPhotoThumbs();
+}
+
+function renderOrderPhotoThumbs() {
+  const wrap = document.getElementById('ofPhotoThumbs');
+  const hint = document.getElementById('ofPhotoHint');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  _orderPhotos.forEach((d, i) => {
+    const t = document.createElement('div');
+    t.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = d;
+    img.addEventListener('click', () => openPhotoViewer(_orderPhotos, i, '부품 사진'));
+    const del = document.createElement('button');
+    del.className = 'ph-del'; del.type = 'button'; del.textContent = '✕';
+    del.addEventListener('click', () => removeOrderPhoto(i));
+    const sz = document.createElement('div');
+    sz.className = 'ph-size'; sz.textContent = dataUrlKB(d) + 'KB';
+    t.appendChild(img); t.appendChild(del); t.appendChild(sz);
+    wrap.appendChild(t);
+  });
+  if (hint) hint.textContent = _orderPhotos.length
+    ? `${_orderPhotos.length}/${PHOTO_MAX}장 첨부됨 (합계 ${_orderPhotos.reduce((s,d)=>s+dataUrlKB(d),0)}KB)`
+    : '사진 없음 — 부품 식별용 사진을 첨부하세요 (장당 약 30KB로 자동압축)';
+}
+
+function parsePhotos(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  try { const a = JSON.parse(v); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+
+function openPhotoViewer(list, idx, caption) {
+  _pvList = list; _pvIdx = idx; _pvCaption = caption || '';
+  pvShow();
+  document.getElementById('photoViewer').classList.add('active');
+}
+function pvShow() {
+  document.getElementById('pvImg').src = _pvList[_pvIdx] || '';
+  document.getElementById('pvCap').textContent =
+    `${_pvCaption} (${_pvIdx + 1}/${_pvList.length})`;
+}
+function pvMove(d) {
+  if (!_pvList.length) return;
+  _pvIdx = (_pvIdx + d + _pvList.length) % _pvList.length;
+  pvShow();
+}
+function closePhotoViewer() {
+  document.getElementById('photoViewer').classList.remove('active');
+}
+function viewOrderPhotos(id) {
+  const r = state.rows.find(x => x.id === id);
+  if (!r) return;
+  const ph = parsePhotos(r.photos);
+  if (!ph.length) { toast('첨부된 사진이 없습니다', 'err'); return; }
+  openPhotoViewer(ph, 0, (r.part_name || '') + (r.part_no ? ' (' + r.part_no + ')' : ''));
+}
+
 function openOrderModal(id) {
   ORDER_FIELDS.forEach(f => {
     const el = document.getElementById('of_' + f);
@@ -1619,6 +1793,7 @@ function openOrderModal(id) {
     document.getElementById('of_pr_date').value = todayStr();
     document.getElementById('of_status').value = '대기';
     setRequesterField('', true);
+    _orderPhotos = [];
   } else {
     const r = state.rows.find(x => x.id === id);
     if (!r) return;
@@ -1632,7 +1807,9 @@ function openOrderModal(id) {
       el.value = v ?? '';
     });
     setRequesterField(r.requester || '', false);
+    _orderPhotos = parsePhotos(r.photos);
   }
+  renderOrderPhotoThumbs();
   document.getElementById('orderModal').classList.add('active');
 }
 
@@ -1660,6 +1837,7 @@ async function saveOrder() {
                           payload[f] = v || null;
     else                  payload[f] = v || null;
   });
+  payload.photos = _orderPhotos.length ? _orderPhotos : null;
 
   try {
     if (state.editingId == null) {
@@ -1995,6 +2173,7 @@ function joinedPurchases() {
       part_no: pr.part_no || '',
       product_no: pr.product_no || '',
       category: pr.category || '',
+      pr_photos: parsePhotos(pr.photos),
     };
   });
 }
@@ -3258,8 +3437,11 @@ create table if not exists pr_orders (
   reviewer     text,
   review_date  date,
   note         text,
+  photos       jsonb,        -- 부품 사진 (base64 배열, 장당 ≤30KB)
   created_at   timestamptz not null default now()
 );
+-- 기존 테이블에 컬럼 추가(이미 생성된 경우)
+alter table pr_orders add column if not exists photos jsonb;
 create index if not exists ix_pr_orders_date on pr_orders(pr_date);
 create index if not exists ix_pr_orders_mold on pr_orders(mold_no);
 
@@ -3561,6 +3743,21 @@ function makeGroupBlock(g, rows, chunkIdx, chunkCnt) {
       <td class="l">${escapeHtml(p.note || '')}</td>
     </tr>`;
   }).join('');
+  let photosHtml = '';
+  if (chunkIdx === chunkCnt - 1 && document.getElementById('rptPhotos') && document.getElementById('rptPhotos').checked) {
+    // 부품(pr_order)별 1회만, 그룹당 최대 8장
+    const seenPr = new Set(); const items = [];
+    g.items.forEach(p => {
+      if (!p.pr_photos || !p.pr_photos.length || seenPr.has(p.pr_order_id)) return;
+      seenPr.add(p.pr_order_id);
+      p.pr_photos.forEach(d => items.push({ d, cap: p.part_name || '' }));
+    });
+    if (items.length) {
+      photosHtml = '<div class="rpt-photos">' + items.slice(0, 8).map(it =>
+        `<div class="rp-item"><img src="${it.d}"><div class="rp-cap">${escapeHtml(it.cap)}</div></div>`
+      ).join('') + '</div>';
+    }
+  }
   el.innerHTML = head + `
     <table class="rpt-tbl">
       <thead><tr>
@@ -3570,7 +3767,7 @@ function makeGroupBlock(g, rows, chunkIdx, chunkCnt) {
         <th style="width:10%">입고예정</th><th style="width:8%">상태</th><th>비고</th>
       </tr></thead>
       <tbody>${body}</tbody>
-    </table>`;
+    </table>` + photosHtml;
   el.style.marginBottom = '6px';
   return el;
 }
@@ -3674,6 +3871,11 @@ async function genReportPDF() {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   toast('📄 PDF 생성 중...','ok');
+  // 사진 로드 보장
+  await Promise.all(Array.from(document.querySelectorAll('#rptPages img')).map(im =>
+    (im.complete && im.naturalWidth) ? Promise.resolve() : new Promise(r => { im.onload = im.onerror = r; })
+  ));
+  await new Promise(r => setTimeout(r, 200));
   try {
     for (let i = 0; i < pages.length; i++) {
       const canvas = await html2canvas(pages[i], { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
