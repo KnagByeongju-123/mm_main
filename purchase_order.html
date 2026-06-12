@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <meta name="theme-color" content="#1e40af">
-<title>금형부품 발주관리 v3.4</title>
+<title>금형부품 발주관리 v3.7</title>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -414,10 +414,10 @@
   .rpt-meta { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:6px; }
   .rpt-meta th, .rpt-meta td { border:1px solid #9ca3af; padding:6px 9px; }
   .rpt-meta th { background:#eef2f7; width:90px; color:#374151; font-weight:700; text-align:center; }
-  .rpt-approve { border-collapse:collapse; font-size:11px; }
+  .rpt-approve { width:auto !important; table-layout:fixed; border-collapse:collapse; font-size:11px; }
   .rpt-approve td { border:1px solid #9ca3af; text-align:center; }
-  .rpt-approve .ap-h { background:#eef2f7; font-weight:700; height:20px; padding:2px 10px; color:#374151; }
-  .rpt-approve .ap-b { height:48px; min-width:60px; }
+  .rpt-approve .ap-h { background:#eef2f7; font-weight:700; height:20px; padding:2px 0; color:#374151; width:66px; }
+  .rpt-approve .ap-b { height:46px; width:66px; }
   .rpt-kpi { display:flex; gap:8px; margin:14px 0 4px; }
   .rpt-kpi .k { flex:1; border:1px solid #cbd5e1; border-radius:6px; padding:8px 6px; text-align:center; background:#f8fafc; }
   .rpt-kpi .k .v { font-size:18px; font-weight:800; color:#1e40af; }
@@ -472,7 +472,7 @@
 <body>
 
 <h1 style="justify-content:space-between;">
-  <span>📋 금형부품 발주관리 <span style="font-size:12px; padding:3px 10px; background:#2563eb; color:#fff; border-radius:12px;">v3.4</span></span>
+  <span>📋 금형부품 발주관리 <span style="font-size:12px; padding:3px 10px; background:#2563eb; color:#fff; border-radius:12px;">v3.7</span></span>
   <span id="userBadge" style="font-size:12px; font-weight:600; color:#1e40af; background:#dbeafe; border:1px solid #bfdbfe; padding:4px 10px; border-radius:14px;">👤 접속자 확인중…</span>
 </h1>
 
@@ -492,6 +492,9 @@
     <div class="toolbar">
       <button class="btn-p" onclick="openOrderModal()">＋ 신규 구매의뢰</button>
       <button class="btn-i" onclick="reloadOrders()">↻ 새로고침</button>
+      <button class="btn-s btn-sm" onclick="exportOrdersExcel()">⬇ 엑셀 다운로드</button>
+      <button class="btn-w btn-sm" onclick="document.getElementById('xlsxUpload').click()">⬆ 엑셀 업로드</button>
+      <input type="file" id="xlsxUpload" accept=".xlsx" style="display:none" onchange="importOrdersExcel(this)">
       <span style="flex:1"></span>
       <div>
         <label>고객사</label>
@@ -599,8 +602,6 @@
       <div><label>보고일자</label><input type="date" id="rptDate"></div>
     </div>
     <div class="grid-4" style="margin-bottom:8px;">
-      <div><label>작성자 <span style="color:#10b981;">🔒 접속자 자동</span></label><input type="text" id="rptWriter" readonly placeholder="(로그인 정보)" style="background:#f3f4f6;"></div>
-      <div><label>수신</label><input type="text" id="rptTo" value="이사님"></div>
       <div><label>바닥글 중앙</label><input type="text" id="rptFootC" value="(주)경일에프비"></div>
       <div><label>바닥글 우측</label><input type="text" id="rptFootR" value="A4(210×297)"></div>
     </div>
@@ -1270,7 +1271,7 @@ function setRequesterField(currentVal, isNew) {
   }
 }
 
-// 보고서 작성자 = 접속자 자동
+// 보고서 작성자 = 접속자 자동 (작성자란 삭제됨 — 입력란이 있을 때만 동작)
 function applySessionToReport() {
   const w = document.getElementById('rptWriter');
   if (w) w.value = sessionName();
@@ -1649,6 +1650,165 @@ async function reloadOrders() {
   state.rows = data || [];
   renderMain();
   toast('새로고침 완료','ok');
+}
+
+/* ===========================================================
+   📑 엑셀 다운로드/업로드 (구매의뢰 일괄 편집)
+   - ID가 있는 행 = 수정, ID가 비어있는 행 = 신규등록
+   - 사진(photos)은 엑셀로 다루지 않음(기존 값 유지)
+   =========================================================== */
+const XL_COLS = [
+  { key:'id',          label:'ID(수정금지)', w:11 },
+  { key:'pr_no',       label:'의뢰번호',   w:13 },
+  { key:'pr_date',     label:'의뢰일',     w:11 },
+  { key:'due_date',    label:'납기일',     w:11 },
+  { key:'status',      label:'진행상태',   w:10 },
+  { key:'category',    label:'구분',       w:10 },
+  { key:'customer',    label:'고객사',     w:12 },
+  { key:'request_type',label:'의뢰품명',   w:11 },
+  { key:'product_no',  label:'기종명',     w:13 },
+  { key:'mold_no',     label:'금형제번',   w:14 },
+  { key:'part_name',   label:'부품명칭',   w:18 },
+  { key:'part_no',     label:'부품번호',   w:11 },
+  { key:'location',    label:'위치',       w:9  },
+  { key:'detail',      label:'세부',       w:9  },
+  { key:'unit1', label:'단위1', w:7 }, { key:'dim1', label:'치수1', w:9 },
+  { key:'unit2', label:'단위2', w:7 }, { key:'dim2', label:'치수2', w:9 },
+  { key:'unit3', label:'단위3', w:7 }, { key:'dim3', label:'치수3', w:9 },
+  { key:'unit4', label:'단위4', w:7 }, { key:'dim4', label:'치수4', w:9 },
+  { key:'qty',         label:'수량',       w:8  },
+  { key:'qty_unit',    label:'단위',       w:7  },
+  { key:'requester',   label:'구매의뢰자', w:11 },
+  { key:'approver',    label:'승인자',     w:10 },
+  { key:'reviewer',    label:'검토자',     w:10 },
+  { key:'review_date', label:'검토일자',   w:11 },
+  { key:'note',        label:'기타사항',   w:24 },
+];
+
+async function exportOrdersExcel() {
+  if (!state.rows.length) { toast('다운로드할 데이터가 없습니다','err'); return; }
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('구매의뢰');
+  ws.columns = XL_COLS.map(c => ({ header: c.label, key: c.key, width: c.w }));
+  // 헤더 스타일
+  ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+  ws.getRow(1).alignment = { horizontal: 'center' };
+  // 데이터 (최신순 → 엑셀은 오래된 순이 편집에 편함)
+  [...state.rows].sort((a,b) => a.id - b.id).forEach(r => {
+    const row = {};
+    XL_COLS.forEach(c => {
+      let v = r[c.key];
+      if (c.key === 'pr_date' || c.key === 'due_date' || c.key === 'review_date') v = formatDate(v);
+      row[c.key] = v ?? '';
+    });
+    ws.addRow(row);
+  });
+  // ID 열 보호 표시(회색)
+  ws.getColumn('id').eachCell(c => { if (c.row > 1) c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FFF1F5F9' } }; });
+  ws.views = [{ state: 'frozen', ySplit: 1 }];
+  const buf = await wb.xlsx.writeBuffer();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  a.download = `구매의뢰_${todayStr().replace(/-/g,'')}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`✅ ${state.rows.length}건 다운로드 — 편집 후 [⬆ 엑셀 업로드]로 반영하세요`, 'ok');
+}
+
+function xlCellStr(cell) {
+  let v = cell && cell.value;
+  if (v == null) return '';
+  if (v instanceof Date) {
+    const p = n => String(n).padStart(2, '0');
+    return `${v.getUTCFullYear()}-${p(v.getUTCMonth()+1)}-${p(v.getUTCDate())}`;
+  }
+  if (typeof v === 'object') {
+    if (v.richText) return v.richText.map(t => t.text).join('');
+    if (v.text) return String(v.text);
+    if (v.result != null) return String(v.result);
+    return '';
+  }
+  return String(v).trim();
+}
+// '2026.06.12', '2026/06/12', '20260612' → '2026-06-12'
+function xlNormDate(s) {
+  if (!s) return null;
+  s = s.replace(/[./]/g, '-').trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (!m) { m = s.match(/^(\d{4})(\d{2})(\d{2})$/); }
+  if (!m) return null;
+  return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+}
+
+async function importOrdersExcel(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (!supaClient) { toast('Supabase 미연결','err'); return; }
+
+  let wb;
+  try {
+    wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+  } catch (e) { alert('엑셀 파일을 읽을 수 없습니다: ' + (e.message || e)); return; }
+
+  const ws = wb.worksheets[0];
+  if (!ws) { alert('시트가 없습니다'); return; }
+
+  // 헤더 매핑 (라벨 → key)
+  const label2key = {};
+  XL_COLS.forEach(c => label2key[c.label] = c.key);
+  const colKey = {}; // 열번호 → key
+  ws.getRow(1).eachCell((cell, col) => {
+    const k = label2key[xlCellStr(cell)];
+    if (k) colKey[col] = k;
+  });
+  if (!Object.values(colKey).includes('part_name')) {
+    alert('헤더를 인식할 수 없습니다.\n[⬇ 엑셀 다운로드]로 받은 양식을 사용하세요.');
+    return;
+  }
+
+  const inserts = [], updates = [];
+  const existIds = new Set(state.rows.map(r => r.id));
+  ws.eachRow((row, rn) => {
+    if (rn === 1) return;
+    const rec = {};
+    Object.entries(colKey).forEach(([col, key]) => { rec[key] = xlCellStr(row.getCell(Number(col))); });
+    // 빈 행 스킵
+    if (!rec.part_name && !rec.customer && !rec.mold_no) return;
+    const payload = {};
+    ORDER_FIELDS.forEach(f => {
+      if (!(f in rec)) return;
+      let v = rec[f];
+      if (f === 'qty') payload[f] = v ? parseFloat(String(v).replace(/,/g,'')) || null : null;
+      else if (['pr_date','due_date','review_date'].includes(f)) payload[f] = xlNormDate(v);
+      else payload[f] = v || null;
+    });
+    const id = parseInt(rec.id, 10);
+    if (id && existIds.has(id)) updates.push({ id, payload });
+    else inserts.push(payload);
+  });
+
+  if (!inserts.length && !updates.length) { toast('반영할 행이 없습니다','err'); return; }
+  if (!confirm(`엑셀 업로드 반영:\n· 수정 ${updates.length}건 (ID 일치)\n· 신규 ${inserts.length}건 (ID 없음)\n\n진행할까요?`)) return;
+
+  let ok = 0, fail = 0;
+  try {
+    if (inserts.length) {
+      const { error } = await supaClient.from('pr_orders').insert(inserts);
+      if (error) throw error;
+      ok += inserts.length;
+    }
+    for (const u of updates) {
+      const { error } = await supaClient.from('pr_orders').update(u.payload).eq('id', u.id);
+      if (error) { fail++; console.warn('update 실패 id=' + u.id, error); } else ok++;
+    }
+    await reloadOrders();
+    toast(`✅ 엑셀 반영 완료: ${ok}건` + (fail ? ` / 실패 ${fail}건` : ''), fail ? 'err' : 'ok');
+  } catch (e) {
+    alert('업로드 반영 실패: ' + (e.message || e));
+  }
 }
 
 const ORDER_FIELDS = [
@@ -3687,21 +3847,18 @@ function makeHeaderBlock(data) {
   const docNo  = escapeHtml(document.getElementById('rptDocNo').value || '');
   const title  = escapeHtml(document.getElementById('rptTitle').value || '발주 진행현황 보고');
   const rdate  = escapeHtml(document.getElementById('rptDate').value || todayStr());
-  const writer = escapeHtml(document.getElementById('rptWriter').value || '');
-  const to     = escapeHtml(document.getElementById('rptTo').value || '');
   const period = `${data.meta.start || '~'} ~ ${data.meta.end || '~'}`;
 
   el.innerHTML = `
     <div style="display:flex; justify-content:flex-end; margin-bottom:6px;">
       <table class="rpt-approve">
-        <tr><td class="ap-h">담당</td><td class="ap-h">팀장</td><td class="ap-h">이사</td></tr>
-        <tr><td class="ap-b"></td><td class="ap-b"></td><td class="ap-b"></td></tr>
+        <tr><td class="ap-h">작성</td><td class="ap-h">검토</td><td class="ap-h">확인</td><td class="ap-h">승인</td></tr>
+        <tr><td class="ap-b"></td><td class="ap-b"></td><td class="ap-b"></td><td class="ap-b"></td></tr>
       </table>
     </div>
     <div class="rpt-title">${title}<span class="sub">(주)경일에프비 · 금형팀</span></div>
     <table class="rpt-meta">
       <tr><th>문서번호</th><td>${docNo}</td><th>보고일자</th><td>${rdate}</td></tr>
-      <tr><th>작 성 자</th><td>${writer}</td><th>수    신</th><td>${to}</td></tr>
       <tr><th>대상기간</th><td colspan="3">${escapeHtml(period)} (발주일 기준)</td></tr>
     </table>
     <div class="rpt-kpi">
