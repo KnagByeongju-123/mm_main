@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리진행 v1.4</title>
+<title>금형 수리진행 v1.5</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -136,7 +136,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <header>
     <h1>🔧 금형 수리진행</h1>
-    <div class="subtitle">Mold Repair Progress · v1.4</div>
+    <div class="subtitle">Mold Repair Progress · v1.5</div>
 </header>
 
 <!-- 수리자 인증 -->
@@ -181,30 +181,6 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
                 <div class="autocomplete-list" id="acList"></div>
             </div>
             <button class="btn btn-mold-search" onclick="openMoldSearch()">🔍 검색</button>
-        </div>
-    </div>
-    <div class="field">
-        <label>금형 정보 (재번·기종·매핑)</label>
-        <input type="text" id="directMoldName" readonly>
-    </div>
-    <div class="row">
-        <div class="field">
-            <label>매핑 기종</label>
-            <input type="text" id="directItemCode" readonly>
-        </div>
-        <div class="field">
-            <label>고객사 / 매핑</label>
-            <input type="text" id="directItemName" readonly>
-        </div>
-    </div>
-    <div class="row">
-        <div class="field">
-            <label>발생설비</label>
-            <input type="text" id="directMachine" placeholder="예: 018">
-        </div>
-        <div class="field">
-            <label>현재 SHOT수</label>
-            <input type="number" id="directShot" placeholder="SHOT" inputmode="numeric">
         </div>
     </div>
     <div class="row">
@@ -337,7 +313,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 </div>
 
-<footer>금형 수리진행 시스템 · Rev 1.4 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리진행 시스템 · Rev 1.5 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -465,6 +441,7 @@ let photos = [];
 let verifiedUser = null;
 
 let moldList = [];
+let directSel = { mold_name: '', item_code: '', item_name: '' };
 let directMode = false;
 let selectedDefectType = '';
 let selectedUrgency = 'normal';
@@ -592,9 +569,7 @@ function bindEvents() {
         const v = moldInput.value.trim();
         const matched = moldList.find(m => makeMoldCode(m) === v);
         if (!matched) {
-            document.getElementById('directMoldName').value = '';
-            document.getElementById('directItemCode').value = '';
-            document.getElementById('directItemName').value = '';
+            directSel = { mold_name: '', item_code: '', item_name: '' };
         }
     });
 
@@ -692,11 +667,7 @@ function switchTab(tab) {
 function resetRepairForm() {
     // 직접등록 입력 초기화
     document.getElementById('directMoldCode').value = '';
-    document.getElementById('directMoldName').value = '';
-    document.getElementById('directItemCode').value = '';
-    document.getElementById('directItemName').value = '';
-    document.getElementById('directMachine').value = '';
-    document.getElementById('directShot').value = '';
+    directSel = { mold_name: '', item_code: '', item_name: '' };
     document.getElementById('directPart').value = '';
     document.getElementById('directDesc').value = '';
     document.getElementById('directDate').value = new Date().toISOString().split('T')[0];
@@ -790,9 +761,9 @@ function applyMold(m) {
     if (m.mold_no)    info.push('재번 ' + m.mold_no);
     if (m.model_code) info.push('기종 ' + m.model_code);
     if (m.mapping)    info.push('매핑 ' + m.mapping);
-    document.getElementById('directMoldName').value = info.join(' · ');
-    document.getElementById('directItemCode').value = m.model_code || '';
-    document.getElementById('directItemName').value = [m.vendor, m.mapping].filter(Boolean).join(' / ');
+    directSel.mold_name = info.join(' · ');
+    directSel.item_code = m.model_code || '';
+    directSel.item_name = [m.vendor, m.mapping].filter(Boolean).join(' / ');
 }
 
 // ============ 금형 검색 모달 ============
@@ -1160,15 +1131,15 @@ async function collectDirectInsert(status) {
     return {
         repair_no: repairNo,
         mold_code: document.getElementById('directMoldCode').value.trim(),
-        mold_name: document.getElementById('directMoldName').value.trim(),
-        item_code: document.getElementById('directItemCode').value.trim(),
-        item_name: document.getElementById('directItemName').value.trim(),
+        mold_name: directSel.mold_name,
+        item_code: directSel.item_code,
+        item_name: directSel.item_name,
         request_date: document.getElementById('directDate').value,
         request_user_id: String(verifiedUser.id || ''),
         request_user: verifiedUser.name,
         request_dept: verifiedUser.dept,
-        machine_code: document.getElementById('directMachine').value.trim(),
-        shot_count: parseInt(document.getElementById('directShot').value) || null,
+        machine_code: null,
+        shot_count: null,
         defect_type: selectedDefectType,
         defect_part: document.getElementById('directPart').value.trim(),
         defect_desc: document.getElementById('directDesc').value.trim(),
