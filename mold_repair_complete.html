@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>금형 수리진행 v1.5</title>
+<title>금형 수리진행 v1.6</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Segoe UI', 'Malgun Gothic', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; }
@@ -53,6 +53,8 @@ textarea { resize: vertical; min-height: 70px; }
 .badge.completed { background: #14532d; color: #bbf7d0; }
 .req-item .info { font-size: 12px; color: #cbd5e1; margin-top: 6px; line-height: 1.5; }
 .req-item .desc { font-size: 11px; color: #94a3b8; margin-top: 4px; max-height: 36px; overflow: hidden; }
+.del-req { background: rgba(220,38,38,0.15); border: 1px solid #7f1d1d; color: #fca5a5; width: 28px; height: 24px; border-radius: 6px; cursor: pointer; font-size: 13px; line-height: 1; padding: 0; }
+.del-req:hover { background: #dc2626; color: #fff; }
 
 .repair-type-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .repair-type-btn { padding: 8px 4px; border-radius: 8px; border: 2px solid #475569; background: #0f172a; color: #94a3b8; cursor: pointer; font-size: 11px; font-weight: 600; }
@@ -136,7 +138,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 <header>
     <h1>🔧 금형 수리진행</h1>
-    <div class="subtitle">Mold Repair Progress · v1.5</div>
+    <div class="subtitle">Mold Repair Progress · v1.6</div>
 </header>
 
 <!-- 수리자 인증 -->
@@ -313,7 +315,7 @@ footer { text-align: center; font-size: 11px; color: #64748b; padding: 12px; mar
 
 </div>
 
-<footer>금형 수리진행 시스템 · Rev 1.5 · 태진다이텍 품질관리팀</footer>
+<footer>금형 수리진행 시스템 · Rev 1.6 · 태진다이텍 품질관리팀</footer>
 
 </div>
 
@@ -861,9 +863,10 @@ function renderRequests() {
         div.innerHTML = `
             <div class="top">
                 <div class="no">${r.repair_no}</div>
-                <div>
+                <div style="display:flex; align-items:center; gap:6px;">
                     <span class="badge ${r.urgency || 'normal'}">${urgencyLabel(r.urgency)}</span>
                     <span class="badge ${r.status}">${statusLabel(r.status)}</span>
+                    <button class="del-req" title="삭제">🗑</button>
                 </div>
             </div>
             <div class="info">
@@ -873,6 +876,8 @@ function renderRequests() {
             <div class="desc">${(r.defect_desc || '').substring(0, 80)}</div>
         `;
         div.addEventListener('click', () => selectRequest(r));
+        const delBtn = div.querySelector('.del-req');
+        delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteRequest(r); });
         box.appendChild(div);
     });
 }
@@ -882,6 +887,29 @@ function urgencyLabel(u) {
 }
 function statusLabel(s) {
     return s === 'requested' ? '의뢰' : s === 'in_progress' ? '진행' : s === 'completed' ? '완료' : s;
+}
+
+async function deleteRequest(r) {
+    if (!verifiedUser) { toast('PIN 인증이 필요합니다', 'error'); openLoginPin(); return; }
+    const isMaster = verifiedUser.id === 'MASTER';
+    const isOwner = String(r.request_user_id || '') === String(verifiedUser.id || '');
+    if (!isMaster && !isOwner) { toast('본인 의뢰 또는 관리자만 삭제할 수 있습니다', 'error'); return; }
+    if (!confirm(`[${r.repair_no}] 수리 건을 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.`)) return;
+    try {
+        const res = await fetch(`${SB_URL}/rest/v1/mm_mold_repair?id=eq.${r.id}`, {
+            method: 'DELETE',
+            headers: sbHeaders()
+        });
+        if (!res.ok) throw new Error(await res.text());
+        toast('삭제되었습니다', 'success');
+        if (selectedReq && selectedReq.id === r.id) {
+            selectedReq = null;
+            document.getElementById('repairForm').style.display = 'none';
+        }
+        await loadRequests();
+    } catch (e) {
+        toast('삭제 실패: ' + e.message, 'error');
+    }
 }
 
 function selectRequest(r) {
