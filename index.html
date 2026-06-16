@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v1.9</title>
+<title>스마트팩토리 v2.0</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -300,7 +300,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v1.9</span></h1>
+  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v2.0</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -368,9 +368,9 @@ body.locked { overflow: hidden; }
         <div class="s-arrow">›</div>
       </a>
       <a class="sub-item" href="mold_repair_complete.html">
-        <div class="s-icon">✅</div>
+        <div class="s-icon">🔧</div>
         <div class="s-text">
-          <div class="s-label" data-i18n="menu_repair_done">수리완료</div>
+          <div class="s-label" data-i18n="menu_repair_done">수리진행</div>
           <div class="s-desc" data-i18n="menu_repair_done_desc">수리 진행/완료 처리 및 결과 등록</div>
         </div>
         <div class="s-arrow">›</div>
@@ -448,7 +448,7 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v1.9 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
+  <div class="footer">v2.0 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
 </div>
 
 <script>
@@ -509,7 +509,7 @@ const I18N = {
     menu_po_desc: '외주업체별 발주·입고관리 / 이사 보고용 PDF',
     menu_repair_req: '수리의뢰',
     menu_repair_req_desc: '금형 불량 발생 시 수리 의뢰 등록',
-    menu_repair_done: '수리완료',
+    menu_repair_done: '수리진행',
     menu_repair_done_desc: '수리 진행/완료 처리 및 결과 등록',
     menu_repair_report: '이력조회·보고서출력',
     menu_repair_report_desc: '기간별 통계 / 상세 보고서 인쇄 / CSV',
@@ -563,7 +563,7 @@ const I18N = {
     menu_po_desc: 'Bestell-/Wareneingang je Lieferant / PDF-Bericht',
     menu_repair_req: 'Reparaturauftrag',
     menu_repair_req_desc: 'Reparaturanfrage bei Werkzeugfehler',
-    menu_repair_done: 'Reparatur abgeschlossen',
+    menu_repair_done: 'Reparatur läuft',
     menu_repair_done_desc: 'Bearbeitung / Abschluss / Ergebnis',
     menu_repair_report: 'Verlauf / Bericht',
     menu_repair_report_desc: 'Statistik / Druckbericht / CSV',
@@ -617,7 +617,7 @@ const I18N = {
     menu_po_desc: 'Жеткізуші бойынша тапсырыс/қабылдау / PDF есебі',
     menu_repair_req: 'Жөндеу өтінімі',
     menu_repair_req_desc: 'Қалып ақаулығы кезінде жөндеу өтінімін тіркеу',
-    menu_repair_done: 'Жөндеу аяқталды',
+    menu_repair_done: 'Жөндеу жүргізілуде',
     menu_repair_done_desc: 'Жөндеу орындау / аяқтау / нәтиже жазу',
     menu_repair_report: 'Тарих / есеп шығару',
     menu_repair_report_desc: 'Кезеңдік статистика / есеп басып шығару / CSV',
