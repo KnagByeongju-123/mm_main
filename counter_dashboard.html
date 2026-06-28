@@ -3,210 +3,1137 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>설비 카운터</title>
+<title>생산일보 v2.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{--bg:#0e1116;--panel:#161b22;--line:#262d36;--ink:#e6edf3;--muted:#8b949e;--ok:#3fb950;--bad:#ef4444;--accent:#58a6ff}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;font-size:14px}
-  header{padding:14px 16px 6px;display:flex;align-items:center;gap:10px}
+  header{padding:12px 16px 4px;display:flex;align-items:center;gap:10px}
   header h1{font-size:18px;margin:0}.ver{color:var(--muted);font-size:12px}.clock{margin-left:auto;color:var(--muted);font-size:13px}
-  .tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px}
-  .tab{flex:1;background:none;border:none;color:var(--muted);padding:12px 4px;font-size:15px;cursor:pointer;border-bottom:2px solid transparent}
+  .ctx{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:8px 16px}
+  label{display:block;color:var(--muted);font-size:12px;margin-bottom:3px}
+  input,select{background:#0b0e13;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:8px 10px;font-size:14px}
+  .tabs{display:flex;border-bottom:1px solid var(--line);padding:0 10px;margin-top:4px}
+  .tab{flex:1;max-width:160px;background:none;border:none;color:var(--muted);padding:12px 4px;font-size:15px;cursor:pointer;border-bottom:2px solid transparent}
   .tab.active{color:var(--ink);border-bottom-color:var(--ok);font-weight:700}
-  .wrap{padding:12px 14px 50px;max-width:820px;margin:0 auto}
-  .sub{color:var(--muted);font-size:13px;margin:2px 2px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .btn{background:#21262d;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;cursor:pointer}
+  .wrap{padding:12px 14px 70px;max-width:1200px;margin:0 auto}
+  .btn{background:#21262d;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer}
   .btn.go{background:var(--ok);color:#04130a;border-color:var(--ok);font-weight:700}
-  .btn.x{padding:8px 10px;color:#f0883e}
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
-  .card h3{margin:0 0 8px;font-size:16px}
-  .vals{display:flex;justify-content:space-between;text-align:center}
-  .v .lab{color:var(--muted);font-size:12px}.v .num{font-size:26px;font-weight:700}
-  .good{color:var(--ok)}.bd{color:var(--bad)}
-  .meta{color:var(--muted);font-size:11px;margin-top:8px;display:flex;justify-content:space-between}
-  .empty{color:var(--muted);text-align:center;padding:30px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:6px 6px;text-align:left}
-  thead th{color:var(--muted);border-bottom:1px solid var(--line)}
+  .btn.xl{background:#1d6f42;color:#fff;border-color:#1d6f42;font-weight:700}
+  .btn.fin{background:#8957e5;color:#fff;border-color:#8957e5;font-weight:700}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  .btn.x{color:#f0883e;padding:6px 9px}
+  .btn.del{color:#ef6b6b}
+  .livecards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .lc{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;padding:12px}
+  .lc.run{border-left-color:var(--ok)} .lc.stop{border-left-color:#f0883e}
+  .lc h3{margin:0;font-size:16px;display:flex;align-items:center;justify-content:space-between}
+  .lc .ln{color:var(--muted);font-size:12px;margin-top:2px}
+  .lc .big{font-size:26px;font-weight:700;margin-top:8px}
+  .lc .meta{color:var(--muted);font-size:12px;margin-top:4px;display:flex;justify-content:space-between}
+  .lc .prod{color:var(--muted);font-size:12px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge{font-size:12px;padding:2px 9px;border-radius:10px}
+  .badge.run{background:#1d2a14;color:#9fd86a} .badge.stop{background:#2a1d14;color:#e0a96a} .badge.none{background:#21262d;color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+  .spacer{flex:1}
+  .sum{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin:2px 2px 10px}
+  .sum b{color:var(--ink);font-size:15px}.sum .g{color:var(--ok)}.sum .b{color:var(--bad)}
+  .tablewrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+  th,td{padding:7px 8px;text-align:left;white-space:nowrap}
+  thead th{color:var(--muted);border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
   tbody tr{border-bottom:1px solid #1b2129}
-  input,select{background:#0b0e13;border:1px solid var(--line);border-radius:7px;color:var(--ink);padding:7px 8px;font-size:13px;width:100%}
-  .maprow td{padding:4px}
-  .banner{background:#1d2a14;border:1px solid #3a5320;border-radius:8px;padding:8px 10px;color:#9fd86a;font-size:12px;margin-bottom:10px}
-  .chip{display:inline-block;background:#21262d;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:12px;margin:2px;cursor:pointer}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#21262d;border:1px solid var(--line);padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  td input,td select{width:100%;background:#0b0e13;border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:5px 6px;font-size:13px}
+  td input.n{text-align:right}
+  .good{color:var(--ok)}.bd{color:var(--bad)}
+  tfoot td{border-top:2px solid var(--line);font-weight:700}
+  .empty{color:var(--muted);text-align:center;padding:30px}
+  .banner{background:#2a1d14;border:1px solid #53381f;border-radius:8px;padding:9px 11px;color:#e0a96a;font-size:12px;margin-bottom:10px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#0b0e13;border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px}
+  .chip span.x{cursor:pointer;color:#f0883e;font-weight:700}
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+  .ov.on{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;width:100%;max-width:520px;max-height:88vh;overflow:auto}
+  .modal h3{margin:0 0 12px;font-size:16px}
+  .mrow{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+  .mrow .rn{flex:1}.mrow .mn{width:110px}
+  .mbar{display:flex;gap:8px;margin-top:12px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#21262d;border:1px solid var(--line);padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:60}
   .toast.on{opacity:1}
-  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:14px}
 </style>
 </head>
 <body>
-<header><h1>설비 카운터</h1><span class="ver">v1.0</span><span class="clock" id="clock">--:--:--</span></header>
-<div class="tabs">
-  <button class="tab active" id="tab-mon" onclick="showTab('mon')">현황</button>
-  <button class="tab" id="tab-map" onclick="showTab('map')">매핑</button>
+<header><h1>생산일보</h1><span class="ver">v2.0</span><span class="clock" id="clock">--:--:--</span></header>
+
+<div class="ctx">
+  <div><label>작업일자</label><input type="date" id="cDate"></div>
+  <div><label>작업조</label><select id="cShift"><option>주간</option><option>야간</option></select></div>
+  <div><label>작업자</label><select id="cWorker"></select></div>
 </div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="main" id="tab-main">메인</button>
+  <button class="tab" data-tab="live" id="tab-live">실시간현황</button>
+  <button class="tab" data-tab="hist" id="tab-hist">이력</button>
+  <button class="tab" data-tab="set" id="tab-set">설정</button>
+</div>
+
 <div class="wrap">
-  <section id="view-mon">
-    <div class="sub"><span id="monInfo">불러오는 중…</span>
-      <button class="btn" style="margin-left:auto" onclick="loadMon()">새로고침</button>
-      <button class="btn go" onclick="zeroToday()">오늘 0부터(제로세팅)</button></div>
-    <div class="cards" id="cards"></div>
+
+  <!-- ===== 메인 ===== -->
+  <section id="v-main">
+    <div class="row">
+      <button class="btn go" id="cNow">현재</button>
+      <button class="btn" id="mLoad">조회</button>
+      <button class="btn" id="cEdit">수정</button>
+      <button class="btn del" id="cDelete">삭제</button>
+    </div>
+    <div class="row">
+      <div class="spacer"></div>
+      <div style="width:104px"><label>호기</label><select id="mTgtMachine" style="width:100%"></select></div>
+      <div style="width:118px"><label>품번</label><select id="mPickCode" style="width:100%"></select></div>
+      <div style="width:140px"><label>금형</label><select id="mPickMold" style="width:100%"></select></div>
+      <button class="btn" id="mApply">적용</button>
+      <button class="btn" id="mMaterial">소재등록</button>
+      <button class="btn" id="mStop">정지등록</button>
+      <button class="btn" id="mDefect">불량등록</button>
+      <button class="btn fin" id="mClose">마감등록</button>
+    </div>
+    <div id="mBanner"></div>
+    <div class="sum" id="mSum"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>라인</th><th>호기</th><th>금형</th><th>고객사</th><th>품번</th><th>품명</th>
+          <th style="text-align:right">가동(분)</th><th style="text-align:right">정지(분)</th>
+          <th style="text-align:right">생산수</th><th style="text-align:right">SPM</th>
+        </tr></thead>
+        <tbody id="mBody"><tr><td colspan="10" class="empty">조회를 누르세요.</td></tr></tbody>
+        <tfoot id="mFoot"></tfoot>
+      </table>
+    </div>
   </section>
 
-  <section id="view-map" style="display:none">
-    <div class="sub"><span>한 줄 = 한 카운터. MAC + GPIO → 어느 호기의 양품/불량인지 지정. (이 브라우저에 저장)</span></div>
-    <div id="detected"></div>
-    <div style="overflow:auto"><table>
-      <thead><tr><th>MAC</th><th>GPIO</th><th>설비호기</th><th>종류</th><th></th></tr></thead>
-      <tbody id="mapBody"></tbody></table></div>
-    <div class="sub" style="margin-top:10px">
-      <button class="btn" onclick="addRow()">+ 줄 추가</button>
-      <button class="btn go" style="margin-left:auto" onclick="saveMap()">저장</button></div>
+  <!-- ===== 실시간현황 ===== -->
+  <section id="v-live" style="display:none">
+    <div class="sum" id="liveSum"></div>
+    <div class="livecards" id="liveBody"></div>
   </section>
-  <footer>설비 카운터 (MAC+GPIO) · v1.0</footer>
+
+  <!-- ===== 이력 ===== -->
+  <section id="v-hist" style="display:none">
+    <div class="row">
+      <div><label>시작일</label><input type="date" id="hFrom"></div>
+      <div><label>종료일</label><input type="date" id="hTo"></div>
+      <div><label>호기</label><select id="hMachine"><option value="">전체</option></select></div>
+      <button class="btn go" id="hSearch">검색</button>
+      <div class="spacer"></div>
+      <button class="btn" id="hAdd">추가</button>
+      <button class="btn xl" id="hXls">엑셀</button>
+    </div>
+    <div class="sum" id="hSum"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>일자</th><th>조</th><th>라인</th><th>호기</th><th>금형</th><th>고객사</th><th>품번</th><th>품명</th>
+          <th style="text-align:right">가동</th><th style="text-align:right">정지</th>
+          <th style="text-align:right">생산수</th><th style="text-align:right">SPM</th>
+          <th style="text-align:right">불량</th><th style="text-align:right">실제수량</th><th>비고</th><th></th>
+        </tr></thead>
+        <tbody id="hBody"><tr><td colspan="16" class="empty">기간을 정하고 검색하세요.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 설정 ===== -->
+  <section id="v-set" style="display:none">
+    <div class="card">
+      <h2>작업자</h2>
+      <div class="row"><input id="sWorker" placeholder="작업자 이름"><button class="btn sm" id="sWorkerAdd">추가</button></div>
+      <div class="chips" id="sWorkerList"></div>
+    </div>
+    <div class="card">
+      <h2>설비(호기)</h2>
+      <div class="row">
+        <input id="sLine" placeholder="라인 (예: A라인)" style="width:140px">
+        <input id="sMachine" placeholder="호기명 (예: 1호기)" style="flex:1">
+        <button class="btn sm" id="sMachineAdd">추가</button>
+      </div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px">추가 후, 표에서 각 호기의 양품/불량 센서코드를 선택하세요(이름이 아니라 코드로 생산수를 가져옵니다).</div>
+      <div class="tablewrap" style="margin-top:8px">
+        <table>
+          <thead><tr><th>라인</th><th>호기</th><th>양품센서코드</th><th>불량센서코드</th><th></th></tr></thead>
+          <tbody id="sMachineList"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>제품 (고객사 / 금형 / 품번 / 품명)</h2>
+      <div class="row">
+        <input id="sCustomer" placeholder="고객사" style="flex:1">
+        <input id="sMold" placeholder="금형" style="flex:1">
+        <input id="sCode" placeholder="품번" style="flex:1">
+        <input id="sName" placeholder="품명" style="flex:1.4">
+        <button class="btn sm" id="sProductAdd">추가</button>
+      </div>
+      <div class="tablewrap" style="margin-top:8px">
+        <table>
+          <thead><tr><th>고객사</th><th>금형</th><th>품번</th><th>품명</th><th></th></tr></thead>
+          <tbody id="sProductList"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>정지유형</h2>
+      <div class="row">
+        <input id="sStopName" placeholder="사유 (예: 금형교체)" style="flex:1.6">
+        <input id="sStopMin" type="number" placeholder="기본분" style="width:100px">
+        <button class="btn sm" id="sStopAdd">추가</button>
+      </div>
+      <div class="chips" id="sStopTypeList"></div>
+    </div>
+    <div class="card">
+      <h2>불량유형</h2>
+      <div class="row"><input id="sDefectName" placeholder="사유 (예: 스크래치)" style="flex:1"><button class="btn sm" id="sDefectAdd">추가</button></div>
+      <div class="chips" id="sDefectTypeList"></div>
+    </div>
+    <div class="card">
+      <h2>작업조 시간</h2>
+      <div class="row">
+        <div><label>주간 시작</label><input type="time" id="sDayStart" value="08:00"></div>
+        <div><label>주간 종료(=야간 시작)</label><input type="time" id="sDayEnd" value="20:00"></div>
+        <button class="btn sm" id="sShiftSave">저장</button>
+      </div>
+      <div style="color:var(--muted);font-size:12px">야간 = 종료시각 ~ 익일 시작시각 · 센서 생산수 집계 시간창에 사용</div>
+    </div>
+    <div class="card">
+      <h2>Supabase SQL <span style="color:var(--muted);font-size:12px">· 최초 1회 실행 (재실행 안전)</span></h2>
+      <div class="row"><button class="btn sm" id="sqlCopy">복사</button><span style="color:var(--muted);font-size:12px;align-self:center">Supabase → SQL Editor에 붙여넣고 실행</span></div>
+      <textarea id="sqlBox" readonly style="width:100%;height:280px;background:#0b0e13;border:1px solid var(--line);border-radius:8px;color:#cdd9e5;font-family:monospace;font-size:11px;line-height:1.45;padding:10px;white-space:pre;overflow:auto">-- ============================================================
+--  생산일보 v2.0 — 전체 스키마 (shot_count 있는 Supabase에서 1회) 재실행 안전
+-- ============================================================
+
+-- ── 작업조 시간창 집계 RPC (타발 1건=1행 → 행 수 = 생산수) ──
+CREATE OR REPLACE FUNCTION public.report_shift(p_start timestamptz, p_end timestamptz)
+RETURNS TABLE(machine_code text, cnt bigint, avg_interval double precision,
+              min_interval bigint, first_ts timestamptz, last_ts timestamptz)
+LANGUAGE sql STABLE AS $$
+  SELECT machine_code, count(*), avg(NULLIF(shot_interval_ms,0)),
+         min(NULLIF(shot_interval_ms,0)), min(created_at), max(created_at)
+  FROM public.shot_count
+  WHERE created_at >= p_start AND created_at < p_end
+  GROUP BY machine_code;
+$$;
+GRANT EXECUTE ON FUNCTION public.report_shift(timestamptz,timestamptz) TO anon, authenticated;
+
+-- ── 매핑 동기화(폰↔PC) ──
+CREATE TABLE IF NOT EXISTS public.machine_mapping(
+  code text PRIMARY KEY, mac text, gpio integer, machine text, type text,
+  updated_at timestamptz DEFAULT now());
+ALTER TABLE public.machine_mapping DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.machine_mapping TO anon, authenticated;
+
+-- ── 마스터: 작업자 ──
+CREATE TABLE IF NOT EXISTS public.pr_worker(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text UNIQUE NOT NULL, created_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_worker DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_worker TO anon, authenticated;
+
+-- ── 마스터: 설비(호기) ──
+CREATE TABLE IF NOT EXISTS public.pr_machine(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text UNIQUE NOT NULL, line text, good_code text, bad_code text,
+  sort integer DEFAULT 0, created_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_machine ADD COLUMN IF NOT EXISTS line text;
+ALTER TABLE public.pr_machine ADD COLUMN IF NOT EXISTS good_code text;
+ALTER TABLE public.pr_machine ADD COLUMN IF NOT EXISTS bad_code text;
+ALTER TABLE public.pr_machine DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_machine TO anon, authenticated;
+
+-- ── 마스터: 제품(고객사/금형/품번/품명 묶음) ──
+CREATE TABLE IF NOT EXISTS public.pr_product(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  customer text, mold text, item_code text, item_name text,
+  created_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_product DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_product TO anon, authenticated;
+
+-- ── 일보 (호기 1행 = 작업일자+작업조+호기) ──
+CREATE TABLE IF NOT EXISTS public.pr_report(
+  report_date date, shift text, machine text, line text,
+  worker text, customer text, mold text, item_code text, item_name text,
+  run_min numeric DEFAULT 0, stop_min numeric DEFAULT 0,
+  prod_qty bigint DEFAULT 0, spm numeric DEFAULT 0,
+  stops jsonb DEFAULT '[]'::jsonb, defects jsonb DEFAULT '[]'::jsonb,
+  defect_qty bigint DEFAULT 0, actual_qty bigint, remark text,
+  updated_at timestamptz DEFAULT now(),
+  PRIMARY KEY(report_date, shift, machine));
+ALTER TABLE public.pr_report ADD COLUMN IF NOT EXISTS line text;
+ALTER TABLE public.pr_report DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_report TO anon, authenticated;
+CREATE INDEX IF NOT EXISTS idx_pr_report_date ON public.pr_report(report_date DESC, shift, machine);
+
+-- ── 설정(작업조 시간 등) 키-값 ──
+CREATE TABLE IF NOT EXISTS public.pr_config(
+  key text PRIMARY KEY, value text, updated_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_config DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_config TO anon, authenticated;
+
+-- ── 마스터: 정지유형 (기본분 포함) ──
+CREATE TABLE IF NOT EXISTS public.pr_stop_type(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text UNIQUE NOT NULL, default_min integer DEFAULT 0, sort integer DEFAULT 0,
+  created_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_stop_type DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_stop_type TO anon, authenticated;
+
+-- ── 마스터: 불량유형 ──
+CREATE TABLE IF NOT EXISTS public.pr_defect_type(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text UNIQUE NOT NULL, sort integer DEFAULT 0,
+  created_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_defect_type DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_defect_type TO anon, authenticated;
+
+-- 기본값 시드 (이미 있으면 무시)
+INSERT INTO public.pr_stop_type(name, default_min, sort) VALUES
+  ('점심',60,1),('휴식',20,2),('저녁',30,3) ON CONFLICT (name) DO NOTHING;
+INSERT INTO public.pr_defect_type(name, sort) VALUES
+  ('외관',1),('치수',2),('버',3),('크랙',4) ON CONFLICT (name) DO NOTHING;
+
+-- ── 소재(코일/로트) 장착·제거 이력 ──
+CREATE TABLE IF NOT EXISTS public.pr_material(
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  report_date date, shift text, machine text,
+  material text, thickness numeric, width numeric, weight numeric, extra text, lot text,
+  photo text, worker text,
+  mounted_at timestamptz, removed_at timestamptz, status text,
+  created_at timestamptz DEFAULT now());
+ALTER TABLE public.pr_material ADD COLUMN IF NOT EXISTS thickness numeric;
+ALTER TABLE public.pr_material DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON public.pr_material TO anon, authenticated;
+CREATE INDEX IF NOT EXISTS idx_pr_material_machine ON public.pr_material(machine, mounted_at DESC);
+
+NOTIFY pgrst, 'reload schema';
+</textarea>
+    </div>
+  </section>
+
+  <footer>생산일보 · v2.0 · shot_count 기반</footer>
 </div>
+
+<!-- 모달 -->
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
-const SB="https://xrmwfsuitikqibwqxede.supabase.co";
-const KEY="sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN";
-const REST=SB.replace(/\/+$/,'').replace(/\/rest\/v1$/,'')+'/rest/v1/';
-const SHOT="shot_count", BASE="daily_baseline";
-const POLL=60000;
-const GPIOS=[26,27,32,33];
-const LS='mc_mapping_v1';
-let mapping=[];
+// ── Supabase ─────────────────────────────────────────────
+const SB  = "https://omngtyewdaqpphnzeate.supabase.co";
+const KEY = "sb_publishable_9j2YkkL-7ul1TrhH-NjVdQ_vWDG2-1D";
+const REST = SB.replace(/\/+$/,'') + "/rest/v1/";
+const LS_MAP = 'mc_mapping_v1';
+let shiftTimes = {dayStart:'08:00', dayEnd:'20:00'};   // 설정탭에서 변경, Supabase 저장
+const DEF_STOPS   = [['점심',60],['휴식',20],['저녁',30]];
+const DEF_DEFECTS = [['외관',0],['치수',0],['버',0],['크랙',0]];
 
-function H(){return {apikey:KEY,Authorization:'Bearer '+KEY};}
-async function get(p){const r=await fetch(REST+p,{headers:H()});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600);}
+let M = {workers:[], machines:[], products:[], stopTypes:[], defectTypes:[], codes:[]};   // 마스터
+let mapping = [];        // 센서 매핑
+let mainRows = [];       // 메인탭 현재 행
+let histRows = [];       // 이력탭 현재 행
+
+const $=id=>document.getElementById(id);
+function H(x){return Object.assign({apikey:KEY,Authorization:'Bearer '+KEY},x||{});}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1700);}
+async function jget(p){const r=await fetch(REST+p,{headers:H()});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+async function jpost(p,body,prefer){const r=await fetch(REST+p,{method:'POST',headers:H(Object.assign({'Content-Type':'application/json'},prefer?{'Prefer':prefer}:{})),body:JSON.stringify(body)});if(!r.ok)throw new Error('HTTP '+r.status+' '+await r.text());return r;}
+async function jdel(p){const r=await fetch(REST+p,{method:'DELETE',headers:H()});if(!r.ok)throw new Error('HTTP '+r.status);return r;}
+async function jpatch(p,body){const r=await fetch(REST+p,{method:'PATCH',headers:H({'Content-Type':'application/json','Prefer':'return=minimal'}),body:JSON.stringify(body)});if(!r.ok)throw new Error('HTTP '+r.status+' '+await r.text());return r;}
+async function rpc(n,b){const r=await fetch(REST+'rpc/'+n,{method:'POST',headers:H({'Content-Type':'application/json'}),body:JSON.stringify(b)});if(!r.ok)throw new Error('RPC '+r.status);return r.json();}
+
 function todayKST(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 function kstClock(){return new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date());}
-function relTime(s){if(!s)return'-';const a=(Date.now()-new Date(s).getTime())/1000;if(a<60)return'방금';if(a<3600)return Math.floor(a/60)+'분 전';if(a<86400)return Math.floor(a/3600)+'시간 전';return Math.floor(a/86400)+'일 전';}
+function nextDay(d){const t=new Date(d+'T00:00:00');t.setDate(t.getDate()+1);return new Intl.DateTimeFormat('en-CA').format(t);}
+function prevDay(d){const t=new Date(d+'T00:00:00');t.setDate(t.getDate()-1);return new Intl.DateTimeFormat('en-CA').format(t);}
+function nowHM(){return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());}
+function currentShift(){
+  const ds=shiftTimes.dayStart, de=shiftTimes.dayEnd, t=nowHM();
+  if(t>=ds && t<de) return {date:todayKST(), shift:'주간'};
+  if(t<ds) return {date:prevDay(todayKST()), shift:'야간'};   // 자정 넘긴 야간 → 전일자
+  return {date:todayKST(), shift:'야간'};
+}
+function setCurrent(){const c=currentShift(); $('cDate').value=c.date; $('cShift').value=c.shift;}
 function normMac(m){return (m||'').replace(/:/g,'').replace(/\s/g,'').toUpperCase();}
 function codeOf(m){return normMac(m.mac)+'_'+m.gpio;}
-function loadMap(){try{mapping=JSON.parse(localStorage.getItem(LS)||'[]');}catch(e){mapping=[];}}
+function num(v){const n=parseFloat(v);return isNaN(n)?0:n;}
+function relTime(ms){if(!ms)return '-';const s=(Date.now()-ms)/1000;if(s<60)return '방금';if(s<3600)return Math.floor(s/60)+'분 전';if(s<86400)return Math.floor(s/3600)+'시간 전';return Math.floor(s/86400)+'일 전';}
+function el(tag,attrs,txt){const e=document.createElement(tag);if(attrs)for(const k in attrs)e.setAttribute(k,attrs[k]);if(txt!=null)e.textContent=txt;return e;}
 
+// ── 탭 ──
+let curTab='main';
 function showTab(t){
-  document.getElementById('view-mon').style.display=t==='mon'?'':'none';
-  document.getElementById('view-map').style.display=t==='map'?'':'none';
-  document.getElementById('tab-mon').classList.toggle('active',t==='mon');
-  document.getElementById('tab-map').classList.toggle('active',t==='map');
-  if(t==='mon')loadMon();else renderMap();
+  curTab=t;
+  ['main','live','hist','set'].forEach(x=>{
+    $('v-'+x).style.display = x===t?'':'none';
+    $('tab-'+x).classList.toggle('active', x===t);
+  });
+  if(t==='set') renderMasters();
+  if(t==='live') loadLive();
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+
+// ── 마스터 로드 ──
+async function loadMasters(){
+  try{
+    const [w,mc,pr,st,dt]=await Promise.all([
+      jget('pr_worker?select=id,name&order=name'),
+      jget('pr_machine?select=id,name,line,good_code,bad_code,sort&order=line,sort,name'),
+      jget('pr_product?select=*&order=mold,item_code'),
+      jget('pr_stop_type?select=id,name,default_min,sort&order=sort,name').catch(()=>[]),
+      jget('pr_defect_type?select=id,name,sort&order=sort,name').catch(()=>[])
+    ]);
+    M.workers=w; M.machines=mc; M.products=pr; M.stopTypes=st; M.defectTypes=dt;
+  }catch(e){toast('마스터 로드 실패: '+e.message);}
+  await loadCodes();
+  // 작업자 select
+  const cw=$('cWorker'); cw.innerHTML='';
+  cw.appendChild(el('option',{value:''},'(선택)'));
+  M.workers.forEach(w=>cw.appendChild(el('option',{value:w.name},w.name)));
+  try{const sv=localStorage.getItem('pr_worker_sel'); if(sv&&[...cw.options].some(o=>o.value===sv))cw.value=sv;}catch(e){}
+  // 이력 호기 select
+  const hm=$('hMachine'); hm.innerHTML=''; hm.appendChild(el('option',{value:''},'전체'));
+  M.machines.forEach(m=>hm.appendChild(el('option',{value:m.name},m.name)));
 }
 
-/* ===== 현황 ===== */
-async function latestOf(code){
-  try{const r=await get(SHOT+'?machine_code=eq.'+encodeURIComponent(code)+'&select=shot_count,created_at&order=created_at.desc&limit=1');
-    return r&&r[0]?{cum:+r[0].shot_count||0,ts:r[0].created_at}:{cum:0,ts:null};}
-  catch(e){return {cum:0,ts:null};}
+// 센서코드 목록(매핑 + 최근 shot_count에서 수집)
+async function loadCodes(){
+  const set=new Set();
+  try{(await jget('machine_mapping?select=code')).forEach(x=>x.code&&set.add(x.code));}catch(e){}
+  try{(await jget('shot_count?select=machine_code&order=created_at.desc&limit=1000')).forEach(x=>x.machine_code&&set.add(x.machine_code));}catch(e){}
+  M.machines.forEach(m=>{if(m.good_code)set.add(m.good_code);if(m.bad_code)set.add(m.bad_code);});
+  M.codes=[...set].sort();
 }
-async function loadMon(){
-  loadMap();
-  const box=document.getElementById('cards');
-  if(!mapping.length){box.innerHTML='<div class="empty">매핑이 없습니다. ‘매핑’ 탭에서 등록하세요.</div>';document.getElementById('monInfo').textContent='매핑 0줄';return;}
-  try{
-    const codes=[...new Set(mapping.map(codeOf))];
-    const [lat, base]=await Promise.all([
-      Promise.all(codes.map(c=>latestOf(c).then(v=>[c,v]))),
-      get(BASE+'?baseline_date=eq.'+todayKST()+'&select=machine_code,baseline_count').catch(()=>[])
-    ]);
-    const L={};lat.forEach(([c,v])=>L[c]=v);
-    const B={};(base||[]).forEach(r=>B[r.machine_code]=+r.baseline_count||0);
-    const mc={};
-    mapping.forEach(m=>{const c=codeOf(m);const cum=(L[c]||{}).cum||0;const today=Math.max(0,cum-(B[c]||0));
-      const g=mc[m.machine]||(mc[m.machine]={good:0,bad:0,ts:null});
-      if(m.type==='불량')g.bad+=today;else g.good+=today;
-      const ts=(L[c]||{}).ts;if(ts&&(!g.ts||new Date(ts)>new Date(g.ts)))g.ts=ts;
-    });
-    const names=Object.keys(mc).sort();
-    box.innerHTML=names.map(n=>{const g=mc[n];const tot=g.good+g.bad;const rate=tot?(g.bad/tot*100).toFixed(1):'0.0';
-      return `<div class="card"><h3>${n}</h3>
-        <div class="vals">
-          <div class="v"><div class="lab">양품</div><div class="num good">${g.good.toLocaleString()}</div></div>
-          <div class="v"><div class="lab">불량</div><div class="num bd">${g.bad.toLocaleString()}</div></div>
-          <div class="v"><div class="lab">불량률</div><div class="num">${rate}<span style="font-size:13px">%</span></div></div>
-        </div><div class="meta"><span>오늘 누적</span><span>${relTime(g.ts)}</span></div></div>`;}).join('');
-    document.getElementById('monInfo').textContent=todayKST()+' · 호기 '+names.length+' · 갱신 '+kstClock();
-  }catch(e){document.getElementById('monInfo').textContent='오류: '+e.message;}
+function codeCell(m,key){
+  const td=el('td'); const sel=el('select'); sel.style.minWidth='150px';
+  sel.appendChild(el('option',{value:''},'(없음)'));
+  M.codes.forEach(c=>{const o=el('option',{value:c},c); if(m[key]===c)o.selected=true; sel.appendChild(o);});
+  if(m[key]&&!M.codes.includes(m[key])){const o=el('option',{value:m[key]},m[key]);o.selected=true;sel.appendChild(o);}
+  sel.addEventListener('change',()=>patchMachine(m.id,{[key]:sel.value||null}));
+  td.appendChild(sel); return td;
 }
-async function zeroToday(){
-  loadMap();
-  if(!mapping.length){toast('매핑 먼저');return;}
-  if(!confirm('오늘 카운트를 0부터 다시 셉니다. (현재 누적을 기준점으로 저장)'))return;
+async function patchMachine(id,body){
+  try{await jpatch('pr_machine?id=eq.'+id,body); const m=M.machines.find(x=>x.id===id); if(m)Object.assign(m,body); toast('저장됨');}
+  catch(e){toast('실패: '+e.message);}
+}
+
+function renderMasters(){
+  const wl=$('sWorkerList'); wl.innerHTML='';
+  M.workers.forEach(w=>{
+    const c=el('span',{class:'chip'},w.name); const x=el('span',{class:'x'},'✕');
+    x.addEventListener('click',()=>delMaster('pr_worker',w.id)); c.appendChild(x); wl.appendChild(c);
+  });
+  // 설비
+  const ml=$('sMachineList'); ml.innerHTML='';
+  M.machines.forEach(m=>{
+    const tr=el('tr');
+    const tdL=el('td'); const li=el('input'); li.value=m.line||''; li.style.minWidth='90px';
+    li.addEventListener('change',()=>patchMachine(m.id,{line:li.value.trim()}));
+    tdL.appendChild(li); tr.appendChild(tdL);
+    tr.appendChild(el('td',null,m.name));
+    tr.appendChild(codeCell(m,'good_code'));
+    tr.appendChild(codeCell(m,'bad_code'));
+    const tdX=el('td'); const b=el('button',{class:'btn x'},'삭제');
+    b.addEventListener('click',()=>delMaster('pr_machine',m.id)); tdX.appendChild(b); tr.appendChild(tdX);
+    ml.appendChild(tr);
+  });
+  // 제품
+  const pl=$('sProductList'); pl.innerHTML='';
+  M.products.forEach(p=>{
+    const tr=el('tr');
+    tr.appendChild(el('td',null,p.customer||''));
+    tr.appendChild(el('td',null,p.mold||''));
+    tr.appendChild(el('td',null,p.item_code||''));
+    tr.appendChild(el('td',null,p.item_name||''));
+    const td=el('td'); const b=el('button',{class:'btn x'},'삭제');
+    b.addEventListener('click',()=>delMaster('pr_product',p.id)); td.appendChild(b); tr.appendChild(td);
+    pl.appendChild(tr);
+  });
+  // 정지유형
+  const stl=$('sStopTypeList'); stl.innerHTML='';
+  M.stopTypes.forEach(t=>{
+    const c=el('span',{class:'chip'}, t.name+(t.default_min?` (${t.default_min}분)`:''));
+    const x=el('span',{class:'x'},'✕'); x.addEventListener('click',()=>delMaster('pr_stop_type',t.id));
+    c.appendChild(x); stl.appendChild(c);
+  });
+  // 불량유형
+  const dtl=$('sDefectTypeList'); dtl.innerHTML='';
+  M.defectTypes.forEach(t=>{
+    const c=el('span',{class:'chip'}, t.name);
+    const x=el('span',{class:'x'},'✕'); x.addEventListener('click',()=>delMaster('pr_defect_type',t.id));
+    c.appendChild(x); dtl.appendChild(c);
+  });
+}
+async function addMaster(table,body){
+  try{ await jpost(table,body); await loadMasters(); renderMasters(); toast('추가됨'); }
+  catch(e){ toast('실패: '+e.message); }
+}
+async function delMaster(table,id){
+  if(!confirm('삭제할까요?'))return;
+  try{ await jdel(table+'?id=eq.'+id); await loadMasters(); renderMasters(); toast('삭제됨'); }
+  catch(e){ toast('실패: '+e.message); }
+}
+$('sWorkerAdd').addEventListener('click',()=>{const v=$('sWorker').value.trim();if(v){addMaster('pr_worker',{name:v});$('sWorker').value='';}});
+$('sMachineAdd').addEventListener('click',()=>{const v=$('sMachine').value.trim();if(v){addMaster('pr_machine',{name:v,line:$('sLine').value.trim(),sort:M.machines.length});$('sMachine').value='';}});
+$('sProductAdd').addEventListener('click',()=>{
+  const c=$('sCustomer').value.trim(),mo=$('sMold').value.trim(),cd=$('sCode').value.trim(),nm=$('sName').value.trim();
+  if(!cd&&!mo&&!nm){toast('내용 입력');return;}
+  addMaster('pr_product',{customer:c,mold:mo,item_code:cd,item_name:nm});
+  $('sCustomer').value=$('sMold').value=$('sCode').value=$('sName').value='';
+});
+$('sStopAdd').addEventListener('click',()=>{const v=$('sStopName').value.trim();if(!v){toast('사유 입력');return;}addMaster('pr_stop_type',{name:v,default_min:num($('sStopMin').value),sort:M.stopTypes.length+1});$('sStopName').value='';$('sStopMin').value='';});
+$('sDefectAdd').addEventListener('click',()=>{const v=$('sDefectName').value.trim();if(!v){toast('사유 입력');return;}addMaster('pr_defect_type',{name:v,sort:M.defectTypes.length+1});$('sDefectName').value='';});
+
+// ── 작업조 시간 설정 ──
+async function loadConfig(){
   try{
-    const codes=[...new Set(mapping.map(codeOf))];
-    const lat=await Promise.all(codes.map(c=>latestOf(c).then(v=>[c,v.cum])));
-    const today=todayKST();
-    const body=lat.map(([c,cum])=>({machine_code:c,baseline_date:today,baseline_count:cum,created_at:new Date().toISOString().replace('Z','+00:00')}));
-    const r=await fetch(REST+BASE+'?on_conflict=machine_code,baseline_date',{method:'POST',
-      headers:Object.assign(H(),{'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'}),
-      body:JSON.stringify(body)});
-    if(!r.ok)throw new Error('HTTP '+r.status+' '+await r.text());
-    toast('제로세팅 완료');loadMon();
+    const r=await jget("pr_config?key=eq.shift_times&select=value");
+    if(r&&r[0]&&r[0].value){const c=JSON.parse(r[0].value);if(c.dayStart)shiftTimes.dayStart=c.dayStart;if(c.dayEnd)shiftTimes.dayEnd=c.dayEnd;}
+  }catch(e){}
+  if($('sDayStart'))$('sDayStart').value=shiftTimes.dayStart;
+  if($('sDayEnd'))$('sDayEnd').value=shiftTimes.dayEnd;
+}
+async function saveConfig(){
+  shiftTimes.dayStart=$('sDayStart').value||'08:00';
+  shiftTimes.dayEnd=$('sDayEnd').value||'20:00';
+  try{
+    await jpost('pr_config?on_conflict=key',[{key:'shift_times',value:JSON.stringify(shiftTimes),updated_at:new Date().toISOString()}],'resolution=merge-duplicates,return=minimal');
+    toast('작업조 시간 저장');
   }catch(e){toast('실패: '+e.message);}
 }
+$('sShiftSave').addEventListener('click',saveConfig);
+$('sqlCopy').addEventListener('click',()=>{const t=$('sqlBox');t.focus();t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t.value).then(()=>toast('SQL 복사됨')).catch(()=>toast(ok?'SQL 복사됨':'복사 실패'));}else{toast(ok?'SQL 복사됨':'복사 실패');}});
 
-/* ===== 매핑 ===== */
-function renderMap(){
-  loadMap();
-  const tb=document.getElementById('mapBody');
-  tb.innerHTML=mapping.length?mapping.map((m,i)=>rowHTML(m,i)).join(''):'';
-  if(!mapping.length)addRow();
-  showDetected();
+// ── 센서 매핑 ──
+async function loadMapping(){
+  let local=[]; try{local=JSON.parse(localStorage.getItem(LS_MAP)||'[]');}catch(e){}
+  if(local.length){
+    try{await jpost('machine_mapping?on_conflict=code',
+      local.map(m=>({code:codeOf(m),mac:m.mac,gpio:+m.gpio,machine:m.machine,type:m.type})),
+      'resolution=merge-duplicates,return=minimal');}catch(e){}
+  }
+  try{mapping=await jget('machine_mapping?select=code,mac,gpio,machine,type');}catch(e){mapping=local.map(m=>({code:codeOf(m),machine:m.machine,type:m.type}));}
 }
-function gpioOpts(sel){return GPIOS.map(g=>'<option value="'+g+'"'+(+sel===g?' selected':'')+'>'+g+'</option>').join('');}
-function typeOpts(sel){return ['양품','불량'].map(t=>'<option'+(t===sel?' selected':'')+'>'+t+'</option>').join('');}
-function rowHTML(m,i){
-  return `<tr class="maprow" data-i="${i}">
-    <td><input class="m-mac" value="${m.mac||''}" placeholder="90:70:.. 또는 9070.."></td>
-    <td><select class="m-gpio">${gpioOpts(m.gpio)}</select></td>
-    <td><input class="m-machine" value="${m.machine||''}" placeholder="3호기"></td>
-    <td><select class="m-type">${typeOpts(m.type||'양품')}</select></td>
-    <td><button class="btn x" onclick="this.closest('tr').remove()">✕</button></td></tr>`;
+function shiftWindow(date,shift){
+  const ds=shiftTimes.dayStart, de=shiftTimes.dayEnd;
+  if(shift==='주간')return{start:`${date}T${ds}:00+09:00`,end:`${date}T${de}:00+09:00`};
+  return{start:`${date}T${de}:00+09:00`,end:`${nextDay(date)}T${ds}:00+09:00`};
 }
-function addRow(mac,gpio,machine,type){
-  const tb=document.getElementById('mapBody');
-  const tr=document.createElement('tr');tr.className='maprow';
-  tr.innerHTML=`<td><input class="m-mac" value="${mac||''}" placeholder="90:70:.. 또는 9070.."></td>
-    <td><select class="m-gpio">${gpioOpts(gpio||26)}</select></td>
-    <td><input class="m-machine" value="${machine||''}" placeholder="3호기"></td>
-    <td><select class="m-type">${typeOpts(type||'양품')}</select></td>
-    <td><button class="btn x" onclick="this.closest('tr').remove()">✕</button></td>`;
-  tb.appendChild(tr);
+async function sensorAgg(date,shift){
+  const w=shiftWindow(date,shift);
+  let agg=[]; try{agg=await rpc('report_shift',{p_start:w.start,p_end:w.end});}catch(e){}
+  const A={}; agg.forEach(r=>A[r.machine_code]=r); return A;   // 코드 기준
 }
-function saveMap(){
-  const rows=[...document.querySelectorAll('#mapBody .maprow')].map(tr=>({
-    mac:tr.querySelector('.m-mac').value.trim(),
-    gpio:+tr.querySelector('.m-gpio').value,
-    machine:tr.querySelector('.m-machine').value.trim(),
-    type:tr.querySelector('.m-type').value
-  })).filter(m=>m.mac&&m.machine);
-  mapping=rows;localStorage.setItem(LS,JSON.stringify(rows));
-  toast('저장됨 ('+rows.length+'줄)');showDetected();
+function computeSensor(A, goodCode, badCode){
+  const ga=goodCode?A[goodCode]:null, ba=badCode?A[badCode]:null;
+  const prod=ga?+ga.cnt:0;
+  const ai=(ga&&ga.avg_interval)||(ba&&ba.avg_interval)||0;
+  const spm=ai?Math.round(60000/ai):0;
+  const fs=[ga&&ga.first_ts,ba&&ba.first_ts].filter(Boolean).map(t=>+new Date(t));
+  const ls=[ga&&ga.last_ts,ba&&ba.last_ts].filter(Boolean).map(t=>+new Date(t));
+  const run=(fs.length&&ls.length)?Math.round((Math.max(...ls)-Math.min(...fs))/60000):0;
+  return {prod,spm,run};
 }
-async function showDetected(){
-  const box=document.getElementById('detected');
+
+// ── 실시간현황 ──
+async function loadLive(){
+  const date=$('cDate').value, shift=$('cShift').value;
+  const box=$('liveBody');
+  if(M.machines.length===0){box.innerHTML='';$('liveSum').textContent='설정탭에서 호기를 먼저 등록하세요';return;}
   try{
-    const rows=await get(SHOT+'?select=machine_code,created_at&order=created_at.desc&limit=400');
-    const seen=[...new Set((rows||[]).map(r=>r.machine_code))];
-    const mapped=new Set(mapping.map(codeOf));
-    const unmapped=seen.filter(c=>!mapped.has(c));
-    box.innerHTML=unmapped.length?'<div class="banner">감지된 미매핑 신호 — 눌러서 줄 추가: '
-      +unmapped.map(c=>'<span class="chip" onclick="quickAdd(\''+c+'\')">'+c+'</span>').join('')+'</div>':'';
-  }catch(e){box.innerHTML='';}
-}
-function quickAdd(code){
-  const i=code.lastIndexOf('_');const mac=code.slice(0,i),gpio=+code.slice(i+1);
-  addRow(mac,gpio,'','양품');toast('줄 추가됨 — 호기 입력 후 저장');
+    const [A, rep]=await Promise.all([
+      sensorAgg(date,shift),
+      jget(`pr_report?report_date=eq.${date}&shift=eq.${encodeURIComponent(shift)}&select=machine,mold,item_code,item_name,stop_min`).catch(()=>[])
+    ]);
+    const R={}; rep.forEach(r=>R[r.machine]=r);
+    const now=Date.now();
+    const list=M.machines.slice().sort((a,b)=>(((a.line||'')+'_'+a.name)).localeCompare(((b.line||'')+'_'+b.name),'ko',{numeric:true}));
+    box.innerHTML='';
+    let nRun=0,nStop=0;
+    list.forEach(mc=>{
+      const ga=mc.good_code?A[mc.good_code]:null, ba=mc.bad_code?A[mc.bad_code]:null;
+      const sn=computeSensor(A, mc.good_code, mc.bad_code);
+      const lastArr=[ga&&ga.last_ts, ba&&ba.last_ts].filter(Boolean).map(t=>+new Date(t));
+      const last=lastArr.length?Math.max(...lastArr):0;
+      const hasSensor=!!mc.good_code;
+      const running=hasSensor&&last&&(now-last)<120000;   // 2분 내 타발 = 가동중
+      const status=!hasSensor?'센서없음':(running?'가동중':'정지');
+      if(hasSensor){ running?nRun++:nStop++; }
+      const rep1=R[mc.name]||{};
+
+      const card=el('div',{class:'lc '+(running?'run':(hasSensor?'stop':''))});
+      const h=el('h3'); h.appendChild(document.createTextNode(mc.name));
+      h.appendChild(el('span',{class:'badge '+(running?'run':(hasSensor?'stop':'none'))}, status));
+      card.appendChild(h);
+      card.appendChild(el('div',{class:'ln'}, mc.line||''));
+      card.appendChild(el('div',{class:'big good'}, sn.prod.toLocaleString()));
+      const meta=el('div',{class:'meta'});
+      meta.appendChild(el('span',null,'SPM '+(sn.spm||0)));
+      meta.appendChild(el('span',null, hasSensor?(last?relTime(last):'타발없음'):'-'));
+      card.appendChild(meta);
+      const pinfo=(rep1.mold||'')+(rep1.item_code?' · '+rep1.item_code:'');
+      if(pinfo.trim()) card.appendChild(el('div',{class:'prod'}, pinfo));
+      box.appendChild(card);
+    });
+    $('liveSum').innerHTML=`<span>${date} · ${shift}</span><span>호기 <b>${list.length}</b></span>`
+      +`<span>가동중 <b class="g">${nRun}</b></span><span>정지 <b style="color:#e0a96a">${nStop}</b></span>`;
+  }catch(e){$('liveSum').textContent='오류: '+e.message;}
 }
 
-/* 시작 */
-loadMap();
-setInterval(()=>document.getElementById('clock').textContent=kstClock(),1000);
-document.getElementById('clock').textContent=kstClock();
-loadMon();
-setInterval(loadMon,POLL);
+// ── 메인 조회 ──
+async function loadMain(){
+  const date=$('cDate').value, shift=$('cShift').value;
+  if(!date){toast('작업일자 선택');return;}
+  $('mBanner').innerHTML=''; $('mBody').innerHTML='<tr><td colspan="10" class="empty">불러오는 중…</td></tr>';
+  if(!M.machines.length){$('mBanner').innerHTML='<div class="banner">설정탭에서 설비(호기)를 먼저 등록하세요.</div>';$('mBody').innerHTML='<tr><td colspan="10" class="empty">설비 없음</td></tr>';return;}
+  try{
+    const [existing, A]=await Promise.all([
+      jget(`pr_report?report_date=eq.${date}&shift=eq.${encodeURIComponent(shift)}&select=*`).catch(()=>[]),
+      sensorAgg(date,shift)
+    ]);
+    const E={}; existing.forEach(r=>E[r.machine]=r);
+    mainRows=M.machines.map(mc=>{
+      const name=mc.name, ex=E[name], sn=computeSensor(A, mc.good_code, mc.bad_code);
+      const hasSensor=!!mc.good_code;
+      return {
+        machine:name, line:mc.line||'', hasSensor,
+        customer: ex?ex.customer:'', mold: ex?ex.mold:'', item_code: ex?ex.item_code:'', item_name: ex?ex.item_name:'',
+        run_min: hasSensor? sn.run : (ex&&ex.run_min!=null?+ex.run_min:0),
+        stop_min: ex?+ex.stop_min||0:0,
+        prod_qty: hasSensor? sn.prod : (ex&&ex.prod_qty? +ex.prod_qty:0),
+        spm: hasSensor? sn.spm : (ex?+ex.spm||0:0),
+        stops: ex&&ex.stops?ex.stops:[],
+        defects: ex&&ex.defects?ex.defects:[],
+        defect_qty: ex?+ex.defect_qty||0:0,
+        actual_qty: ex?ex.actual_qty:null,
+        remark: ex?ex.remark:''
+      };
+    });
+    renderMain(date,shift);
+    populatePicker();
+  }catch(e){$('mBody').innerHTML=`<tr><td colspan="10" class="empty">오류: ${e.message}</td></tr>`;}
+}
+
+function productSelect(row){
+  const sel=el('select');
+  sel.appendChild(el('option',{value:''},'(선택)'));
+  M.products.forEach((p,i)=>{
+    const o=el('option',{value:String(i)}, (p.mold||'')+' / '+(p.item_code||''));
+    if(p.mold===row.mold && p.item_code===row.item_code && row.item_code) o.selected=true;
+    sel.appendChild(o);
+  });
+  sel.addEventListener('change',()=>{
+    const p=M.products[+sel.value];
+    if(p){row.customer=p.customer||'';row.mold=p.mold||'';row.item_code=p.item_code||'';row.item_name=p.item_name||'';}
+    else{row.customer=row.mold=row.item_code=row.item_name='';}
+    renderMain($('cDate').value,$('cShift').value);
+    autosave(row);
+  });
+  return sel;
+}
+function renderMain(date,shift){
+  const tb=$('mBody'); tb.innerHTML='';
+  if(!mainRows.length){tb.innerHTML='<tr><td colspan="10" class="empty">데이터 없음</td></tr>';return;}
+  mainRows.forEach(r=>{
+    const tr=el('tr');
+    tr.appendChild(el('td',null,r.line||''));
+    tr.appendChild(el('td',null,r.machine));
+    const tdP=el('td'); tdP.appendChild(productSelect(r)); tr.appendChild(tdP);
+    tr.appendChild(el('td',null,r.customer||''));
+    tr.appendChild(el('td',null,r.item_code||''));
+    tr.appendChild(el('td',null,r.item_name||''));
+    // 가동
+    if(r.hasSensor){ tr.appendChild(el('td',{class:'num'}, (r.run_min||0).toLocaleString())); }
+    else{ const tdRun=el('td',{class:'num'}); const iRun=el('input',{class:'n',type:'number'}); iRun.value=r.run_min||0;
+      iRun.addEventListener('input',()=>r.run_min=num(iRun.value)); iRun.addEventListener('change',()=>autosave(r));
+      tdRun.appendChild(iRun); tr.appendChild(tdRun); }
+    // 정지(읽기)
+    tr.appendChild(el('td',{class:'num'}, (r.stop_min||0).toLocaleString()));
+    // 생산수
+    if(r.hasSensor){ tr.appendChild(el('td',{class:'num good'}, (r.prod_qty||0).toLocaleString())); }
+    else{ const tdQ=el('td',{class:'num'}); const iQ=el('input',{class:'n',type:'number'}); iQ.value=r.prod_qty||0;
+      iQ.addEventListener('input',()=>r.prod_qty=num(iQ.value)); iQ.addEventListener('change',()=>autosave(r));
+      tdQ.appendChild(iQ); tr.appendChild(tdQ); }
+    // SPM(읽기)
+    tr.appendChild(el('td',{class:'num'}, (r.spm||0).toLocaleString()));
+    tb.appendChild(tr);
+  });
+  const tq=mainRows.reduce((a,r)=>a+(+r.prod_qty||0),0);
+  const ts=mainRows.reduce((a,r)=>a+(+r.stop_min||0),0);
+  const td=mainRows.reduce((a,r)=>a+(+r.defect_qty||0),0);
+  $('mSum').innerHTML=`<span>${date} · ${shift}</span><span>호기 <b>${mainRows.length}</b></span>`
+    +`<span>생산수 <b class="g">${tq.toLocaleString()}</b></span>`
+    +`<span>불량 <b class="b">${td.toLocaleString()}</b></span>`
+    +`<span>정지 <b>${ts.toLocaleString()}분</b></span>`;
+}
+
+// ── 품번 빠른선택(툴바) ──
+function uniqueCodes(){return [...new Set(M.products.map(p=>p.item_code).filter(Boolean))].sort();}
+function moldsForCode(code){return M.products.filter(p=>p.item_code===code);}
+function populatePicker(){
+  const tm=$('mTgtMachine'); if(!tm)return;
+  const pc=$('mPickCode'), pm=$('mPickMold');
+  const prevTm=tm.value, prevPc=pc.value, prevPm=pm.value;
+  tm.innerHTML='';
+  const names=mainRows.length?mainRows.map(r=>r.machine):M.machines.map(m=>m.name);
+  names.forEach(n=>tm.appendChild(el('option',{value:n},n)));
+  if(names.includes(prevTm))tm.value=prevTm;
+  pc.innerHTML=''; pc.appendChild(el('option',{value:''},'(품번)'));
+  const codes=uniqueCodes(); codes.forEach(c=>pc.appendChild(el('option',{value:c},c)));
+  if(prevPc&&codes.includes(prevPc))pc.value=prevPc;
+  fillMold(prevPm);
+}
+function fillMold(keep){
+  const pc=$('mPickCode'), pm=$('mPickMold'); if(!pc||!pm)return; pm.innerHTML='';
+  const code=pc.value, list=moldsForCode(code);
+  if(!code){pm.appendChild(el('option',{value:''},'(금형)'));return;}
+  if(list.length!==1)pm.appendChild(el('option',{value:''},'금형 택일'));
+  list.forEach(p=>pm.appendChild(el('option',{value:String(M.products.indexOf(p))},(p.mold||'(금형없음)')+(p.customer?' · '+p.customer:''))));
+  if(keep!=null&&keep!==''){const opt=[...pm.options].find(o=>o.value===keep); if(opt)pm.value=keep;}
+}
+function applyPick(){
+  const machine=$('mTgtMachine').value, code=$('mPickCode').value, mi=$('mPickMold').value;
+  if(!machine){toast('호기 선택');return;}
+  if(!code){toast('품번 선택');return;}
+  const list=moldsForCode(code); let p;
+  if(mi!=='') p=M.products[+mi]; else if(list.length===1) p=list[0]; else {toast('금형 택일하세요');return;}
+  if(!p){toast('제품 없음');return;}
+  const r=mainRows.find(x=>x.machine===machine); if(!r){toast('호기 행 없음 (조회 먼저)');return;}
+  r.customer=p.customer||''; r.mold=p.mold||''; r.item_code=p.item_code||''; r.item_name=p.item_name||'';
+  renderMain($('cDate').value,$('cShift').value);
+  autosave(r); toast(machine+' ← '+code+(p.mold?' / '+p.mold:''));
+}
+
+async function saveMain(){
+  if(!mainRows.length){toast('저장할 내용 없음');return;}
+  const body=mainRows.map(r=>({report_date:date,shift,machine:r.machine,line:r.line,worker,
+    customer:r.customer,mold:r.mold,item_code:r.item_code,item_name:r.item_name,
+    run_min:r.run_min||0,stop_min:r.stop_min||0,prod_qty:r.prod_qty||0,spm:r.spm||0,
+    stops:r.stops||[],defects:r.defects||[],defect_qty:r.defect_qty||0,
+    actual_qty:r.actual_qty,remark:r.remark||'',updated_at:new Date().toISOString()}));
+  try{await jpost('pr_report?on_conflict=report_date,shift,machine',body,'resolution=merge-duplicates,return=minimal');toast('저장 완료 ('+body.length+'행)');}
+  catch(e){toast('저장 실패: '+e.message);}
+}
+async function saveRow(r){
+  const date=$('cDate').value, shift=$('cShift').value, worker=$('cWorker').value;
+  await jpost('pr_report?on_conflict=report_date,shift,machine',[{report_date:date,shift,machine:r.machine,line:r.line,worker,
+    customer:r.customer,mold:r.mold,item_code:r.item_code,item_name:r.item_name,
+    run_min:r.run_min||0,stop_min:r.stop_min||0,prod_qty:r.prod_qty||0,spm:r.spm||0,
+    stops:r.stops||[],defects:r.defects||[],defect_qty:r.defect_qty||0,
+    actual_qty:r.actual_qty,remark:r.remark||'',updated_at:new Date().toISOString()}],
+    'resolution=merge-duplicates,return=minimal');
+}
+async function autosave(r){ try{await saveRow(r);}catch(e){toast('저장실패: '+e.message);} }
+
+// ── 모달 공통 ──
+function openModal(node){const m=$('modal');m.innerHTML='';m.appendChild(node);$('ov').classList.add('on');}
+function closeModal(){$('ov').classList.remove('on');}
+$('ov').addEventListener('click',e=>{if(e.target===$('ov'))closeModal();});
+function machineSelect(){
+  const s=el('select');
+  if(!mainRows.length)M.machines.forEach(m=>s.appendChild(el('option',{value:m.name},m.name)));
+  else mainRows.forEach(r=>s.appendChild(el('option',{value:r.machine},r.machine)));
+  return s;
+}
+
+// ── 정지등록 ──
+function openStop(){
+  if(!mainRows.length&&M.machines.length===0){toast('설정탭에서 호기를 먼저 등록하세요');return;}
+  ensureRows().then(ok=>{ if(ok) openStopBody(); });
+}
+function openStopBody(){
+  const box=el('div'); box.appendChild(el('h3',null,'정지등록 (분)'));
+  const msel=machineSelect(); const lbl=el('label',null,'호기'); box.appendChild(lbl); box.appendChild(msel);
+  const list=el('div',{style:'margin-top:10px'});
+  function fill(){
+    list.innerHTML='';
+    const r=mainRows.find(x=>x.machine===msel.value);
+    const data=(r&&r.stops&&r.stops.length)?r.stops.map(s=>[s.reason,s.minutes])
+      :(M.stopTypes.length?M.stopTypes.map(t=>[t.name,t.default_min||0]):DEF_STOPS.map(d=>[d[0],d[1]]));
+    data.forEach(d=>list.appendChild(stopRow(d[0],d[1])));
+  }
+  function stopRow(reason,min){
+    const row=el('div',{class:'mrow'});
+    const ri=el('input',{class:'rn',placeholder:'사유'}); ri.value=reason||'';
+    const mi=el('input',{class:'mn n',type:'number',placeholder:'분'}); mi.value=min||0;
+    const x=el('button',{class:'btn x'},'✕'); x.addEventListener('click',()=>row.remove());
+    row.appendChild(ri);row.appendChild(mi);row.appendChild(x);return row;
+  }
+  msel.addEventListener('change',fill); fill();
+  const add=el('button',{class:'btn sm'},'+ 사유 추가'); add.addEventListener('click',()=>list.appendChild(stopRow('',0)));
+  box.appendChild(list); box.appendChild(add);
+  const bar=el('div',{class:'mbar'});
+  const save=el('button',{class:'btn go'},'저장'); const cancel=el('button',{class:'btn'},'닫기');
+  cancel.addEventListener('click',closeModal);
+  save.addEventListener('click',async()=>{
+    const r=mainRows.find(x=>x.machine===msel.value); if(!r)return;
+    const stops=[...list.querySelectorAll('.mrow')].map(w=>({reason:w.querySelector('.rn').value.trim(),minutes:num(w.querySelector('.mn').value)})).filter(s=>s.reason);
+    r.stops=stops; r.stop_min=stops.reduce((a,s)=>a+s.minutes,0);
+    try{await saveRow(r);renderMain($('cDate').value,$('cShift').value);toast('정지 저장');closeModal();}catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(save);bar.appendChild(cancel);box.appendChild(bar);
+  openModal(box);
+}
+
+// ── 불량등록 ──
+function openDefect(){
+  if(!mainRows.length&&M.machines.length===0){toast('설정탭에서 호기를 먼저 등록하세요');return;}
+  ensureRows().then(ok=>{ if(ok) openDefectBody(); });
+}
+function openDefectBody(){
+  const box=el('div'); box.appendChild(el('h3',null,'불량등록 (수량)'));
+  const msel=machineSelect(); box.appendChild(el('label',null,'호기')); box.appendChild(msel);
+  const list=el('div',{style:'margin-top:10px'});
+  function defRow(reason,qty){
+    const row=el('div',{class:'mrow'});
+    const ri=el('input',{class:'rn',placeholder:'사유'}); ri.value=reason||'';
+    const qi=el('input',{class:'mn n',type:'number',placeholder:'수량'}); qi.value=qty||0;
+    const x=el('button',{class:'btn x'},'✕'); x.addEventListener('click',()=>row.remove());
+    row.appendChild(ri);row.appendChild(qi);row.appendChild(x);return row;
+  }
+  function fill(){list.innerHTML='';const r=mainRows.find(x=>x.machine===msel.value);
+    const data=(r&&r.defects&&r.defects.length)?r.defects.map(s=>[s.reason,s.qty])
+      :(M.defectTypes.length?M.defectTypes.map(t=>[t.name,0]):DEF_DEFECTS.map(d=>[d[0],d[1]]));
+    data.forEach(d=>list.appendChild(defRow(d[0],d[1])));}
+  msel.addEventListener('change',fill);fill();
+  const add=el('button',{class:'btn sm'},'+ 사유 추가');add.addEventListener('click',()=>list.appendChild(defRow('',0)));
+  box.appendChild(list);box.appendChild(add);
+  const bar=el('div',{class:'mbar'});
+  const save=el('button',{class:'btn go'},'저장');const cancel=el('button',{class:'btn'},'닫기');cancel.addEventListener('click',closeModal);
+  save.addEventListener('click',async()=>{
+    const r=mainRows.find(x=>x.machine===msel.value);if(!r)return;
+    const defects=[...list.querySelectorAll('.mrow')].map(w=>({reason:w.querySelector('.rn').value.trim(),qty:num(w.querySelector('.mn').value)})).filter(s=>s.reason);
+    r.defects=defects;r.defect_qty=defects.reduce((a,s)=>a+s.qty,0);
+    try{await saveRow(r);renderMain($('cDate').value,$('cShift').value);toast('불량 저장');closeModal();}catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(save);bar.appendChild(cancel);box.appendChild(bar);openModal(box);
+}
+
+// ── 마감등록 ──
+function openClose(){
+  if(!mainRows.length&&M.machines.length===0){toast('설정탭에서 호기를 먼저 등록하세요');return;}
+  ensureRows().then(ok=>{ if(ok) openCloseBody(); });
+}
+function openCloseBody(){
+  const box=el('div'); box.appendChild(el('h3',null,'마감등록'));
+  const msel=machineSelect(); box.appendChild(el('label',null,'호기')); box.appendChild(msel);
+  // 현황 요약(읽기전용)
+  const info=el('div',{style:'background:#0b0e13;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px;line-height:1.7'});
+  box.appendChild(info);
+  const la=el('label',null,'실제수량'); const ia=el('input',{type:'number'});
+  const lr=el('label',null,'비고'); const ir=el('input',{placeholder:'특이사항'});
+  function fill(){
+    const r=mainRows.find(x=>x.machine===msel.value);
+    if(r){
+      const tot=(+r.prod_qty||0)+(+r.defect_qty||0);
+      const rate=tot?((+r.defect_qty||0)/tot*100).toFixed(1):'0.0';
+      info.innerHTML=
+        `<div style="color:var(--muted)">제품</div><div style="color:var(--ink)">`
+        +`${r.customer||'-'} / ${r.mold||'-'} / ${r.item_code||'-'} ${r.item_name?'· '+r.item_name:''}</div>`
+        +`<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px">`
+        +`<span>생산수 <b class="good">${(+r.prod_qty||0).toLocaleString()}</b></span>`
+        +`<span>불량 <b class="bd">${(+r.defect_qty||0).toLocaleString()}</b></span>`
+        +`<span>불량률 <b>${rate}%</b></span>`
+        +`<span>정지 <b>${(+r.stop_min||0).toLocaleString()}분</b></span>`
+        +`<span>가동 <b>${(+r.run_min||0).toLocaleString()}분</b></span>`
+        +`<span>SPM <b>${(+r.spm||0).toLocaleString()}</b></span></div>`;
+      ia.value=r.actual_qty!=null?r.actual_qty:''; ir.value=r.remark||'';
+    }else{ info.textContent=''; ia.value=''; ir.value=''; }
+  }
+  msel.addEventListener('change',fill); fill();
+  box.appendChild(la);box.appendChild(ia);box.appendChild(lr);box.appendChild(ir);
+  const bar=el('div',{class:'mbar'});
+  const save=el('button',{class:'btn fin'},'마감 저장');const cancel=el('button',{class:'btn'},'닫기');cancel.addEventListener('click',closeModal);
+  save.addEventListener('click',async()=>{
+    const r=mainRows.find(x=>x.machine===msel.value);if(!r)return;
+    r.actual_qty=ia.value===''?null:num(ia.value);r.remark=ir.value.trim();
+    try{await saveRow(r);toast('마감 저장');closeModal();}catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(save);bar.appendChild(cancel);box.appendChild(bar);openModal(box);
+}
+
+// ── 사진 압축(≤30KB) ──
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.width,h=img.height; const md=800;
+      if(w>h&&w>md){h=h*md/w;w=md;} else if(h>md){w=w*md/h;h=md;}
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      let q=0.7,data=cv.toDataURL('image/jpeg',q);
+      while(data.length/1024>30&&q>0.2){q-=0.1;data=cv.toDataURL('image/jpeg',q);}
+      res(data);
+    };
+    img.onerror=rej; img.src=url;
+  });
+}
+// ── QR 스캔 ──
+let qrScanner=null;
+function startQR(targetInput,container){
+  if(typeof Html5Qrcode==='undefined'){toast('QR 라이브러리 로드 안됨');return;}
+  container.innerHTML=''; container.style.display='block';
+  const id='qr_'+Date.now(); container.appendChild(el('div',{id}));
+  qrScanner=new Html5Qrcode(id);
+  qrScanner.start({facingMode:'environment'},{fps:10,qrbox:200},
+    txt=>{targetInput.value=txt; toast('QR: '+txt); stopQR(container);},()=>{}).catch(e=>toast('카메라 실패: '+e));
+}
+function stopQR(container){
+  if(qrScanner){qrScanner.stop().then(()=>{try{qrScanner.clear();}catch(e){}qrScanner=null;container.style.display='none';container.innerHTML='';}).catch(()=>{qrScanner=null;container.style.display='none';container.innerHTML='';});}
+  else{container.style.display='none';container.innerHTML='';}
+}
+
+// ── 소재등록 (로트 장착/제거) ──
+function openMaterial(){
+  if(!M.machines.length){toast('설정탭에서 호기 먼저 등록');return;}
+  const box=el('div'); box.appendChild(el('h3',null,'소재등록 (로트)'));
+  box.appendChild(el('label',null,'호기')); const msel=machineSelect(); box.appendChild(msel);
+
+  box.appendChild(el('label',null,'구분'));
+  const seg=el('div',{class:'mrow'});
+  const bMount=el('button',{class:'btn go sm'},'장착'); const bRemove=el('button',{class:'btn sm'},'제거');
+  seg.appendChild(bMount); seg.appendChild(bRemove); box.appendChild(seg);
+  let mode='장착';
+
+  // ── 장착 폼 ──
+  const mountForm=el('div');
+  function fld(lbl,ph,type){const l=el('label',null,lbl);const i=el('input',type?{type,placeholder:ph}:{placeholder:ph});mountForm.appendChild(l);mountForm.appendChild(i);return i;}
+  const fMat=fld('재질','예: SPCC'); const fTh=fld('두께','mm','number'); const fW=fld('폭','mm','number'); const fWt=fld('중량','kg','number'); const fEx=fld('추가구분','선택');
+  mountForm.appendChild(el('label',null,'로트'));
+  const lotRow=el('div',{class:'mrow'});
+  const fLot=el('input',{class:'rn',placeholder:'로트번호'});
+  const bQR=el('button',{class:'btn sm'},'QR스캔');
+  lotRow.appendChild(fLot); lotRow.appendChild(bQR); mountForm.appendChild(lotRow);
+  const qrBox=el('div',{style:'display:none;margin:6px 0'}); mountForm.appendChild(qrBox);
+  bQR.addEventListener('click',()=>{ if(qrScanner)stopQR(qrBox); else startQR(fLot,qrBox); });
+  mountForm.appendChild(el('label',null,'사진'));
+  const photoRow=el('div',{class:'mrow'});
+  const fPhoto=el('input',{type:'file',accept:'image/*',capture:'environment'});
+  photoRow.appendChild(fPhoto); mountForm.appendChild(photoRow);
+  const thumb=el('img',{style:'max-width:120px;border-radius:8px;display:none;margin-top:6px'}); mountForm.appendChild(thumb);
+  let photoData='';
+  fPhoto.addEventListener('change',async()=>{ if(fPhoto.files&&fPhoto.files[0]){ try{photoData=await compressImage(fPhoto.files[0]);thumb.src=photoData;thumb.style.display='block';}catch(e){toast('사진 처리 실패');} } });
+  box.appendChild(mountForm);
+
+  // ── 제거 폼 ──
+  const removeForm=el('div',{style:'display:none'});
+  const curBox=el('div',{style:'background:#0b0e13;border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--muted);font-size:13px'},'조회 중…');
+  removeForm.appendChild(curBox);
+  box.appendChild(removeForm);
+  let curRec=null;
+  async function loadCurrent(){
+    curBox.textContent='조회 중…'; curRec=null;
+    try{
+      const r=await jget(`pr_material?machine=eq.${encodeURIComponent(msel.value)}&removed_at=is.null&order=mounted_at.desc&limit=1`);
+      if(r&&r[0]){curRec=r[0];
+        curBox.innerHTML=`현재 장착: <b style="color:var(--ink)">${curRec.material||'-'}</b> · 두께 ${curRec.thickness||'-'} · 폭 ${curRec.width||'-'} · 중량 ${curRec.weight||'-'}kg<br>로트 <b style="color:var(--ink)">${curRec.lot||'-'}</b> · 장착 ${curRec.mounted_at?new Date(curRec.mounted_at).toLocaleString('ko-KR'):'-'}`;
+      } else curBox.textContent='장착된 소재 없음';
+    }catch(e){curBox.textContent='오류: '+e.message;}
+  }
+
+  function setMode(m){
+    mode=m;
+    bMount.className=m==='장착'?'btn go sm':'btn sm';
+    bRemove.className=m==='제거'?'btn go sm':'btn sm';
+    mountForm.style.display=m==='장착'?'':'none';
+    removeForm.style.display=m==='제거'?'':'none';
+    if(m==='제거')loadCurrent();
+  }
+  bMount.addEventListener('click',()=>setMode('장착'));
+  bRemove.addEventListener('click',()=>setMode('제거'));
+  msel.addEventListener('change',()=>{ if(mode==='제거')loadCurrent(); });
+
+  const bar=el('div',{class:'mbar'});
+  const save=el('button',{class:'btn go'},'저장'); const cancel=el('button',{class:'btn'},'닫기');
+  cancel.addEventListener('click',()=>{stopQR(qrBox);closeModal();});
+  save.addEventListener('click',async()=>{
+    const date=$('cDate').value, shift=$('cShift').value, worker=$('cWorker').value, machine=msel.value;
+    try{
+      if(mode==='장착'){
+        await jpost('pr_material',[{report_date:date,shift,machine,worker,
+          material:fMat.value.trim(),thickness:fTh.value===''?null:num(fTh.value),width:fW.value===''?null:num(fW.value),weight:fWt.value===''?null:num(fWt.value),
+          extra:fEx.value.trim(),lot:fLot.value.trim(),photo:photoData||null,
+          mounted_at:new Date().toISOString(),status:'장착'}],'return=minimal');
+        toast('장착 등록');
+      }else{
+        if(!curRec){toast('장착된 소재 없음');return;}
+        await jpatch('pr_material?id=eq.'+curRec.id,{removed_at:new Date().toISOString(),status:'제거'});
+        toast('제거 등록');
+      }
+      stopQR(qrBox); closeModal();
+    }catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(save); bar.appendChild(cancel); box.appendChild(bar);
+  openModal(box); setMode('장착');
+}
+
+// ── 행 보장: 호기 없으면 알림, 있으면 자동 로드 ──
+async function ensureRows(){
+  if(M.machines.length===0){toast('설정탭에서 호기를 먼저 등록하세요');return false;}
+  if(!mainRows.length){ await loadMain(); }
+  return mainRows.length>0;
+}
+
+// ── 수정 ──
+async function openEdit(){
+  if(!(await ensureRows()))return;
+  const box=el('div'); box.appendChild(el('h3',null,'수정'));
+  box.appendChild(el('label',null,'호기')); const msel=machineSelect(); box.appendChild(msel);
+  const wrap=el('div'); box.appendChild(wrap);
+  const F={};
+  function build(){
+    wrap.innerHTML=''; const r=mainRows.find(x=>x.machine===msel.value); if(!r)return;
+    function fld(lbl,key,type){const l=el('label',null,lbl);const i=el('input',type?{type}:{});i.value=r[key]!=null?r[key]:'';wrap.appendChild(l);wrap.appendChild(i);F[key]=i;}
+    fld('고객사','customer');fld('금형','mold');fld('품번','item_code');fld('품명','item_name');
+    fld('가동(분)','run_min','number');fld('정지(분)','stop_min','number');
+    fld('생산수','prod_qty','number');fld('SPM','spm','number');
+    fld('불량','defect_qty','number');fld('실제수량','actual_qty','number');fld('비고','remark');
+  }
+  msel.addEventListener('change',build); build();
+  const bar=el('div',{class:'mbar'});
+  const save=el('button',{class:'btn go'},'저장'); const cancel=el('button',{class:'btn'},'닫기'); cancel.addEventListener('click',closeModal);
+  save.addEventListener('click',async()=>{
+    const r=mainRows.find(x=>x.machine===msel.value); if(!r)return;
+    r.customer=F.customer.value;r.mold=F.mold.value;r.item_code=F.item_code.value;r.item_name=F.item_name.value;
+    r.run_min=num(F.run_min.value);r.stop_min=num(F.stop_min.value);r.prod_qty=num(F.prod_qty.value);r.spm=num(F.spm.value);
+    r.defect_qty=num(F.defect_qty.value);r.actual_qty=F.actual_qty.value===''?null:num(F.actual_qty.value);r.remark=F.remark.value.trim();
+    try{await saveRow(r);renderMain($('cDate').value,$('cShift').value);toast('수정 저장');closeModal();}catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(save);bar.appendChild(cancel);box.appendChild(bar);openModal(box);
+}
+
+// ── 삭제 ──
+async function openDelete(){
+  if(!(await ensureRows()))return;
+  const box=el('div'); box.appendChild(el('h3',null,'삭제'));
+  box.appendChild(el('label',null,'호기')); const msel=machineSelect(); box.appendChild(msel);
+  box.appendChild(el('div',{style:'color:#e0a96a;font-size:13px;margin:8px 0'},'선택한 호기의 이 작업일자·작업조 기록이 삭제됩니다.'));
+  const bar=el('div',{class:'mbar'});
+  const del=el('button',{class:'btn del'},'삭제'); const cancel=el('button',{class:'btn'},'닫기'); cancel.addEventListener('click',closeModal);
+  del.addEventListener('click',async()=>{
+    const date=$('cDate').value,shift=$('cShift').value,machine=msel.value;
+    if(!confirm(machine+' 기록 삭제?'))return;
+    try{await jdel(`pr_report?report_date=eq.${date}&shift=eq.${encodeURIComponent(shift)}&machine=eq.${encodeURIComponent(machine)}`);toast('삭제됨');closeModal();loadMain();}catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(del);bar.appendChild(cancel);box.appendChild(bar);openModal(box);
+}
+
+// ── 이력 ──
+async function searchHist(){
+  const from=$('hFrom').value, to=$('hTo').value, mc=$('hMachine').value;
+  if(!from||!to){toast('기간을 정하세요');return;}
+  let q=`pr_report?report_date=gte.${from}&report_date=lte.${to}&select=*&order=report_date.desc,shift,machine`;
+  if(mc)q+=`&machine=eq.${encodeURIComponent(mc)}`;
+  $('hBody').innerHTML='<tr><td colspan="16" class="empty">검색 중…</td></tr>';
+  try{histRows=await jget(q);renderHist();}catch(e){$('hBody').innerHTML=`<tr><td colspan="16" class="empty">오류: ${e.message}</td></tr>`;}
+}
+function renderHist(){
+  const tb=$('hBody');tb.innerHTML='';
+  if(!histRows.length){tb.innerHTML='<tr><td colspan="16" class="empty">결과 없음</td></tr>';$('hSum').innerHTML='';return;}
+  histRows.forEach(r=>{
+    const tr=el('tr');
+    [r.report_date,r.shift,r.line,r.machine,r.mold,r.customer,r.item_code,r.item_name].forEach(v=>tr.appendChild(el('td',null,v||'')));
+    [['run_min'],['stop_min'],['prod_qty'],['spm'],['defect_qty'],['actual_qty']].forEach(k=>tr.appendChild(el('td',{class:'num'}, r[k[0]]!=null?Number(r[k[0]]).toLocaleString():'')));
+    tr.appendChild(el('td',null,r.remark||''));
+    const td=el('td');
+    const e=el('button',{class:'btn sm'},'수정'); e.addEventListener('click',()=>editHist(r));
+    const d=el('button',{class:'btn x'},'삭제'); d.addEventListener('click',()=>delHist(r));
+    td.appendChild(e);td.appendChild(d);tr.appendChild(td);
+    tb.appendChild(tr);
+  });
+  const tq=histRows.reduce((a,r)=>a+(+r.prod_qty||0),0);
+  const tdf=histRows.reduce((a,r)=>a+(+r.defect_qty||0),0);
+  $('hSum').innerHTML=`<span>행 <b>${histRows.length}</b></span><span>생산수 <b class="g">${tq.toLocaleString()}</b></span><span>불량 <b class="b">${tdf.toLocaleString()}</b></span>`;
+}
+function editHist(r){ histForm(Object.assign({},r), false); }
+function addHist(){ histForm({report_date:$('cDate').value||todayKST(),shift:'주간',machine:'',line:'',customer:'',mold:'',item_code:'',item_name:'',run_min:0,stop_min:0,prod_qty:0,spm:0,defect_qty:0,actual_qty:null,remark:''}, true); }
+
+function histForm(r,isNew){
+  const box=el('div'); box.appendChild(el('h3',null,isNew?'이력 추가':'이력 수정'));
+  function fld(lbl,key,type){const l=el('label',null,lbl);const i=el('input',type?{type}:{});i.value=r[key]!=null?r[key]:'';i.dataset.key=key;box.appendChild(l);box.appendChild(i);return i;}
+  const f={};
+  f.report_date=fld('작업일자','report_date','date');
+  // 작업조
+  box.appendChild(el('label',null,'작업조')); const sh=el('select');['주간','야간'].forEach(s=>{const o=el('option',{value:s},s);if(r.shift===s)o.selected=true;sh.appendChild(o);});box.appendChild(sh);
+  // 호기
+  box.appendChild(el('label',null,'호기')); const mc=el('select');mc.appendChild(el('option',{value:''},'(선택)'));M.machines.forEach(m=>{const o=el('option',{value:m.name},m.name);if(r.machine===m.name)o.selected=true;mc.appendChild(o);});box.appendChild(mc);
+  f.line=fld('라인','line');
+  f.customer=fld('고객사','customer'); f.mold=fld('금형','mold'); f.item_code=fld('품번','item_code'); f.item_name=fld('품명','item_name');
+  f.run_min=fld('가동(분)','run_min','number'); f.stop_min=fld('정지(분)','stop_min','number');
+  f.prod_qty=fld('생산수','prod_qty','number'); f.spm=fld('SPM','spm','number');
+  f.defect_qty=fld('불량','defect_qty','number'); f.actual_qty=fld('실제수량','actual_qty','number');
+  f.remark=fld('비고','remark');
+  const bar=el('div',{class:'mbar'});
+  const save=el('button',{class:'btn go'},'저장'); const cancel=el('button',{class:'btn'},'닫기');cancel.addEventListener('click',closeModal);
+  save.addEventListener('click',async()=>{
+    if(!mc.value){toast('호기 선택');return;}
+    const rec={report_date:f.report_date.value,shift:sh.value,machine:mc.value,line:f.line.value,worker:$('cWorker').value,
+      customer:f.customer.value,mold:f.mold.value,item_code:f.item_code.value,item_name:f.item_name.value,
+      run_min:num(f.run_min.value),stop_min:num(f.stop_min.value),prod_qty:num(f.prod_qty.value),spm:num(f.spm.value),
+      defect_qty:num(f.defect_qty.value),actual_qty:f.actual_qty.value===''?null:num(f.actual_qty.value),remark:f.remark.value,updated_at:new Date().toISOString()};
+    try{await jpost('pr_report?on_conflict=report_date,shift,machine',[rec],'resolution=merge-duplicates,return=minimal');toast('저장됨');closeModal();searchHist();}
+    catch(e){toast('실패: '+e.message);}
+  });
+  bar.appendChild(save);bar.appendChild(cancel);box.appendChild(bar);openModal(box);
+}
+async function delHist(r){
+  if(!confirm(`${r.report_date} ${r.shift} ${r.machine} 삭제?`))return;
+  try{await jdel(`pr_report?report_date=eq.${r.report_date}&shift=eq.${encodeURIComponent(r.shift)}&machine=eq.${encodeURIComponent(r.machine)}`);toast('삭제됨');searchHist();}
+  catch(e){toast('실패: '+e.message);}
+}
+function exportHist(){
+  if(!histRows.length){toast('내보낼 데이터 없음');return;}
+  const aoa=[['생산일보 이력'],[],['일자','작업조','라인','호기','금형','고객사','품번','품명','가동(분)','정지(분)','생산수','SPM','불량','실제수량','비고']];
+  histRows.forEach(r=>aoa.push([r.report_date,r.shift,r.line,r.machine,r.mold,r.customer,r.item_code,r.item_name,
+    +r.run_min||0,+r.stop_min||0,+r.prod_qty||0,+r.spm||0,+r.defect_qty||0,r.actual_qty!=null?+r.actual_qty:'',r.remark||'']));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:11},{wch:6},{wch:9},{wch:9},{wch:12},{wch:12},{wch:14},{wch:18},{wch:9},{wch:9},{wch:9},{wch:8},{wch:8},{wch:9},{wch:16}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'생산일보');
+  XLSX.writeFile(wb,`생산일보_${$('hFrom').value}_${$('hTo').value}.xlsx`);
+  toast('엑셀 다운로드');
+}
+
+// ── 이벤트 ──
+$('mLoad').addEventListener('click',loadMain);
+$('cNow').addEventListener('click',()=>{setCurrent();loadMain();});
+$('cEdit').addEventListener('click',openEdit);
+$('cDelete').addEventListener('click',openDelete);
+$('cDate').addEventListener('change',loadMain);
+$('cShift').addEventListener('change',loadMain);
+$('cWorker').addEventListener('change',()=>{try{localStorage.setItem('pr_worker_sel',$('cWorker').value);}catch(e){}});
+let autoTimer=setInterval(()=>{ if(curTab==='main')loadMain(); else if(curTab==='live')loadLive(); },30000);   // 30초 자동갱신
+$('mApply').addEventListener('click',applyPick);
+$('mPickCode').addEventListener('change',()=>fillMold());
+$('mMaterial').addEventListener('click',openMaterial);
+$('mStop').addEventListener('click',openStop);
+$('mDefect').addEventListener('click',openDefect);
+$('mClose').addEventListener('click',openClose);
+$('hSearch').addEventListener('click',searchHist);
+$('hAdd').addEventListener('click',addHist);
+$('hXls').addEventListener('click',exportHist);
+
+// ── 시작 ──
+$('cDate').value=todayKST();
+$('hFrom').value=todayKST(); $('hTo').value=todayKST();
+$('clock').textContent=kstClock(); setInterval(()=>$('clock').textContent=kstClock(),1000);
+Promise.all([loadConfig(), loadMasters()]).then(()=>{ setCurrent(); loadMain(); });
 </script>
 </body>
 </html>
