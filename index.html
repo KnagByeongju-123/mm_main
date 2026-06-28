@@ -103,6 +103,11 @@ html, body {
 .acc.c-imp:hover, .acc.c-imp:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
 .acc.c-master:hover, .acc.c-master:focus-within { background: rgba(253,186,116,0.08); border-color: rgba(253,186,116,0.4); }
 .acc.c-board:hover, .acc.c-board:focus-within { background: rgba(244,114,182,0.08); border-color: rgba(244,114,182,0.4); }
+.acc.c-daily:hover, .acc.c-daily:focus-within { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.4); }
+.acc.c-daily[open] { box-shadow: 0 4px 20px rgba(74,222,128,0.22); border-color: rgba(74,222,128,0.55); }
+.acc.c-daily[open] .icon  { box-shadow: 0 0 16px rgba(74,222,128,0.4); }
+.acc.c-daily[open] .title { color: #bbf7d0; }
+.acc.c-daily .icon { background: linear-gradient(135deg, rgba(74,222,128,0.2), rgba(34,197,94,0.3)); color: #4ade80; }
 
 .acc[open] {
   border-color: rgba(56,189,248,0.5);
@@ -398,6 +403,19 @@ body.locked { overflow: hidden; }
       </a>
     </div>
   </details>
+  <details class="acc c-daily">
+    <summary><div class="icon">📅</div><div class="title" data-i18n="daily">작업일보</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="production_report.html">
+        <div class="s-icon">📊</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_daily">생산일보</div>
+          <div class="s-desc" data-i18n="menu_daily_desc">호기별 생산수·정지·불량·마감 실시간 작성</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
   <details class="acc c-imp">
     <summary><div class="icon">🛠</div><div class="title" data-i18n="improvement">개선활동</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
@@ -515,6 +533,9 @@ const I18N = {
     menu_repair_report_desc: '기간별 통계 / 상세 보고서 인쇄 / CSV',
     menu_tryout: 'Tryout 보고서',
     menu_tryout_desc: '개발 단계 시작품 테스트 결과 작성',
+    daily: '작업일보',
+    menu_daily: '생산일보',
+    menu_daily_desc: '호기별 생산수·정지·불량·마감 실시간 작성',
     menu_improvement: '개선활동 보고',
     menu_improvement_desc: '문제 발생 시 개선 전/후 비교 및 효과 기록',
     menu_security: '보안 마스터',
@@ -569,6 +590,9 @@ const I18N = {
     menu_repair_report_desc: 'Statistik / Druckbericht / CSV',
     menu_tryout: 'Tryout-Bericht',
     menu_tryout_desc: 'Testergebnisse für Prototypen in der Entwicklungsphase',
+    daily: 'Arbeitsbericht',
+    menu_daily: 'Produktionsbericht',
+    menu_daily_desc: 'Stückzahl, Stopps, Ausschuss je Presse in Echtzeit',
     menu_improvement: 'Verbesserungsbericht',
     menu_improvement_desc: 'Vorher/Nachher-Vergleich und Wirksamkeit',
     menu_security: 'Sicherheits-Master',
@@ -623,6 +647,9 @@ const I18N = {
     menu_repair_report_desc: 'Кезеңдік статистика / есеп басып шығару / CSV',
     menu_tryout: 'Tryout есебі',
     menu_tryout_desc: 'Әзірлеу кезеңіндегі өнімді сынау нәтижелерін жазу',
+    daily: 'Жұмыс есебі',
+    menu_daily: 'Өндіріс есебі',
+    menu_daily_desc: 'Пресс бойынша өнім саны, тоқтау, ақау нақты уақытта',
     menu_improvement: 'Жақсарту есебі',
     menu_improvement_desc: 'Алдын/Соңын салыстыру және нәтижелілік',
     menu_security: 'Қауіпсіздік шебері',
