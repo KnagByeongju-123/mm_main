@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>원영 위치 QR</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:    #334155;
+  --border-hi: #475569;
+  --text:      #e2e8f0;
+  --text-mid:  #cbd5e1;
+  --text-sub:  #94a3b8;
+  --text-dim:  #64748b;
+  --ice:       #7dd3fc;
+  --ice-lt:    #bae6fd;
+  --orange:    #fdba74;
+  --green:     #4ade80;
+  --purple:    #c4b5fd;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+  background: var(--bg-dark); color: var(--text); min-height: 100vh; padding-bottom: 40px;
+}
+
+.app-header {
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  color: var(--ice); padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.app-header h1 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 6px; color: var(--ice); }
+.ver { font-size: 11px; opacity: 0.65; font-weight: 500; margin-left: 8px; color: var(--text-sub); cursor: pointer; }
+.app-header a {
+  color: var(--ice); text-decoration: none; font-size: 13px;
+  padding: 6px 12px; background: rgba(125,211,252,0.12);
+  border: 1px solid rgba(125,211,252,0.3); border-radius: 6px;
+}
+
+.container { max-width: 600px; margin: 0 auto; padding: 16px; }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px; margin-bottom: 12px;
+}
+.card h2 { font-size: 15px; margin-bottom: 12px; color: var(--ice); }
+
+.tab-bar {
+  display: flex; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; margin-bottom: 12px;
+}
+.tab {
+  flex: 1; padding: 12px; text-align: center; font-size: 14px;
+  font-weight: 600; color: var(--text-sub); cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+.tab.active { color: var(--ice); border-bottom-color: var(--ice); background: var(--bg-card-hi); }
+
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-mid); }
+input[type="text"], textarea {
+  width: 100%; padding: 10px 12px;
+  background: var(--bg-dark); color: var(--text);
+  border: 1px solid var(--border-hi);
+  border-radius: 6px; font-size: 15px; font-family: inherit;
+}
+input[type="text"]:focus, textarea:focus { outline: none; border-color: var(--ice); }
+input[type="text"]::placeholder, textarea::placeholder { color: var(--text-dim); }
+textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+.btn {
+  padding: 12px 16px; border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-primary {
+  background: linear-gradient(135deg, rgba(125,211,252,0.2), rgba(56,189,248,0.3));
+  color: var(--ice); width: 100%;
+  border: 1px solid rgba(125,211,252,0.4);
+}
+.btn-secondary {
+  background: var(--bg-card-hi); color: var(--text-mid);
+  border: 1px solid var(--border-hi);
+}
+
+.hint {
+  font-size: 12px; color: var(--text-sub); background: rgba(125,211,252,0.06);
+  border: 1px solid rgba(125,211,252,0.15);
+  padding: 10px 12px; border-radius: 6px; line-height: 1.6; margin-top: 8px;
+}
+.hint code {
+  background: var(--bg-dark); color: var(--ice); padding: 1px 5px;
+  border: 1px solid var(--border); border-radius: 3px;
+  font-size: 11px; font-family: monospace;
+}
+
+/* QR 결과 — 단일 (인쇄 시 흰 배경, 화면에선 다크 박스) */
+.qr-result { text-align: center; padding-top: 8px; }
+.qr-result.hidden { display: none; }
+.qr-label-area {
+  background: white;  /* QR 라벨은 흰색 유지 (인쇄 품질) */
+  border: 2px solid var(--ice); border-radius: 8px;
+  padding: 16px; display: inline-block; margin-bottom: 12px;
+}
+.qr-loc {
+  font-size: 36px; font-weight: 800; letter-spacing: 4px;
+  margin-bottom: 8px; color: #1a3a5c;
+}
+.qr-img-wrap { background: white; padding: 8px; display: inline-block; }
+.qr-img-wrap img { width: 200px; height: 200px; display: block; }
+.qr-caption { font-size: 12px; color: #666; margin-top: 6px; }
+
+.qr-actions {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.qr-actions .btn { flex: 1; min-width: 120px; }
+.btn-print {
+  background: rgba(74,222,128,0.15); color: var(--green);
+  border: 1px solid rgba(74,222,128,0.35);
+}
+.btn-download {
+  background: rgba(196,181,253,0.15); color: var(--purple);
+  border: 1px solid rgba(196,181,253,0.35);
+}
+
+/* QR 결과 — 다중 (A4) */
+.batch-result { display: none; }
+.batch-result.show { display: block; }
+.batch-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  background: white;  /* 인쇄용이므로 흰색 */
+  padding: 16px; border-radius: 8px; margin-top: 12px;
+}
+.batch-item {
+  border: 1px dashed #ccc; padding: 12px 8px; text-align: center;
+  page-break-inside: avoid;
+}
+.batch-item .b-loc {
+  font-size: 24px; font-weight: 800; letter-spacing: 3px;
+  color: #1a3a5c; margin-bottom: 6px;
+}
+.batch-item .b-img img { width: 130px; height: 130px; }
+.batch-item .b-cap { font-size: 10px; color: #888; margin-top: 4px; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: rgba(15,23,42,0.95); color: var(--ice);
+  border: 1px solid var(--ice);
+  padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 9999;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+.footer {
+  text-align: center; margin-top: 24px;
+  font-size: 11px; color: var(--text-dim);
+}
+
+/* 인쇄 — 흰 배경으로 강제 */
+@media print {
+  body { background: white !important; color: black !important; padding: 0; }
+  .app-header, .container > .tab-bar, .container > .card:not(.print-area),
+  .qr-actions, .hint, .toast, .footer { display: none !important; }
+  .container { max-width: 100%; padding: 0; }
+  .card.print-area { background: white !important; border: none; padding: 0; }
+
+  /* 단일 인쇄 */
+  .qr-result:not(.hidden) {
+    page-break-after: always; padding-top: 30mm;
+  }
+  .qr-label-area {
+    border: 3px solid #1a3a5c; padding: 24px;
+  }
+  .qr-loc { font-size: 64px; color: #1a3a5c; }
+  .qr-img-wrap img { width: 320px; height: 320px; }
+
+  /* 다중 인쇄 */
+  .batch-grid {
+    padding: 0; gap: 8mm;
+    grid-template-columns: repeat(2, 1fr);
+    background: white !important;
+  }
+  .batch-item {
+    border: 2px solid #1a3a5c; padding: 12mm 4mm; min-height: 60mm;
+    color: #1a3a5c;
+  }
+  .batch-item .b-loc { font-size: 28pt; color: #1a3a5c; }
+  .batch-item .b-img img { width: 140px; height: 140px; }
+  @page { size: A4; margin: 12mm; }
+}
+</style>
+</head>
+<body>
+<!-- ============ 인증 가드 (모든 페이지 공통) ============ -->
+<script>
+(function(){
+  'use strict';
+  // PIN 인증 세션 키 (index.html에서 저장)
+  var LK_AUTH = 'mm_user_session';
+  var LK_LAST_LOC = 'mm_last_loc';
+
+  function getSession(){
+    try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+  }
+
+  var s = getSession();
+
+  /* 1) 미인증 또는 세션 만료 → 메인으로 강제 이동 (페이지 렌더 차단) */
+  if(!s || !s.exp || s.exp <= Date.now()){
+    try{localStorage.removeItem(LK_AUTH)}catch(e){}
+    /* 페이지가 렌더되기 전 즉시 리다이렉트 */
+    location.replace('index.html');
+    /* DOM 차단 */
+    document.documentElement.style.display = 'none';
+    throw new Error('Unauthorized - redirecting');
+  }
+
+  /* 2) 세션을 호환 키에 자동 미러링 */
+  try{
+    if(s.role === 'admin'){
+      localStorage.setItem('msmUser_name', '관리자');
+      localStorage.setItem('msmUser_dept', '');
+    } else {
+      localStorage.setItem('msmUser_name', s.name || '');
+      localStorage.setItem('msmUser_dept', s.dept || '');
+    }
+  }catch(e){}
+
+  /* 3) 페이지 진입 위치 추적 (Supabase 비동기 INSERT, 실패해도 동작에 영향 없음) */
+  (function trackPageEntry(){
+    if(!s.id) return;
+    /* 마스터(관리자)는 추적 안 함 */
+    if(s.role === 'admin') return;
+
+    var SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+    var TBL_LOC = 'mm_user_location';
+    var pageName = (location.pathname.split('/').pop()||'').replace('.html','');
+
+    /* 같은 IP 5분 내 재접근은 스킵 (DB 부담 방지) */
+    var last = null;
+    try{ last = JSON.parse(localStorage.getItem(LK_LAST_LOC)||'null'); }catch(e){}
+    var now = Date.now();
+    if(last && last.ts && (now - last.ts) < 5*60*1000 && last.page === pageName){
+      return;  /* 5분 내 같은 페이지 재진입은 무시 */
+    }
+
+    /* IP 조회 후 INSERT */
+    fetch('https://ipapi.co/json/').then(function(r){return r.json()}).then(function(d){
+      var payload = {
+        user_id: s.id, user_name: s.name||null,
+        factory: s.factory||null, dept: s.dept||null,
+        lat: d.latitude||null, lng: d.longitude||null,
+        ip: d.ip||null, city: d.city||null, region: d.region||null,
+        country: d.country_name||null, org: d.org||null,
+        device_info: (navigator.userAgent||'').slice(0,180) + ' | page:' + pageName,
+        error_code: null,
+        recorded_at: new Date().toISOString()
+      };
+      fetch(SUPABASE_URL+'/rest/v1/'+TBL_LOC, {
+        method:'POST',
+        headers:{
+          'apikey':SUPABASE_KEY,
+          'Authorization':'Bearer '+SUPABASE_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      }).then(function(){
+        localStorage.setItem(LK_LAST_LOC, JSON.stringify({
+          ip:d.ip, page:pageName, ts:now
+        }));
+      }).catch(function(){});
+    }).catch(function(){});
+  })();
+
+  /* 4) 세션을 전역에 노출 (개별 페이지 스크립트에서 사용) */
+  window.__msmSession = s;
+})();
+</script>
+<!-- ======================================================== -->
+
+<div class="app-header">
+  <h1>🔳 원영 위치 QR <span class="ver" onclick="showVer()">v1.0</span></h1>
+  <a href="wonyoung_factory.html">🏠</a>
+</div>
+
+<div class="container">
+
+  <div class="tab-bar">
+    <div class="tab active" data-tab="single">📌 1개 만들기</div>
+    <div class="tab" data-tab="batch">📋 여러개 (A4)</div>
+  </div>
+
+  <!-- 단일 -->
+  <div id="page-single">
+    <div class="card">
+      <h2>📍 위치 코드 입력</h2>
+      <div class="form-group">
+        <input type="text" id="locInput" placeholder="예: A01, B-02, 가1, 1번랙" autofocus>
+      </div>
+      <button class="btn btn-primary" id="btnGenSingle" type="button">🔳 QR 생성</button>
+      <div class="hint">
+        💡 이 QR을 찍으면 해당 위치에 등록된 품목 리스트가 자동으로 표시됩니다.<br>
+        대상 페이지: <code>wonyoung_factory_input.html?loc=위치코드</code>
+      </div>
+    </div>
+
+    <div class="card print-area">
+      <div class="qr-result hidden" id="qrSingleResult">
+        <div class="qr-label-area">
+          <div class="qr-loc" id="qrLoc"></div>
+          <div class="qr-img-wrap"><img id="qrImg" alt=""></div>
+          <div class="qr-caption">스캔 → 재고 리스트</div>
+        </div>
+        <div class="qr-actions">
+          <button class="btn btn-print" id="btnPrint" type="button">🖨 인쇄</button>
+          <button class="btn btn-download" id="btnDownload" type="button">💾 이미지 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 다중 -->
+  <div id="page-batch" style="display:none">
+    <div class="card">
+      <h2>📋 여러 위치 한번에</h2>
+      <div class="form-group">
+        <label>위치 코드를 줄바꿈으로 입력</label>
+        <textarea id="locBatch" placeholder="A01&#10;A02&#10;A03&#10;B01&#10;B02"></textarea>
+      </div>
+      <button class="btn btn-primary" id="btnGenBatch" type="button">🔳 일괄 QR 생성</button>
+      <div class="hint">
+        💡 A4 한 장에 6개씩 인쇄됩니다. 가위로 잘라서 각 랙에 부착하세요.
+      </div>
+    </div>
+
+    <div class="card batch-result print-area" id="batchResult">
+      <h2 style="text-align:center;margin-bottom:8px">위치 QR 라벨 (총 <span id="batchCount">0</span>개)</h2>
+      <div class="qr-actions" style="margin-bottom:12px">
+        <button class="btn btn-print" id="btnPrintBatch" type="button">🖨 A4 인쇄</button>
+      </div>
+      <div class="batch-grid" id="batchGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="footer">v1.0 · msm · 원영</div>
+
+<script>
+'use strict';
+
+function showVer(){
+  alert(
+    '🔳 원영 위치 QR 생성기\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    'v1.0 (현재)\n' +
+    '• 원영 전용 위치 QR 생성\n' +
+    '• 스캔 시 wonyoung_factory_input.html?loc=위치코드'
+  );
+}
+
+(function(){
+  function $(id) { return document.getElementById(id); }
+
+  // 베이스 URL = 현재 페이지가 있는 경로
+  function getBaseURL() {
+    const path = window.location.pathname.replace(/\/[^/]*$/, '/');
+    return window.location.origin + path + 'wonyoung_factory_input.html';
+  }
+
+  function buildTargetURL(loc) {
+    return getBaseURL() + '?loc=' + encodeURIComponent(loc);
+  }
+
+  function buildQRImgURL(targetURL, size) {
+    size = size || 240;
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size +
+      '&margin=8&data=' + encodeURIComponent(targetURL);
+  }
+
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // 모바일에서 mouse + touch 중복 발화 방지하면서 클릭 처리
+  function tap(elOrId, handler) {
+    const el = typeof elOrId === 'string' ? $(elOrId) : elOrId;
+    if (!el) return;
+    let touched = false;
+    el.addEventListener('touchend', e => {
+      touched = true;
+      e.preventDefault();
+      handler(e);
+      setTimeout(() => { touched = false; }, 500);
+    }, { passive: false });
+    el.addEventListener('click', e => {
+      if (touched) return;
+      handler(e);
+    });
+  }
+
+  // === 단일 생성 ===
+  function genSingle() {
+    const loc = $('locInput').value.trim();
+    if (!loc) { showToast('⚠ 위치 코드를 입력하세요'); return; }
+    const url = buildTargetURL(loc);
+    $('qrLoc').textContent = loc;
+    $('qrImg').src = buildQRImgURL(url, 240);
+    $('qrSingleResult').classList.remove('hidden');
+    setTimeout(() => {
+      $('qrSingleResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  }
+
+  // === 다중 생성 ===
+  function genBatch() {
+    const raw = $('locBatch').value;
+    const list = raw.split(/[\n,]/).map(s => s.trim()).filter(s => s);
+    if (list.length === 0) { showToast('⚠ 위치 코드를 입력하세요'); return; }
+
+    const grid = $('batchGrid');
+    grid.innerHTML = list.map(loc => {
+      const url = buildTargetURL(loc);
+      const qr = buildQRImgURL(url, 200);
+      return '<div class="batch-item">' +
+        '<div class="b-loc">' + escapeHtml(loc) + '</div>' +
+        '<div class="b-img"><img src="' + qr + '" alt=""></div>' +
+        '<div class="b-cap">스캔 → 재고 리스트</div>' +
+      '</div>';
+    }).join('');
+    $('batchCount').textContent = list.length;
+    $('batchResult').classList.add('show');
+    setTimeout(() => {
+      $('batchResult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  }
+
+  // === 이미지 다운로드 ===
+  async function downloadSingle() {
+    const loc = $('qrLoc').textContent;
+    const targetURL = buildTargetURL(loc);
+    const qrApiURL = buildQRImgURL(targetURL, 600);
+
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const W = 700, H = 850;
+        const canvas = document.createElement('canvas');
+        canvas.width = W; canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        // 배경
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, W, H);
+
+        // 외곽선
+        ctx.strokeStyle = '#1a3a5c';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(20, 20, W - 40, H - 40);
+
+        // 위치 코드
+        ctx.fillStyle = '#1a3a5c';
+        ctx.font = 'bold 56px "Malgun Gothic", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(loc, W / 2, 100);
+
+        // QR
+        ctx.drawImage(img, (W - 500) / 2, 140, 500, 500);
+
+        // 캡션
+        ctx.fillStyle = '#666';
+        ctx.font = '20px "Malgun Gothic", sans-serif';
+        ctx.fillText('📱 스캔하여 재고 리스트 확인', W / 2, 700);
+
+        // URL
+        ctx.fillStyle = '#999';
+        ctx.font = '14px monospace';
+        let urlText = targetURL;
+        if (urlText.length > 60) urlText = urlText.substring(0, 57) + '...';
+        ctx.fillText(urlText, W / 2, 750);
+
+        ctx.fillStyle = '#aaa';
+        ctx.font = '13px "Malgun Gothic", sans-serif';
+        ctx.fillText('msm 소모품관리', W / 2, 790);
+
+        // 다운로드
+        canvas.toBlob(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'qr_' + loc.replace(/[^\w가-힣]/g, '_') + '.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+          showToast('💾 저장됨');
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        showToast('⚠ 이미지 로드 실패');
+      };
+      img.src = qrApiURL;
+    } catch (e) {
+      showToast('❌ 실패: ' + e.message);
+    }
+  }
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  // === 탭 전환 ===
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === name);
+    });
+    $('page-single').style.display = name === 'single' ? 'block' : 'none';
+    $('page-batch').style.display = name === 'batch' ? 'block' : 'none';
+  }
+
+  // 초기화
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab').forEach(t => {
+      tap(t, () => switchTab(t.dataset.tab));
+    });
+    tap('btnGenSingle', genSingle);
+    tap('btnGenBatch', genBatch);
+    tap('btnPrint', () => window.print());
+    tap('btnPrintBatch', () => window.print());
+    tap('btnDownload', downloadSingle);
+
+    // 엔터로 생성
+    $('locInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') { e.preventDefault(); genSingle(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

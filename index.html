@@ -98,6 +98,7 @@ html, body {
 }
 .acc.c-hq:hover, .acc.c-hq:focus-within { background: rgba(125,211,252,0.08); border-color: rgba(125,211,252,0.4); }
 .acc.c-f1:hover, .acc.c-f1:focus-within { background: rgba(94,234,212,0.08); border-color: rgba(94,234,212,0.4); }
+.acc.c-wy:hover, .acc.c-wy:focus-within { background: rgba(163,230,53,0.08); border-color: rgba(163,230,53,0.4); }
 .acc.c-repair:hover, .acc.c-repair:focus-within { background: rgba(252,165,165,0.08); border-color: rgba(252,165,165,0.4); }
 .acc.c-f2:hover, .acc.c-f2:focus-within { background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.4); }
 .acc.c-imp:hover, .acc.c-imp:focus-within { background: rgba(196,181,253,0.08); border-color: rgba(196,181,253,0.4); }
@@ -115,6 +116,7 @@ html, body {
 }
 .acc.c-hq[open] { box-shadow: 0 4px 20px rgba(125,211,252,0.22); border-color: rgba(125,211,252,0.55); }
 .acc.c-f1[open] { box-shadow: 0 4px 20px rgba(94,234,212,0.22); border-color: rgba(94,234,212,0.55); }
+.acc.c-wy[open] { box-shadow: 0 4px 20px rgba(163,230,53,0.22); border-color: rgba(163,230,53,0.55); }
 .acc.c-repair[open] { box-shadow: 0 4px 20px rgba(252,165,165,0.22); border-color: rgba(252,165,165,0.55); }
 .acc.c-f2[open] { box-shadow: 0 4px 20px rgba(147,197,253,0.22); border-color: rgba(147,197,253,0.55); }
 .acc.c-imp[open] { box-shadow: 0 4px 20px rgba(196,181,253,0.22); border-color: rgba(196,181,253,0.55); }
@@ -142,6 +144,7 @@ html, body {
 }
 .acc.c-hq[open] .icon     { box-shadow: 0 0 16px rgba(125,211,252,0.4); }
 .acc.c-f1[open] .icon     { box-shadow: 0 0 16px rgba(94,234,212,0.4); }
+.acc.c-wy[open] .icon     { box-shadow: 0 0 16px rgba(163,230,53,0.4); }
 .acc.c-repair[open] .icon { box-shadow: 0 0 16px rgba(252,165,165,0.4); }
 .acc.c-f2[open] .icon     { box-shadow: 0 0 16px rgba(147,197,253,0.4); }
 .acc.c-imp[open] .icon    { box-shadow: 0 0 16px rgba(196,181,253,0.4); }
@@ -154,6 +157,7 @@ html, body {
 }
 .acc.c-hq[open] .title     { color: #bae6fd; }
 .acc.c-f1[open] .title     { color: #99f6e4; }
+.acc.c-wy[open] .title     { color: #d9f99d; }
 .acc.c-repair[open] .title { color: #fecaca; }
 .acc.c-f2[open] .title     { color: #bfdbfe; }
 .acc.c-imp[open] .title    { color: #ddd6fe; }
@@ -178,6 +182,7 @@ html, body {
 
 .acc.c-hq .icon     { background: linear-gradient(135deg, rgba(56,189,248,0.2), rgba(14,165,233,0.3)); color: #7dd3fc; }
 .acc.c-f1 .icon     { background: linear-gradient(135deg, rgba(45,212,191,0.2), rgba(20,184,166,0.3)); color: #5eead4; }
+.acc.c-wy .icon     { background: linear-gradient(135deg, rgba(163,230,53,0.2), rgba(132,204,22,0.3)); color: #bef264; }
 .acc.c-repair .icon { background: linear-gradient(135deg, rgba(248,113,113,0.2), rgba(239,68,68,0.3)); color: #fca5a5; }
 .acc.c-f2 .icon     { background: linear-gradient(135deg, rgba(96,165,250,0.2), rgba(59,130,246,0.3)); color: #93c5fd; }
 .acc.c-imp .icon    { background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(139,92,246,0.3)); color: #c4b5fd; }
@@ -343,6 +348,19 @@ body.locked { overflow: hidden; }
         <div class="s-text">
           <div class="s-label" data-i18n="menu_mold_f1">금형부품 재고관리</div>
           <div class="s-desc" data-i18n="menu_mold_f1_desc">프레스부품 입출고 / 재고 조회</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
+  <details class="acc c-wy">
+    <summary><div class="icon">🏭</div><div class="title" data-i18n="fwy">재고(원영)</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="wonyoung_factory.html">
+        <div class="s-icon">📦</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_mold_wy">금형부품 재고관리</div>
+          <div class="s-desc" data-i18n="menu_mold_wy_desc">원영 입출고 / 재고 조회</div>
         </div>
         <div class="s-arrow">›</div>
       </a>
@@ -514,6 +532,7 @@ const I18N = {
     info_days: '일',
     hq: '재고(본사)',
     f1: '재고(1공장)',
+    fwy: '재고(원영)',
     repair: '금형수리',
     tryout: 'Tryout',
     improvement: '개선활동',
@@ -522,6 +541,8 @@ const I18N = {
     menu_mold_hq_desc: '소모품 입출고 / 재고 조회',
     menu_mold_f1: '금형부품 재고관리',
     menu_mold_f1_desc: '프레스부품 입출고 / 재고 조회',
+    menu_mold_wy: '금형부품 재고관리',
+    menu_mold_wy_desc: '원영 입출고 / 재고 조회',
     po: '금형부품 발주관리',
     menu_po: '발주 / 외주현황 / 진행보고서',
     menu_po_desc: '외주업체별 발주·입고관리 / 이사 보고용 PDF',
@@ -571,6 +592,7 @@ const I18N = {
     info_days: ' Tage',
     hq: 'Lager (Zentrale)',
     f1: 'Lager (Werk 1)',
+    fwy: 'Lager (Wonyoung)',
     repair: 'Werkzeugreparatur',
     tryout: 'Tryout',
     improvement: 'Verbesserung',
@@ -579,6 +601,8 @@ const I18N = {
     menu_mold_hq_desc: 'Wareneingang/-ausgang / Bestand',
     menu_mold_f1: 'Lagerverwaltung (Formteile)',
     menu_mold_f1_desc: 'Pressteile-Ein-/Ausgang / Bestand',
+    menu_mold_wy: 'Lagerverwaltung (Formteile)',
+    menu_mold_wy_desc: 'Wonyoung Ein-/Ausgang / Bestand',
     po: 'Bestellverwaltung Formteile',
     menu_po: 'Bestellung / Lieferanten / Fortschrittsbericht',
     menu_po_desc: 'Bestell-/Wareneingang je Lieferant / PDF-Bericht',
@@ -628,6 +652,7 @@ const I18N = {
     info_days: ' күн',
     hq: 'Қойма (Бас кеңсе)',
     f1: 'Қойма (1-зауыт)',
+    fwy: 'Қойма (Wonyoung)',
     repair: 'Қалыпты жөндеу',
     tryout: 'Tryout',
     improvement: 'Жақсарту',
@@ -636,6 +661,8 @@ const I18N = {
     menu_mold_hq_desc: 'Кіріс/шығыс / қалдықты қарау',
     menu_mold_f1: 'Қойма басқару (қалып бөлшектері)',
     menu_mold_f1_desc: 'Баспасөз бөлшектерінің кірісі/шығысы / қалдықты қарау',
+    menu_mold_wy: 'Қойма басқару (қалып бөлшектері)',
+    menu_mold_wy_desc: 'Wonyoung кірісі/шығысы / қалдықты қарау',
     po: 'Қалып бөлшектерін тапсырыс беру',
     menu_po: 'Тапсырыс / жеткізушілер / есеп',
     menu_po_desc: 'Жеткізуші бойынша тапсырыс/қабылдау / PDF есебі',

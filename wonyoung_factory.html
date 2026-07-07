@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>원영 재고관리 v1.3</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg-dark:    #0f172a;
+  --bg-card:    #1e293b;
+  --bg-card-hi: #283447;
+  --border:    #334155;
+  --border-hi: #475569;
+  --text:      #e2e8f0;
+  --text-mid:  #cbd5e1;
+  --text-sub:  #94a3b8;
+  --text-dim:  #64748b;
+  --ice:       #7dd3fc;
+  --ice-lt:    #bae6fd;
+  --orange:    #fdba74;
+  --green:     #4ade80;
+  --rose:      #fca5a5;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  margin: 0; padding: 0;
+  background: var(--bg-dark);
+  min-height: 100vh; color: var(--text);
+}
+
+/* ========== 헤더 ========== */
+.header {
+  padding: 28px 20px 22px; text-align: center;
+  position: relative;
+  background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  margin: 0 0 6px 0; font-size: 22px; font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--ice);
+}
+.header h1 .ver {
+  font-size: 11px; opacity: 0.65; margin-left: 8px; font-weight: 500;
+  vertical-align: middle; color: var(--text-sub);
+  cursor: pointer;
+}
+.header p {
+  margin: 0; font-size: 13px; color: var(--text-sub);
+}
+
+/* 뒤로가기 버튼 */
+.back-btn {
+  position: absolute; top: 18px; left: 16px;
+  background: rgba(125,211,252,0.08);
+  border: 1px solid rgba(125,211,252,0.25);
+  color: var(--ice); padding: 6px 12px 6px 10px;
+  border-radius: 16px; font-size: 12px;
+  text-decoration: none; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.back-btn:active { background: rgba(125,211,252,0.18); }
+
+/* 사용자 표시 배지 */
+.user-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(125,211,252,0.08);
+  border: 1px solid rgba(125,211,252,0.25);
+  color: var(--ice); padding: 5px 12px; border-radius: 14px;
+  font-size: 12px; margin-top: 10px; cursor: pointer;
+  font-weight: 500;
+}
+.user-badge .ic { font-size: 13px; }
+.user-badge.empty {
+  background: rgba(148,163,184,0.08);
+  border-color: rgba(148,163,184,0.25);
+  color: var(--text-sub);
+}
+
+/* ========== 본문 컨테이너 ========== */
+.container {
+  padding: 20px 16px 40px;
+  max-width: 700px; margin: 0 auto;
+}
+
+.section-title {
+  font-size: 11px; color: var(--text-sub); font-weight: 700;
+  margin: 18px 4px 12px 4px;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+  margin-left: 8px;
+}
+
+/* ========== 카드 그리드 ========== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 14px;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
+  text-align: center; min-height: 140px;
+  text-decoration: none; color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: var(--accent, var(--ice));
+  opacity: 0.7;
+}
+.card:active {
+  transform: scale(0.97);
+  background: var(--bg-card-hi);
+  border-color: var(--border-hi);
+}
+.card .icon {
+  width: 54px; height: 54px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  background: var(--accent-bg, rgba(125,211,252,0.12));
+  border: 1px solid var(--accent-border, rgba(125,211,252,0.3));
+}
+.card .label {
+  font-size: 14px; font-weight: 700; line-height: 1.3;
+  color: var(--text);
+}
+.card .desc {
+  font-size: 11px; color: var(--text-sub); line-height: 1.35;
+}
+
+/* 카드 색상 변형 (좌측 상단 라인 색상) */
+.card.c1 {
+  --accent: #4ade80;
+  --accent-bg: rgba(74,222,128,0.12);
+  --accent-border: rgba(74,222,128,0.3);
+}
+.card.c1 .icon { color: #4ade80; }
+
+.card.c2 {
+  --accent: #7dd3fc;
+  --accent-bg: rgba(125,211,252,0.12);
+  --accent-border: rgba(125,211,252,0.3);
+}
+.card.c2 .icon { color: #7dd3fc; }
+
+.card.c3 {
+  --accent: #fdba74;
+  --accent-bg: rgba(253,186,116,0.12);
+  --accent-border: rgba(253,186,116,0.3);
+}
+.card.c3 .icon { color: #fdba74; }
+
+.card.c4 {
+  --accent: #c4b5fd;
+  --accent-bg: rgba(196,181,253,0.12);
+  --accent-border: rgba(196,181,253,0.3);
+}
+.card.c4 .icon { color: #c4b5fd; }
+
+.card.c5 {
+  --accent: #fca5a5;
+  --accent-bg: rgba(252,165,165,0.12);
+  --accent-border: rgba(252,165,165,0.3);
+}
+.card.c5 .icon { color: #fca5a5; }
+
+.card.c6 {
+  --accent: #5eead4;
+  --accent-bg: rgba(94,234,212,0.12);
+  --accent-border: rgba(94,234,212,0.3);
+}
+.card.c6 .icon { color: #5eead4; }
+
+/* coming-soon */
+.card.coming-soon {
+  background: var(--bg-dark);
+  border-color: var(--border);
+  cursor: default; opacity: 0.5;
+}
+.card.coming-soon::before { opacity: 0.2; }
+.card.coming-soon:active { transform: none; background: var(--bg-dark); }
+.card.coming-soon .icon {
+  background: rgba(148,163,184,0.08) !important;
+  border-color: rgba(148,163,184,0.2) !important;
+  color: var(--text-dim) !important;
+}
+.card.coming-soon .label { color: var(--text-dim); }
+.card.coming-soon .desc { color: var(--text-dim); }
+
+/* ========== 푸터 ========== */
+.footer {
+  text-align: center; margin-top: 32px;
+  font-size: 11px; color: var(--text-dim);
+}
+/* 언어 선택 탭 */
+.lang-tabs {
+  display: flex; gap: 4px; justify-content: center; margin-top: 8px;
+}
+.lang-tab {
+  font-size: 18px; padding: 4px 10px; border-radius: 14px;
+  background: rgba(125,211,252,0.06);
+  border: 1px solid rgba(125,211,252,0.2);
+  cursor: pointer; transition: all 0.15s;
+  filter: grayscale(40%) opacity(0.6);
+}
+.lang-tab:active { transform: scale(0.92); }
+.lang-tab.active {
+  background: rgba(125,211,252,0.18);
+  border-color: var(--ice);
+  filter: none;
+  box-shadow: 0 0 8px rgba(125,211,252,0.3);
+}
+</style>
+</head>
+<body>
+<!-- ============ 인증 가드 (모든 페이지 공통) ============ -->
+<script>
+(function(){
+  'use strict';
+  // PIN 인증 세션 키 (index.html에서 저장)
+  var LK_AUTH = 'mm_user_session';
+  var LK_LAST_LOC = 'mm_last_loc';
+
+  function getSession(){
+    try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+  }
+
+  var s = getSession();
+
+  /* 1) 미인증 또는 세션 만료 → 메인으로 강제 이동 (페이지 렌더 차단) */
+  if(!s || !s.exp || s.exp <= Date.now()){
+    try{localStorage.removeItem(LK_AUTH)}catch(e){}
+    /* 페이지가 렌더되기 전 즉시 리다이렉트 */
+    location.replace('index.html');
+    /* DOM 차단 */
+    document.documentElement.style.display = 'none';
+    throw new Error('Unauthorized - redirecting');
+  }
+
+  /* 2) 세션을 호환 키에 자동 미러링 */
+  try{
+    if(s.role === 'admin'){
+      localStorage.setItem('msmUser_name', '관리자');
+      localStorage.setItem('msmUser_dept', '');
+    } else {
+      localStorage.setItem('msmUser_name', s.name || '');
+      localStorage.setItem('msmUser_dept', s.dept || '');
+    }
+  }catch(e){}
+
+  /* 3) 페이지 진입 위치 추적 (Supabase 비동기 INSERT, 실패해도 동작에 영향 없음) */
+  (function trackPageEntry(){
+    if(!s.id) return;
+    /* 마스터(관리자)는 추적 안 함 */
+    if(s.role === 'admin') return;
+
+    var SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+    var TBL_LOC = 'mm_user_location';
+    var pageName = (location.pathname.split('/').pop()||'').replace('.html','');
+
+    /* 같은 IP 5분 내 재접근은 스킵 (DB 부담 방지) */
+    var last = null;
+    try{ last = JSON.parse(localStorage.getItem(LK_LAST_LOC)||'null'); }catch(e){}
+    var now = Date.now();
+    if(last && last.ts && (now - last.ts) < 5*60*1000 && last.page === pageName){
+      return;  /* 5분 내 같은 페이지 재진입은 무시 */
+    }
+
+    /* IP 조회 후 INSERT */
+    fetch('https://ipapi.co/json/').then(function(r){return r.json()}).then(function(d){
+      var payload = {
+        user_id: s.id, user_name: s.name||null,
+        factory: s.factory||null, dept: s.dept||null,
+        lat: d.latitude||null, lng: d.longitude||null,
+        ip: d.ip||null, city: d.city||null, region: d.region||null,
+        country: d.country_name||null, org: d.org||null,
+        device_info: (navigator.userAgent||'').slice(0,180) + ' | page:' + pageName,
+        error_code: null,
+        recorded_at: new Date().toISOString()
+      };
+      fetch(SUPABASE_URL+'/rest/v1/'+TBL_LOC, {
+        method:'POST',
+        headers:{
+          'apikey':SUPABASE_KEY,
+          'Authorization':'Bearer '+SUPABASE_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      }).then(function(){
+        localStorage.setItem(LK_LAST_LOC, JSON.stringify({
+          ip:d.ip, page:pageName, ts:now
+        }));
+      }).catch(function(){});
+    }).catch(function(){});
+  })();
+
+  /* 4) 세션을 전역에 노출 (개별 페이지 스크립트에서 사용) */
+  window.__msmSession = s;
+})();
+</script>
+<!-- ======================================================== -->
+
+<div class="header">
+  <a href="index.html" class="back-btn" data-i18n="back">‹ 메인</a>
+  <h1><span data-i18n-keep>⚙️ </span><span data-i18n="title">금형부품재고관리</span> <span class="ver" onclick="showVer()">v1.3</span></h1>
+  <div class="lang-tabs">
+    <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
+    <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
+    <button class="lang-tab" data-lang="kk" title="Қазақша">🇰🇿</button>
+  </div>
+  <div class="user-badge empty" id="userBadge">
+    <span class="ic">👤</span>
+    <span id="userBadgeText" data-i18n="login_required">내 정보 등록</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-title"><span data-i18n-keep>📦 </span><span data-i18n="sec_inventory">재고 / 자재</span></div>
+  <div class="grid">
+    <a class="card c1" href="wonyoung_factory_input.html">
+      <div class="icon">📦</div>
+      <div class="label" data-i18n="card_inventory">재고관리</div>
+      <div class="desc" data-i18n="card_inventory_desc">소모품 입출고 / 재고 조회</div>
+    </a>
+
+    <a class="card c2" href="wonyoung_factory_QR.html">
+      <div class="icon">🔳</div>
+      <div class="label" data-i18n="card_qr">위치 QR 생성</div>
+      <div class="desc" data-i18n="card_qr_desc">랙별 QR 라벨 만들기</div>
+    </a>
+  </div>
+
+  <div class="section-title"><span data-i18n-keep>📋 </span><span data-i18n="sec_report">보고 / 결재</span></div>
+  <div class="grid">
+    <a class="card c4" href="wonyoung_factory_report.html">
+      <div class="icon">📄</div>
+      <div class="label" data-i18n="card_report">보고서</div>
+      <div class="desc" data-i18n="card_report_desc">월보고/발주/폐기 PDF·Excel</div>
+    </a>
+  </div>
+
+  <div class="footer">
+    v1.3 · msm Smart Factory · 원영
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ 다국어 시스템 ============ */
+const I18N = {
+  ko: {
+    back: '‹ 메인',
+    title: '원영 재고관리',
+    login_required: '내 정보 등록',
+    login_needed: '로그인 필요',
+    admin: '관리자',
+    sec_inventory: '재고 / 자재',
+    sec_report: '보고 / 결재',
+    card_inventory: '재고관리',
+    card_inventory_desc: '소모품 입출고 / 재고 조회',
+    card_qr: '위치 QR 생성',
+    card_qr_desc: '랙별 QR 라벨 만들기',
+    card_report: '보고서',
+    card_report_desc: '월보고/발주/폐기 PDF·Excel'
+  },
+  de: {
+    back: '‹ Start',
+    title: 'Lagerverwaltung (Wonyoung)',
+    login_required: 'Anmelden',
+    login_needed: 'Anmeldung erforderlich',
+    admin: 'Administrator',
+    sec_inventory: 'Lager / Material',
+    sec_report: 'Berichte / Freigabe',
+    card_inventory: 'Lagerverwaltung',
+    card_inventory_desc: 'Wareneingang/-ausgang / Bestand',
+    card_qr: 'Standort-QR',
+    card_qr_desc: 'QR-Etiketten pro Regal erstellen',
+    card_report: 'Bericht',
+    card_report_desc: 'Monats-/Bestell-/Verwerfung PDF·Excel'
+  },
+  kk: {
+    back: '‹ Басты',
+    title: 'Қойма басқару (Wonyoung)',
+    login_required: 'Кіру қажет',
+    login_needed: 'Кіру керек',
+    admin: 'Әкімші',
+    sec_inventory: 'Қойма / Материалдар',
+    sec_report: 'Есеп / Бекіту',
+    card_inventory: 'Қойма басқару',
+    card_inventory_desc: 'Кіріс/шығыс / қалдықты қарау',
+    card_qr: 'Орын QR жасау',
+    card_qr_desc: 'Сөре бойынша QR белгілерін жасау',
+    card_report: 'Есеп',
+    card_report_desc: 'Айлық / тапсырыс / жою PDF·Excel'
+  }
+};
+
+const LK_LANG = 'msm_lang';
+
+function getLang(){
+  return localStorage.getItem(LK_LANG) || 'ko';
+}
+
+function setLang(lang){
+  if(!I18N[lang]) lang = 'ko';
+  localStorage.setItem(LK_LANG, lang);
+  applyLang(lang);
+}
+
+function applyLang(lang){
+  const dict = I18N[lang] || I18N.ko;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if(dict[key]) el.textContent = dict[key];
+  });
+  // <html lang> 속성도 업데이트
+  document.documentElement.lang = lang;
+  // 탭 활성화
+  document.querySelectorAll('.lang-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.lang === lang);
+  });
+  // 페이지별 hook
+  if(typeof window.onLangChange === 'function'){
+    try{ window.onLangChange(lang); }catch(e){}
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // 언어 탭 클릭
+  document.querySelectorAll('.lang-tab').forEach(t => {
+    t.addEventListener('click', () => setLang(t.dataset.lang));
+  });
+  applyLang(getLang());
+});
+
+function showVer(){
+  alert(
+    '⚙️ 원영 재고관리 변경 이력\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    '★ 원영 공장 버전 (1공장 v1.3 기반 분리)\n' +
+    '• 전용 테이블: wy_inventory_items / wy_inventory_history / wy_reports\n\n' +
+    'v1.3 (현재)\n' +
+    '• 한국어 제목 변경: 재고관리(금형부품) → 금형부품재고관리\n\n' +
+    'v1.2\n' +
+    '• 다국어 지원: 한국어 / 독일어 / 카자흐스탄어\n' +
+    '• 선택한 언어 localStorage 저장 (페이지 이동해도 유지)\n\n' +
+    'v1.1\n' +
+    '• 제목 변경: 1공장 · 프레스양산 → 재고관리(금형부품)\n\n' +
+    'v1.0\n' +
+    '• 1공장 메인 페이지 오픈\n' +
+    '• 본사와 동일한 다크테마 + 인증가드\n' +
+    '• 1공장 전용 별도 DB 테이블 사용\n' +
+    '  (wy_inventory_items / wy_inventory_history)'
+  );
+}
+
+(function() {
+  // PIN 인증 세션 키 (index.html에서 저장)
+  const LK_AUTH = 'mm_user_session';
+  // 다른 페이지(재고관리/보고서) 호환용 키
+  const K_DEPT = 'msmUser_dept';
+  const K_NAME = 'msmUser_name';
+
+  function $(id){return document.getElementById(id)}
+
+  function getSession(){
+    try{return JSON.parse(localStorage.getItem(LK_AUTH)||'null')}catch(e){return null}
+  }
+
+  /* 세션 정보를 다른 페이지(stock_mold/stock_report) 호환 키에 자동 미러링 */
+  function mirrorToLegacyKeys(s){
+    if(!s) return;
+    if(s.role === 'admin'){
+      localStorage.setItem(K_NAME, '관리자');
+      localStorage.setItem(K_DEPT, '');
+    }else{
+      localStorage.setItem(K_NAME, s.name || '');
+      localStorage.setItem(K_DEPT, s.dept || '');
+    }
+  }
+
+  function refreshBadge(s){
+    const badge = $('userBadge');
+    const text = $('userBadgeText');
+    const dict = I18N[getLang()] || I18N.ko;
+    if(!s){
+      badge.classList.add('empty');
+      text.textContent = dict.login_needed;
+      return;
+    }
+    badge.classList.remove('empty');
+    if(s.role === 'admin'){
+      text.textContent = dict.admin;
+      badge.style.color = '#fdba74';
+      badge.style.background = 'rgba(253,186,116,0.1)';
+      badge.style.borderColor = 'rgba(253,186,116,0.3)';
+    }else{
+      let label = s.name || '';
+      if(s.factory) label = s.factory + ' · ' + label;
+      if(s.dept)    label += ' · ' + s.dept;
+      if(s.position) label += ' ' + s.position;
+      text.textContent = label;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const s = getSession();
+
+    // 1) 미인증 또는 세션 만료 → 메인으로 강제 이동
+    if(!s || !s.exp || s.exp <= Date.now()){
+      try{localStorage.removeItem(LK_AUTH)}catch(e){}
+      location.replace('index.html');
+      return;
+    }
+
+    // 2) 세션을 호환 키에 미러링 (다른 페이지 자동 채움용)
+    mirrorToLegacyKeys(s);
+
+    // 3) 상단 배지 표시
+    refreshBadge(s);
+
+    // 4) 언어 변경 시 배지 다시 그리기
+    window.onLangChange = function(){ refreshBadge(s); };
+
+    // 5) 배지 클릭 시 세션 정보 안내
+    $('userBadge').addEventListener('click', () => {
+      const expDate = new Date(s.exp);
+      const remainDays = Math.max(0, Math.ceil((s.exp - Date.now())/(24*60*60*1000)));
+      alert(
+        '👤 ' + (s.role === 'admin' ? '관리자' : (s.name || '-')) + '\n' +
+        (s.factory ? '🏭 공장: ' + s.factory + '\n' : '') +
+        (s.dept    ? '📂 부서: ' + s.dept + '\n' : '') +
+        (s.position? '🎖 직위: ' + s.position + '\n' : '') +
+        '\n⏱ 자동 잠금까지: ' + remainDays + '일'
+      );
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

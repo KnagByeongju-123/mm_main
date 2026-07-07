@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>금형부품재고관리 v1.17</title>
+<title>원영 금형부품재고관리 v1.16</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -553,7 +553,7 @@ input[type="file"] { display: none; }
 <!-- ======================================================== -->
 
 <header>
-  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.17</span></h1>
+  <h1><span data-i18n-keep>📦 </span><span data-i18n="page_title">금형부품재고관리</span> <span class="ver" onclick="showVerInput()">v1.16</span></h1>
   <div class="lang-tabs">
     <button class="lang-tab" data-lang="ko" title="한국어">🇰🇷</button>
     <button class="lang-tab" data-lang="de" title="Deutsch">🇩🇪</button>
@@ -675,7 +675,7 @@ input[type="file"] { display: none; }
 <button class="fab" id="btnAdd">+</button>
 
 <div class="app-footer">
-  금형부품재고관리 v1.17 · msm · 프레스양산
+  원영 금형부품재고관리 v1.16 · msm · 원영
 </div>
 
 <div id="errMsg"></div>
@@ -900,7 +900,7 @@ input[type="file"] { display: none; }
     </div>
 
     <div id="moveWarnBox" style="background:#fff3cd;color:#664d03;padding:10px;border-radius:6px;font-size:12px;line-height:1.5;margin-bottom:12px;border:1px solid #ffe69c">
-      ⚠️ <b>이동 모드:</b> 선택한 품목이 현재 위치(1공장)에서 <b>사라지고</b> 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.
+      ⚠️ <b>이동 모드:</b> 선택한 품목이 현재 위치(원영)에서 <b>사라지고</b> 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.
     </div>
 
     <div class="modal-buttons">
@@ -954,11 +954,11 @@ const I18N = {
     move_desc: '개 품목을 선택했습니다. 어느 공장으로 이동할까요?',
     move_target: '이동 대상', move_memo: '이동 사유 / 메모',
     move_memo_ph: '예: 본사 반환 / 사용 종료',
-    move_warn: '⚠️ <b>주의:</b> 선택한 품목이 현재 위치(1공장)에서 사라지고 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.',
+    move_warn: '⚠️ <b>주의:</b> 선택한 품목이 현재 위치(원영)에서 사라지고 대상 공장 재고에 추가됩니다. 이력에는 [이동] 기록이 남습니다.',
     move_exec: '이동 실행', move_to: '으로 이동'
   },
   de: {
-    page_title: 'Werk 1 Lagerverwaltung',
+    page_title: 'Wonyoung Lagerverwaltung',
     tab_inv: 'Lager', tab_hist: 'Verlauf', tab_export: 'Import/Export',
     sum_total: 'Alle Artikel', sum_low: 'Knapp', sum_value: 'Wert (10k KRW)',
     low_only_badge: '✓ Nur knapp', low_only_title: 'Nur knappe Artikel',
@@ -1002,7 +1002,7 @@ const I18N = {
     move_exec: 'Verschieben', move_to: ' verschieben'
   },
   kk: {
-    page_title: '1-зауыт қойма басқару',
+    page_title: 'Wonyoung қойма басқару',
     tab_inv: 'Қойма', tab_hist: 'Тарих', tab_export: 'Топтық өңдеу',
     sum_total: 'Барлық тауар', sum_low: 'Аз қалдық', sum_value: 'Құны (10мың вон)',
     low_only_badge: '✓ Тек аз', low_only_title: 'Аз қалдық сүзгі',
@@ -1101,9 +1101,9 @@ function showVerInput(){
   alert(
     '📦 금형부품재고관리 변경 이력\n' +
     '━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-    'v1.17 (현재)\n' +
-    '• 이동 대상 공장에 원영 추가 (wy_inventory_*)\n\n' +
-    'v1.16\n' +
+    '★ 원영 공장 버전 (1공장 v1.16 기반 분리)\n' +
+    '• 전용 테이블: wy_inventory_items / wy_inventory_history\n\n' +
+    'v1.16 (현재)\n' +
     '• 재고부족 카드 클릭 → 재고부족 품목만 필터링\n' +
     '  - 다시 클릭하면 전체 보기로 복귀\n' +
     '  - 활성 시 ✓ 부족만 뱃지 표시 (ko/de/kk 다국어)\n' +
@@ -1184,9 +1184,9 @@ function showVerInput(){
 (function() {
   'use strict';
 
-  const LS = 'f1Inv_';
-  const T_ITEMS = 'f1_inventory_items';
-  const T_HIST = 'f1_inventory_history';
+  const LS = 'wyInv_';
+  const T_ITEMS = 'wy_inventory_items';
+  const T_HIST = 'wy_inventory_history';
 
   // 다중 선택 + 이동 기능: 공장별 테이블 매핑
   // items 테이블은 모든 공장이 같은 스키마: stock, min_stock, price, photo
@@ -1198,7 +1198,7 @@ function showVerInput(){
     'f3':  { name: '3공장', items: 'f3_inventory_items',    hist: 'f3_inventory_history',    histExtra: false },
     'wy':  { name: '원영',  items: 'wy_inventory_items',    hist: 'wy_inventory_history',    histExtra: false }
   };
-  const CURRENT_FACTORY = 'f1';
+  const CURRENT_FACTORY = 'wy';
 
   // 품목 그대로 복사 (id/타임스탬프만 제외)
   // 공장 간 공통 안전 필드만 사용 (모든 공장 _items 테이블에 존재)
