@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v2.0</title>
+<title>스마트팩토리 v2.1</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -294,6 +294,13 @@ body.locked { overflow: hidden; }
 }
 .pl-key.fn { background: transparent; border: none; font-size: 18px; color: #94a3b8; box-shadow: none; }
 .pl-lockout { color: #fda4af; font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+
+/* 업무현황 카드 테마 (amber) */
+.acc.c-work:hover, .acc.c-work:focus-within { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.4); }
+.acc.c-work[open] { box-shadow: 0 4px 20px rgba(251,191,36,0.22); border-color: rgba(251,191,36,0.55); }
+.acc.c-work[open] .icon { box-shadow: 0 0 16px rgba(251,191,36,0.4); }
+.acc.c-work[open] .title { color: #fde68a; }
+.acc.c-work .icon { background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.3)); color: #fcd34d; }
 </style>
 </head>
 <body class="locked">
@@ -310,7 +317,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v2.0</span></h1>
+  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v2.1</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -447,6 +454,19 @@ body.locked { overflow: hidden; }
       </a>
     </div>
   </details>
+  <details class="acc c-work">
+    <summary><div class="icon">🗂</div><div class="title" data-i18n="workstatus">업무현황</div><div class="count">1</div><div class="arrow">›</div></summary>
+    <div class="acc-body">
+      <a class="sub-item" href="work_status.html">
+        <div class="s-icon">👥</div>
+        <div class="s-text">
+          <div class="s-label" data-i18n="menu_workstatus">인원별 업무현황</div>
+          <div class="s-desc" data-i18n="menu_workstatus_desc">모바일 입력 → PC 실시간 공유 / 일자별 조회</div>
+        </div>
+        <div class="s-arrow">›</div>
+      </a>
+    </div>
+  </details>
   <details class="acc c-master">
     <summary><div class="icon">⚙️</div><div class="title" data-i18n="master">마스터</div><div class="count">2</div><div class="arrow">›</div></summary>
     <div class="acc-body">
@@ -484,7 +504,7 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v2.0 · msm Smart Factory · <span data-i18n="footer_mod">Tryout 모듈</span></div>
+  <div class="footer">v2.1 · msm Smart Factory · <span data-i18n="footer_mod">업무현황 모듈</span></div>
 </div>
 
 <script>
@@ -559,6 +579,9 @@ const I18N = {
     menu_daily_desc: '호기별 생산수·정지·불량·마감 실시간 작성',
     menu_improvement: '개선활동 보고',
     menu_improvement_desc: '문제 발생 시 개선 전/후 비교 및 효과 기록',
+    workstatus: '업무현황',
+    menu_workstatus: '인원별 업무현황',
+    menu_workstatus_desc: '모바일 입력 → PC 실시간 공유 / 일자별 조회',
     menu_security: '보안 마스터',
     menu_security_desc: 'PIN 관리 / 로그인 위치 / 차단 / 알림',
     menu_mold_master: '금형마스터',
@@ -566,7 +589,7 @@ const I18N = {
     board: '수정요청 게시판',
     menu_board: '수정요청 · 버그신고 · 공지',
     menu_board_desc: '누구나 자유롭게 작성 가능 (PIN 불필요)',
-    footer_mod: 'Tryout 모듈'
+    footer_mod: '업무현황 모듈'
   },
   de: {
     pin_sub: 'Bitte PIN eingeben',
@@ -619,6 +642,9 @@ const I18N = {
     menu_daily_desc: 'Stückzahl, Stopps, Ausschuss je Presse in Echtzeit',
     menu_improvement: 'Verbesserungsbericht',
     menu_improvement_desc: 'Vorher/Nachher-Vergleich und Wirksamkeit',
+    workstatus: 'Arbeitsstatus',
+    menu_workstatus: 'Arbeitsstatus je Mitarbeiter',
+    menu_workstatus_desc: 'Mobile Eingabe → Echtzeit am PC / Tagesansicht',
     menu_security: 'Sicherheits-Master',
     menu_security_desc: 'PIN-Verwaltung / Login-Standorte / Sperren / Benachrichtigungen',
     menu_mold_master: 'Formen-Master',
@@ -626,7 +652,7 @@ const I18N = {
     board: 'Anfrage-Forum',
     menu_board: 'Änderungsanfragen · Fehler · Hinweise',
     menu_board_desc: 'Für alle zugänglich (keine PIN erforderlich)',
-    footer_mod: 'Tryout-Modul'
+    footer_mod: 'Arbeitsstatus-Modul'
   },
   kk: {
     pin_sub: 'PIN кодын енгізіңіз',
@@ -679,6 +705,9 @@ const I18N = {
     menu_daily_desc: 'Пресс бойынша өнім саны, тоқтау, ақау нақты уақытта',
     menu_improvement: 'Жақсарту есебі',
     menu_improvement_desc: 'Алдын/Соңын салыстыру және нәтижелілік',
+    workstatus: 'Жұмыс жағдайы',
+    menu_workstatus: 'Қызметкер бойынша жұмыс жағдайы',
+    menu_workstatus_desc: 'Мобильді енгізу → ДК-де нақты уақытта / күн бойынша',
     menu_security: 'Қауіпсіздік шебері',
     menu_security_desc: 'PIN кодын басқару / Кіру орны / Бұғаттау / Хабарламалар',
     menu_mold_master: 'Қалып шебері',
@@ -686,7 +715,7 @@ const I18N = {
     board: 'Өтінім тақтасы',
     menu_board: 'Өтінім · Қате · Хабарлама',
     menu_board_desc: 'Барлығына ашық (PIN қажет емес)',
-    footer_mod: 'Tryout модулі'
+    footer_mod: 'Жұмыс жағдайы модулі'
   }
 };
 
