@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>업무현황 v1.1</title>
+<title>업무현황 v1.2</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -107,6 +107,27 @@ details.panel > summary::-webkit-details-marker{ display:none; }
 
 .empty-msg{ text-align:center; color:#64748b; font-size:13px; padding:40px 10px; }
 
+/* 순서편집 모드 */
+.ordbar{
+  display:none; align-items:center; gap:8px; margin-bottom:8px;
+  background:rgba(56,189,248,.1); border:1px solid rgba(56,189,248,.35);
+  border-radius:10px; padding:8px 10px; font-size:12px; color:#7dd3fc; font-weight:700;
+}
+body.ordmode .ordbar{ display:flex; }
+.ordbar .r{ margin-left:auto; display:flex; gap:6px; }
+.card.ord{ cursor:grab; border-color:rgba(56,189,248,.4); background:rgba(56,189,248,.06); }
+.card.ord.dragging{ opacity:.4; }
+.card .mv{ display:none; flex-direction:column; gap:4px; justify-content:center; flex:0 0 34px; }
+body.ordmode .card .mv{ display:flex; }
+.card .mv button{
+  width:34px; height:26px; border-radius:7px; cursor:pointer; font-family:inherit;
+  background:rgba(15,23,42,.8); border:1px solid rgba(56,189,248,.4);
+  color:#7dd3fc; font-size:12px; font-weight:800; padding:0;
+}
+.card .mv button:active{ transform:scale(.92); }
+.card .hd{ display:none; align-items:center; color:#38bdf8; font-size:16px; flex:0 0 16px; }
+body.ordmode .card .hd{ display:flex; }
+
 /* 편집 시트 */
 .mask{ position:fixed; inset:0; background:rgba(2,6,23,.7); backdrop-filter:blur(3px);
   z-index:50; display:none; }
@@ -152,7 +173,7 @@ textarea:focus,.ip:focus{ outline:none; border-color:rgba(251,191,36,.6); }
 <div class="header">
   <div class="hrow">
     <button class="back" id="btnBack">←</button>
-    <h1>업무현황 <span class="ver">v1.1</span></h1>
+    <h1>업무현황 <span class="ver">v1.2</span></h1>
     <div class="me" id="meLabel"></div>
   </div>
   <div class="datebar">
@@ -178,11 +199,18 @@ textarea:focus,.ip:focus{ outline:none; border-color:rgba(251,191,36,.6); }
       <input class="srch" id="srch" type="search" placeholder="이름 검색">
       <div class="chips" style="margin-top:8px">
         <button class="chip" id="btnOnlyFilled">✍ 입력된 인원만</button>
+        <button class="chip" id="btnOrder">↕ 순서편집</button>
+        <button class="chip" id="btnOrderReset">↺ 순서초기화</button>
         <button class="chip" id="btnReloadUsers">👥 인원 새로고침</button>
         <button class="chip" id="btnCsv">⬇ CSV</button>
       </div>
     </div>
   </details>
+
+  <div class="ordbar" id="ordbar">
+    <span>↕ 순서편집 중 — ▲▼ 로 이동 (PC는 드래그) · 이 기기에만 저장됩니다</span>
+    <span class="r"><button class="chip" id="btnOrderDone">완료</button></span>
+  </div>
 
   <div class="stat" id="stat"></div>
   <div id="list"></div>
@@ -221,6 +249,7 @@ const TBL_USER = 'mm_user_pin';
 const TBL_WS   = 'mm_work_status';
 const LK_AUTH  = 'mm_user_session';
 const CK_USERS = 'ws_users_cache';      // 인원 마스터 캐시
+const CK_ORDER = 'ws_user_order';       // 인원 배치순서 (이 기기 전용 / localStorage)
 const CK_USERS_TTL = 12*60*60*1000;     // 12시간
 const POLL_MS  = 600000;                // 10분 증분 폴링 (수동 새로고침 / 화면 복귀 시 즉시 동기화)
 
@@ -245,6 +274,7 @@ let lastSync = null;            // 서버 updated_at 최대값 (증분 기준)
 let liveOn = true;
 let timer = null;
 let fFac = '', fDept = '', fQry = '', fFilled = false;
+let orderMode = false, dragId = null;
 let editUser = null, edStatus = '근무', edProg = 0;
 
 /* ================= 유틸 ================= */
@@ -278,7 +308,7 @@ async function loadUsers(force){
     try{
       const c = JSON.parse(localStorage.getItem(CK_USERS)||'null');
       if(c && c.t && (Date.now()-c.t) < CK_USERS_TTL && Array.isArray(c.list) && c.list.length){
-        users = c.list; return;
+        users = c.list; applyOrder(); return;
       }
     }catch(e){}
   }
@@ -288,6 +318,7 @@ async function loadUsers(force){
   const list = (await r.json()).filter(u=>u && u.name);
   users = list;
   try{ localStorage.setItem(CK_USERS, JSON.stringify({t:Date.now(), list})); }catch(e){}
+  applyOrder();
 }
 
 /* ================= 업무현황 조회 ================= */
@@ -341,6 +372,62 @@ function setLive(ok, n){
 function startTimer(){
   clearInterval(timer);
   if(liveOn) timer = setInterval(poll, POLL_MS);
+}
+
+/* ================= 배치순서 (localStorage) ================= */
+function loadOrder(){
+  try{
+    const a = JSON.parse(localStorage.getItem(CK_ORDER)||'null');
+    return Array.isArray(a) ? a : null;
+  }catch(e){ return null; }
+}
+function saveOrder(){
+  try{ localStorage.setItem(CK_ORDER, JSON.stringify(users.map(u=>u.id))); }catch(e){}
+}
+function applyOrder(){
+  const ord = loadOrder();
+  if(!ord || !ord.length) return;
+  const idx = {};
+  ord.forEach((id,i)=>{ idx[id] = i; });
+  users.sort((a,b)=>{
+    const ia = (idx[a.id]===undefined) ? 99999 : idx[a.id];
+    const ib = (idx[b.id]===undefined) ? 99999 : idx[b.id];
+    if(ia !== ib) return ia - ib;
+    return (a.name||'').localeCompare(b.name||'');
+  });
+}
+function resetOrder(){
+  if(!confirm('배치순서를 기본(공장·부서·이름)으로 되돌립니다.')) return;
+  localStorage.removeItem(CK_ORDER);
+  loadUsers(true).then(()=>{ buildFilters(); render(); toast('순서 초기화'); })
+                 .catch(()=>toast('초기화 실패'));
+}
+function moveUser(u, dir){
+  const vs = visibleUsers();
+  const i = vs.findIndex(x=>x.id===u.id);
+  const j = i + dir;
+  if(i < 0 || j < 0 || j >= vs.length) return;
+  const a = users.indexOf(u), b = users.indexOf(vs[j]);
+  users[a] = vs[j]; users[b] = u;
+  saveOrder(); render();
+  const el = els[u.id];
+  if(el) el.scrollIntoView({block:'center'});
+}
+function dropOn(targetId){
+  if(!dragId || dragId === targetId) return;
+  const from = users.findIndex(u=>u.id===dragId);
+  if(from < 0) return;
+  const moved = users.splice(from,1)[0];
+  const to = users.findIndex(u=>u.id===targetId);
+  users.splice(to < 0 ? users.length : to, 0, moved);
+  dragId = null;
+  saveOrder(); render();
+}
+function setOrderMode(on){
+  orderMode = on;
+  document.body.classList.toggle('ordmode', on);
+  document.getElementById('btnOrder').classList.toggle('on', on);
+  render();
 }
 
 /* ================= 렌더 ================= */
@@ -404,8 +491,28 @@ function makeCard(u){
   ft.appendChild(pg); ft.appendChild(upd); ft.appendChild(note);
 
   body.appendChild(top); body.appendChild(ct); body.appendChild(ft);
-  el.appendChild(bar); el.appendChild(body);
-  el.addEventListener('click', ()=>openEditor(u));
+
+  const hd = document.createElement('div'); hd.className = 'hd'; hd.textContent = '⋮⋮';
+
+  const mv = document.createElement('div'); mv.className = 'mv';
+  const up = document.createElement('button'); up.textContent = '▲';
+  const dn = document.createElement('button'); dn.textContent = '▼';
+  up.addEventListener('click', e=>{ e.stopPropagation(); moveUser(u,-1); });
+  dn.addEventListener('click', e=>{ e.stopPropagation(); moveUser(u, 1); });
+  mv.appendChild(up); mv.appendChild(dn);
+
+  el.appendChild(hd); el.appendChild(bar); el.appendChild(body); el.appendChild(mv);
+
+  if(orderMode){
+    el.classList.add('ord');
+    el.draggable = true;
+    el.addEventListener('dragstart', ()=>{ dragId = u.id; el.classList.add('dragging'); });
+    el.addEventListener('dragend',   ()=>{ el.classList.remove('dragging'); });
+    el.addEventListener('dragover',  e=>{ e.preventDefault(); });
+    el.addEventListener('drop',      e=>{ e.preventDefault(); dropOn(u.id); });
+  }else{
+    el.addEventListener('click', ()=>openEditor(u));
+  }
 
   paintCard(el, u);
   return el;
@@ -423,8 +530,8 @@ function render(){
   }
   let grp = null;
   vs.forEach(u=>{
-    const g = [u.factory||'미지정', u.dept||''].filter(Boolean).join(' / ');
-    if(g !== grp){
+    const g = orderMode ? null : [u.factory||'미지정', u.dept||''].filter(Boolean).join(' / ');
+    if(g && g !== grp){
       grp = g;
       const h = document.createElement('div'); h.className = 'grp'; h.textContent = g;
       list.appendChild(h);
@@ -655,6 +762,9 @@ async function init(){
     catch(err){ toast('갱신 실패'); }
   });
   document.getElementById('btnCsv').addEventListener('click', exportCsv);
+  document.getElementById('btnOrder').addEventListener('click', ()=>setOrderMode(!orderMode));
+  document.getElementById('btnOrderDone').addEventListener('click', ()=>setOrderMode(false));
+  document.getElementById('btnOrderReset').addEventListener('click', resetOrder);
 
   document.getElementById('shClose').addEventListener('click', closeEditor);
   document.getElementById('shCancel').addEventListener('click', closeEditor);
