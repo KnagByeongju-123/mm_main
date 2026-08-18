@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가공 생산일보 Local Rev.1.3</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{color-scheme:light}
+  body{margin:0;padding:12px;font-family:'Malgun Gothic','맑은 고딕',sans-serif;background:#f1f5f9;color:#0f172a;user-select:none}
+  button,input,select,textarea{font-family:inherit}
+  input,select,textarea{user-select:text}
+  .top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .top h1{font-size:17px;margin:0;color:#1a3a6c;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge{font-size:10px;font-weight:800;padding:4px 8px;border-radius:10px;background:#dcfce7;color:#15803d;border:1px solid #86efac}
+  .badge.stop{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+  .badge.wait{background:#e2e8f0;color:#475569;border-color:#cbd5e1}
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;position:sticky;top:0;z-index:20;background:#f1f5f9;padding:4px 0}
+  .tab{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:9px;padding:10px 4px;font-size:12px;font-weight:800;cursor:pointer}
+  .tab.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+  .panel{display:none}.panel.active{display:block}
+  .card{background:#fff;border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(15,23,42,.08)}
+  .card.run{border:2px solid #3b82f6;background:linear-gradient(180deg,#eff6ff,#fff 58%)}
+  .card.stopcard{border:2px solid #ef4444;background:linear-gradient(180deg,#fef2f2,#fff 58%)}
+  .title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#334155;padding:4px 2px 8px;border-bottom:1px solid #e2e8f0;margin-bottom:10px}
+  .title .right{margin-left:auto;font-size:10px;color:#64748b;font-weight:700}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .full{grid-column:1/-1}
+  .fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .fld label{font-size:11px;font-weight:800;color:#475569}
+  .fld input,.fld select,.fld textarea{width:100%;min-width:0;padding:10px;border:1.5px solid #cbd5e1;border-radius:8px;background:#fff;color:#0f172a;font-size:14px}
+  .fld textarea{min-height:72px;resize:vertical}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:#38bdf8}
+  .readonly{background:#f8fafc!important;color:#64748b!important}
+  .statusbox{display:flex;align-items:center;gap:10px;border:1px solid #dbeafe;background:#eff6ff;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .statusdot{width:11px;height:11px;border-radius:50%;background:#94a3b8;flex-shrink:0}
+  .statusdot.run{background:#22c55e;animation:blink 1.3s infinite}.statusdot.stop{background:#dc2626;animation:blink 1.0s infinite}
+  @keyframes blink{50%{opacity:.5}}
+  .statusmain{font-size:13px;font-weight:800;color:#1e3a8a}.statussub{font-size:10px;color:#64748b;margin-top:2px}
+  .timer{margin-left:auto;font-family:ui-monospace,monospace;font-size:18px;font-weight:800;color:#1d4ed8}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 4px}
+  .circle{width:108px;height:108px;border:0;border-radius:50%;color:#fff;font-size:19px;font-weight:800;justify-self:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+  .circle.start{background:#4472c4}.circle.stop{background:#ed7d31}.circle.resume{background:#16a34a}.circle.done{background:#7c3aed}
+  .circle:disabled{opacity:.4;box-shadow:none;cursor:not-allowed}
+  .minirow{display:flex;gap:6px;flex-wrap:wrap}
+  .btn{border:0;border-radius:9px;padding:11px 12px;font-size:13px;font-weight:800;cursor:pointer}
+  .btn.blue{background:#1d4ed8;color:#fff}.btn.green{background:#16a34a;color:#fff}.btn.red{background:#dc2626;color:#fff}.btn.gray{background:#64748b;color:#fff}.btn.orange{background:#ea580c;color:#fff}.btn.white{background:#fff;color:#334155;border:1px solid #cbd5e1}
+  .btn.block{width:100%;padding:14px;font-size:15px}
+  .metricgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .metric{border:1px solid #e2e8f0;background:#f8fafc;border-radius:9px;padding:9px;text-align:center}
+  .metric .l{font-size:10px;color:#64748b;font-weight:700}.metric .v{font-family:ui-monospace,monospace;font-size:18px;font-weight:800;margin-top:4px}.metric.good .v{color:#15803d}.metric.bad .v{color:#b91c1c}.metric.rate .v{color:#6d28d9}
+  .reasonwrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .reason{border:1px solid #fca5a5;background:#fff7ed;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:800;cursor:pointer}
+  .reason.active{background:#dc2626;color:#fff;border-color:#dc2626}
+  .tablewrap{overflow:auto;width:100%}
+  table{width:100%;border-collapse:collapse;font-size:11px;min-width:720px}
+  th,td{padding:7px 6px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:middle}
+  th{background:#f1f5f9;color:#475569;font-weight:800;position:sticky;top:0}
+  td.num{text-align:right;font-family:ui-monospace,monospace}
+  .empty{text-align:center;padding:22px 8px;color:#94a3b8;font-size:12px}
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+  .sum{background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:8px;text-align:center}.sum b{display:block;font-size:16px;font-family:ui-monospace,monospace;color:#1d4ed8}.sum span{font-size:9px;color:#64748b}
+  .notice{font-size:11px;line-height:1.6;background:#fffbeb;border:1px solid #fcd34d;color:#92400e;padding:9px 10px;border-radius:9px;margin-bottom:10px}
+  .dangerbox{font-size:11px;line-height:1.6;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:9px 10px;border-radius:9px}
+  .infobox{font-size:11px;line-height:1.6;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;padding:9px 10px;border-radius:9px}
+  .editmark{display:inline-block;margin-left:4px;padding:1px 5px;border-radius:6px;background:#fef3c7;color:#92400e;font-size:9px;font-weight:800}
+  .muted{font-size:10px;color:#64748b;line-height:1.5}
+  .history-card{border:1px solid #e2e8f0;border-left:5px solid #3b82f6;border-radius:10px;padding:10px;margin-bottom:8px;background:#fff}
+  .history-head{display:flex;align-items:center;gap:7px;font-size:12px}.history-head b{color:#1d4ed8}.history-head .tail{margin-left:auto;font-size:10px;color:#64748b}
+  .history-sub{font-size:10px;color:#64748b;margin-top:4px;line-height:1.5}
+  .history-num{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}.history-num div{text-align:center;background:#f8fafc;border-radius:7px;padding:6px}.history-num b{display:block;font-family:ui-monospace,monospace;font-size:13px}.history-num span{font-size:9px;color:#64748b}
+  dialog{border:0;border-radius:14px;padding:0;max-width:430px;width:calc(100% - 28px);box-shadow:0 14px 40px rgba(15,23,42,.28)}dialog::backdrop{background:rgba(15,23,42,.55)}
+  .dlg{padding:15px}.dlg h2{font-size:15px;margin:0 0 10px;color:#1a3a6c}.dlg-actions{display:flex;gap:8px;margin-top:12px}.dlg-actions .btn{flex:1}
+  /* 좌측 햄버거 드로어 - ESP32 생산일보 스타일 */
+  .top{display:flex;align-items:center;gap:8px;margin:2px 0 10px}
+  .ham-btn{position:relative;width:42px;height:42px;flex-shrink:0;border:1.5px solid #cbd5e1;border-radius:10px;background:#fff;font-size:20px;color:#334155;cursor:pointer}
+  .ham-btn:active{transform:scale(.94);background:#eff6ff}
+  .top h1{font-size:16px;margin:0;color:#1a3a6c;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cur-menu{color:#64748b;font-size:13px;font-weight:700}
+  .rev-tag{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:6px;background:#e2e8f0;color:#475569;font-size:9px;font-weight:800;vertical-align:2px;letter-spacing:.2px}
+  .drawer-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:300}
+  .drawer-bg.show{display:block}
+  .drawer{position:fixed;top:0;left:0;bottom:0;width:264px;max-width:82vw;background:#fff;z-index:301;box-shadow:4px 0 20px rgba(15,23,42,.2);transform:translateX(-105%);transition:transform .22s ease;display:flex;flex-direction:column;padding:12px 10px;overflow-y:auto}
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:800;color:#1a3a6c;padding:4px 6px 12px;border-bottom:1px solid #e2e8f0;margin-bottom:8px}
+  .drawer-head small{display:block;color:#94a3b8;font-weight:600;font-size:10px;margin-top:2px}
+  .drawer-x{width:30px;height:30px;border-radius:50%;border:none;background:#f1f5f9;color:#475569;font-size:13px;font-weight:800;cursor:pointer}
+  .drawer-sep{font-size:10px;font-weight:800;color:#94a3b8;padding:12px 8px 4px;letter-spacing:.5px}
+  .drawer-foot{margin-top:auto;padding:12px 8px 4px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;line-height:1.5}
+  .tab-btn{width:100%;padding:12px;border:none;background:transparent;border-radius:10px;font-size:14px;font-weight:800;color:#475569;cursor:pointer;display:flex;align-items:center;gap:10px;position:relative;text-align:left;margin-bottom:2px}
+  .tab-btn .tab-ico{font-size:18px;width:24px;text-align:center}
+  .tab-btn:active{background:#f1f5f9}
+  .tab-btn.active{background:#1d4ed8;color:#fff}
+  .drawer-status{display:flex;align-items:center;gap:6px;margin:8px 6px 2px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;font-size:11px;color:#64748b}
+  .drawer-status .dot{width:8px;height:8px;border-radius:50%;background:#22c55e}
+  .guide-hero{background:linear-gradient(135deg,#eff6ff,#fff);border:1px solid #bfdbfe;border-radius:12px;padding:14px;margin-bottom:10px}
+  .guide-hero b{display:block;color:#1e3a8a;font-size:14px;margin-bottom:5px}.guide-hero p{margin:0;font-size:11px;line-height:1.7;color:#475569}
+  .flow{display:flex;flex-direction:column;gap:8px}
+  .flow-step{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;border:1px solid #e2e8f0;border-radius:11px;background:#fff;padding:11px;position:relative}
+  .flow-step:not(:last-child)::after{content:'↓';position:absolute;left:20px;bottom:-17px;color:#94a3b8;font-size:15px;font-weight:900;z-index:2}
+  .flow-no{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#1d4ed8;color:#fff;font-size:13px;font-weight:900}
+  .flow-step h3{font-size:13px;margin:1px 0 5px;color:#1e293b}.flow-step p{font-size:11px;line-height:1.65;color:#64748b;margin:0}.flow-step strong{color:#334155}
+  .guide-tip{margin-top:10px;padding:10px;border-radius:10px;background:#f8fafc;border:1px dashed #94a3b8;font-size:11px;line-height:1.7;color:#475569}
+  .guide-chip{display:inline-block;padding:2px 6px;margin:1px 2px;border-radius:6px;background:#e0e7ff;color:#3730a3;font-size:10px;font-weight:800}
+  @media(max-width:420px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.tabs{grid-template-columns:repeat(4,1fr)}.tab{font-size:10px}.circle{width:96px;height:96px;font-size:17px}.metricgrid{grid-template-columns:repeat(3,1fr)}.summary{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="top">
+  <button class="ham-btn" type="button" onclick="openDrawer()" aria-label="메뉴 열기">☰</button>
+  <h1>⚙️ 가공 생산일보 <span class="cur-menu" id="curMenuName">작업입력</span><span class="rev-tag">Local Rev.1.3</span></h1>
+  <span class="badge wait" id="topStatus">로컬 저장</span>
+</div>
+
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<nav class="drawer" id="drawer" aria-label="가공 생산일보 메뉴">
+  <div class="drawer-head">
+    <div>⚙️ 가공 생산일보<small>LOCAL DAILY REPORT</small></div>
+    <button class="drawer-x" type="button" onclick="closeDrawer()" aria-label="메뉴 닫기">✕</button>
+  </div>
+  <div class="drawer-status"><span class="dot"></span><span>작업 데이터는 이 브라우저에만 저장됩니다.</span></div>
+  <div class="drawer-sep">작업</div>
+  <button class="tab-btn active" data-tab="work" onclick="switchTab('work',this)"><span class="tab-ico">▶</span><span>작업입력</span></button>
+  <button class="tab-btn" data-tab="report" onclick="switchTab('report',this)"><span class="tab-ico">📝</span><span>일보 / 이력</span></button>
+  <div class="drawer-sep">관리</div>
+  <button class="tab-btn" data-tab="master" onclick="switchTab('master',this)"><span class="tab-ico">🧰</span><span>기준정보</span></button>
+  <button class="tab-btn" data-tab="setting" onclick="switchTab('setting',this)"><span class="tab-ico">⚙</span><span>설정 / 백업</span></button>
+  <div class="drawer-sep">도움말</div>
+  <button class="tab-btn" data-tab="guide" onclick="switchTab('guide',this)"><span class="tab-ico">❔</span><span>사용안내</span></button>
+  <div class="drawer-foot">GitHub에서 페이지 실행 · 작업데이터는 브라우저 LocalStorage 저장<br>가공 생산일보 Local Rev.1.3</div>
+</nav>
+
+<section class="panel active" id="work">
+  <div class="card run">
+    <div class="title">📋 작업 기본정보 <span class="right">자동 임시저장</span></div>
+    <div class="grid">
+      <div class="fld"><label>작업일자</label><input type="date" id="workDate"></div>
+      <div class="fld"><label>근무조</label><select id="shift"><option>주간</option><option>야간</option><option>기타</option></select></div>
+      <div class="fld"><label>작업자</label><input id="worker" placeholder="작업자명"></div>
+      <div class="fld"><label>설비</label><input id="machine" list="machineList" placeholder="예: MCT-01"><datalist id="machineList"></datalist></div>
+      <div class="fld"><label>작업지시번호</label><input id="orderNo" placeholder="WO-2026-0001"></div>
+      <div class="fld"><label>품번</label><input id="itemNo" list="itemList" placeholder="품번"><datalist id="itemList"></datalist></div>
+      <div class="fld"><label>품명</label><input id="itemName" placeholder="품명"></div>
+      <div class="fld"><label>공정</label><input id="process" list="processList" placeholder="예: CNC선삭"><datalist id="processList"></datalist></div>
+      <div class="fld"><label>계획수량</label><input type="number" min="0" id="planQty" placeholder="0"></div>
+      <div class="fld"><label>기준 CT(초/EA)</label><input type="number" min="0" step="0.1" id="stdCt" placeholder="예: 45"></div>
+      <div class="fld"><label>소재/LOT</label><input id="materialLot" placeholder="소재 LOT"></div>
+      <div class="fld"><label>도면/Rev</label><input id="drawingRev" placeholder="예: DWG-001 Rev.B"></div>
+    </div>
+  </div>
+
+  <div class="card" id="runCard">
+    <div class="title">⏱️ 가동 상태 <span class="right" id="stateLabel">대기</span></div>
+    <div class="statusbox">
+      <span class="statusdot" id="statusDot"></span>
+      <div><div class="statusmain" id="statusMain">작업 시작 전</div><div class="statussub" id="statusSub">기본정보 입력 후 가동시작</div></div>
+      <div class="timer" id="liveTimer">00:00:00</div>
+    </div>
+    <div class="actions">
+      <button class="circle start" id="btnStart" onclick="startWork()">▶ 가동<br>시작</button>
+      <button class="circle stop" id="btnStop" onclick="stopWork()" disabled>⏸ 정지<br>시작</button>
+      <button class="circle resume" id="btnResume" onclick="resumeWork()" disabled>▶ 정지<br>해제</button>
+      <button class="circle done" id="btnDone" onclick="finishWork()" disabled>🏁 작업<br>완료</button>
+    </div>
+    <div id="stopReasonArea" style="display:none">
+      <div style="font-size:11px;font-weight:800;color:#b91c1c;margin-top:10px">현재 정지 사유</div>
+      <div class="reasonwrap" id="reasonWrap"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="title">🔢 생산수량 / 실적</div>
+    <div class="grid">
+      <div class="fld"><label>양품수량</label><input type="number" min="0" id="goodQty" value="0"></div>
+      <div class="fld"><label>불량수량</label><input type="number" min="0" id="badQty" value="0"></div>
+      <div class="fld full"><label>불량유형</label><select id="badReason"><option value="">불량 없음 / 선택</option><option>치수불량</option><option>외관불량</option><option>가공누락</option><option>소재불량</option><option>공구/셋업</option><option>기타</option></select></div>
+      <div class="fld full"><label>특이사항</label><textarea id="remark" placeholder="치수이상 상세, 공구교환, 설비특이사항 등"></textarea></div>
+    </div>
+    <div class="metricgrid" style="margin-top:10px">
+      <div class="metric good"><div class="l">총 생산</div><div class="v" id="mTotal">0</div></div>
+      <div class="metric bad"><div class="l">불량률</div><div class="v" id="mBadRate">0.0%</div></div>
+      <div class="metric rate"><div class="l">달성률</div><div class="v" id="mAchieve">0.0%</div></div>
+    </div>
+    <div class="metricgrid" style="margin-top:7px">
+      <div class="metric"><div class="l">순가동</div><div class="v" id="mRun">00:00:00</div></div>
+      <div class="metric"><div class="l">정지합계</div><div class="v" id="mStop">00:00:00</div></div>
+      <div class="metric rate"><div class="l">가동률</div><div class="v" id="mOpRate">0.0%</div></div>
+    </div>
+    <div class="metricgrid" style="margin-top:7px">
+      <div class="metric"><div class="l">기준 CT</div><div class="v" id="mStdCtMetric">0.0s</div></div>
+      <div class="metric rate"><div class="l">성능률</div><div class="v" id="mPerformance">0.0%</div></div>
+      <div class="metric good"><div class="l">양품/시간</div><div class="v" id="mGoodPerHour">0.0</div></div>
+    </div>
+    <button class="btn green block" style="margin-top:12px" onclick="saveDailyReport()">💾 현재 작업을 생산일보로 저장</button>
+  </div>
+</section>
+
+<section class="panel" id="report">
+  <div class="card">
+    <div class="title">📝 생산일보 이력 <span class="right" id="historyCount">0건</span></div>
+    <div class="grid" style="margin-bottom:10px">
+      <div class="fld"><label>조회일자</label><input type="date" id="filterDate" onchange="renderHistory()"></div>
+      <div class="fld"><label>설비 검색</label><input id="filterMachine" placeholder="전체" oninput="renderHistory()"></div>
+    </div>
+    <div class="summary">
+      <div class="sum"><b id="sJobs">0</b><span>작업건수</span></div>
+      <div class="sum"><b id="sGood">0</b><span>양품</span></div>
+      <div class="sum"><b id="sBad">0</b><span>불량</span></div>
+      <div class="sum"><b id="sRate">0.0%</b><span>불량률</span></div>
+    </div>
+    <div id="historyList"></div>
+    <div class="minirow" style="margin-top:8px">
+      <button class="btn blue" onclick="downloadCsv()">⬇ CSV 다운로드</button>
+      <button class="btn white" onclick="document.getElementById('filterDate').value='';renderHistory()">전체보기</button>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="master">
+  <div class="card">
+    <div class="title">🏭 설비 기준정보</div>
+    <div class="grid">
+      <div class="fld"><label>설비코드</label><input id="mMachineCode" placeholder="MCT-01"></div>
+      <div class="fld"><label>설비명</label><input id="mMachineName" placeholder="5축 MCT 1호기"></div>
+    </div>
+    <button class="btn blue block" style="margin-top:9px" onclick="addMachine()">설비 추가</button>
+    <div class="tablewrap" style="margin-top:10px"><table style="min-width:420px"><thead><tr><th>설비코드</th><th>설비명</th><th></th></tr></thead><tbody id="machineBody"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="title">🧩 품목/공정 기준정보</div>
+    <div class="grid">
+      <div class="fld"><label>품번</label><input id="mItemNo" placeholder="ITEM-001"></div>
+      <div class="fld"><label>품명</label><input id="mItemName" placeholder="SHAFT"></div>
+      <div class="fld"><label>공정</label><input id="mProcess" placeholder="CNC선삭"></div>
+      <div class="fld"><label>기준 CT(초)</label><input type="number" step="0.1" min="0" id="mStdCt" placeholder="45"></div>
+    </div>
+    <button class="btn green block" style="margin-top:9px" onclick="addItem()">품목/공정 추가</button>
+    <div class="tablewrap" style="margin-top:10px"><table style="min-width:560px"><thead><tr><th>품번</th><th>품명</th><th>공정</th><th>기준CT</th><th></th></tr></thead><tbody id="itemBody"></tbody></table></div>
+  </div>
+</section>
+
+<section class="panel" id="setting">
+  <div class="card">
+    <div class="title">💾 로컬 데이터 관리</div>
+    <div class="notice">페이지 파일은 GitHub/GitHub Pages에서 실행할 수 있지만, <b>작업 데이터는 서버나 GitHub로 전송하지 않고 현재 브라우저의 LocalStorage에만 저장</b>합니다. 같은 PC·같은 브라우저에서 기록이 유지되며, 브라우저 데이터 삭제 또는 PC 변경 시 사라질 수 있으므로 정기적으로 JSON 백업을 권장합니다.</div>
+    <div class="minirow">
+      <button class="btn blue" onclick="exportBackup()">⬇ 전체 백업(JSON)</button>
+      <button class="btn white" onclick="document.getElementById('importFile').click()">⬆ 백업 복원</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importBackup(this)">
+    </div>
+  </div>
+  <div class="card">
+    <div class="title">🏢 기본 설정</div>
+    <div class="grid">
+      <div class="fld full"><label>회사/공장명</label><input id="companyName" placeholder="회사명" oninput="savePrefs()"></div>
+      <div class="fld"><label>기본 작업자</label><input id="defaultWorker" placeholder="작업자" oninput="savePrefs()"></div>
+      <div class="fld"><label>기본 근무조</label><select id="defaultShift" onchange="savePrefs()"><option>주간</option><option>야간</option><option>기타</option></select></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="title">⚠ 초기화</div>
+    <div class="dangerbox">현재 진행중 작업과 저장된 일보/기준정보를 모두 삭제합니다. 필요하면 먼저 JSON 백업을 내려받으세요.</div>
+    <button class="btn red block" style="margin-top:10px" onclick="resetAll()">🗑 로컬 데이터 전체 초기화</button>
+  </div>
+</section>
+
+<section class="panel" id="guide">
+  <div class="guide-hero">
+    <b>❔ 가공 생산일보 사용안내</b>
+    <p>이 페이지는 GitHub/GitHub Pages에서 열어 사용할 수 있습니다. <strong>생산일보·진행작업·기준정보는 GitHub에 저장되지 않고, 사용 중인 PC의 현재 브라우저 LocalStorage에만 저장됩니다.</strong></p>
+  </div>
+
+  <div class="card">
+    <div class="title">🔁 기본 작업 흐름 <span class="right">위에서 아래 순서대로</span></div>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-no">1</div><div><h3>기준정보를 먼저 등록</h3><p>처음 사용할 때 메뉴의 <span class="guide-chip">기준정보</span>에서 <strong>설비코드/설비명</strong>과 <strong>품번/품명/공정/기준 CT</strong>를 등록합니다. 한 품번에 공정이 여러 개면 공정별로 각각 등록하세요.</p></div></div>
+      <div class="flow-step"><div class="flow-no">2</div><div><h3>작업 기본정보 입력</h3><p><span class="guide-chip">작업입력</span>에서 작업일자, 작업자, 설비, 작업지시번호, 품번, 공정, 계획수량, 소재 LOT 등을 입력합니다. 품번과 공정을 기준정보에서 선택하면 품명과 기준 CT가 자동 적용됩니다. 입력 내용은 가동 전에도 임시저장됩니다.</p></div></div>
+      <div class="flow-step"><div class="flow-no">3</div><div><h3>가동 시작</h3><p>실제 설비 작업을 시작할 때 <strong>▶ 가동 시작</strong>을 누릅니다. 이 시점부터 순가동 시간이 계산됩니다.</p></div></div>
+      <div class="flow-step"><div class="flow-no">4</div><div><h3>작업 중 정지 발생</h3><p>공구교환, 치수측정, 소재대기, 설비이상 등이 발생하면 <strong>⏸ 정지 시작</strong>을 누르고 정지 사유를 선택합니다. 다시 생산을 시작할 때 <strong>▶ 정지 해제</strong>를 누르면 정지시간과 순가동시간이 분리 기록됩니다.</p></div></div>
+      <div class="flow-step"><div class="flow-no">5</div><div><h3>수량과 불량 입력</h3><p>작업 중 또는 종료 전에 <strong>양품수량·불량수량</strong>을 입력합니다. 불량이 있으면 불량유형을 선택하고 필요한 상세내용은 특이사항에 적습니다. 화면에서 달성률·가동률·성능률을 확인할 수 있습니다.</p></div></div>
+      <div class="flow-step"><div class="flow-no">6</div><div><h3>작업 완료로 시간 확정</h3><p>실제 가공이 끝났을 때 <strong>🏁 작업 완료</strong>를 누릅니다. 순가동 및 정지시간이 이 시점에서 확정됩니다. 수량과 내용을 한 번 확인하세요.</p></div></div>
+      <div class="flow-step"><div class="flow-no">7</div><div><h3>생산일보 저장</h3><p><strong>💾 현재 작업을 생산일보로 저장</strong>을 누르면 해당 작업이 <span class="guide-chip">일보 / 이력</span>에 등록됩니다. 저장 위치는 서버가 아니라 현재 브라우저의 LocalStorage입니다.</p></div></div>
+      <div class="flow-step"><div class="flow-no">8</div><div><h3>일보 확인·수정·CSV 출력</h3><p><span class="guide-chip">일보 / 이력</span>에서 일자/설비별 기록을 확인하고, 잘못 입력한 내용은 수정할 수 있습니다. 정지내역과 수정이력도 확인할 수 있으며 필요하면 CSV로 다운로드합니다.</p></div></div>
+      <div class="flow-step"><div class="flow-no">9</div><div><h3>정기 백업</h3><p><span class="guide-chip">설정 / 백업</span>에서 <strong>전체 백업(JSON)</strong>을 내려받아 보관하세요. PC 교체, 브라우저 데이터 삭제 등에 대비한 원본 백업입니다. 다른 PC에서 사용할 때는 백업 복원으로 데이터를 옮길 수 있습니다.</p></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="title">⚠ 꼭 알아둘 점</div>
+    <div class="guide-tip"><strong>GitHub에 올라가는 것은 프로그램 HTML 파일입니다.</strong><br>작업자가 입력한 생산 데이터는 GitHub 저장소나 서버로 자동 업로드되지 않습니다. 같은 URL을 여러 PC에서 열어도 각 PC/브라우저마다 데이터가 따로 저장됩니다.</div>
+    <div class="guide-tip"><strong>브라우저를 닫았다 다시 열었을 때 진행 중 작업이 감지되면</strong><br>실제 설비가 계속 돌아갔다면 <strong>가동으로 유지</strong>, 설비가 멈춰 있었다면 <strong>정지로 처리</strong>를 선택하세요.</div>
+    <div class="guide-tip"><strong>운영 초기 권장 순서</strong><br>기준정보 등록 → 시험 작업 1건 → 정지/재가동 시험 → 일보 저장 → 수정 시험 → JSON 백업/복원 시험 후 실제 생산에 적용하는 것이 좋습니다.</div>
+  </div>
+</section>
+
+<dialog id="stopDialog">
+  <div class="dlg">
+    <h2>⏸ 정지 사유 선택</h2>
+    <div class="reasonwrap" id="dialogReasons"></div>
+    <div class="fld" style="margin-top:10px"><label>직접입력</label><input id="customReason" placeholder="예: 치수측정 대기"></div>
+    <div class="dlg-actions"><button class="btn gray" onclick="stopDialog.close()">취소</button><button class="btn red" onclick="confirmStop()">정지 시작</button></div>
+  </div>
+</dialog>
+
+<dialog id="recoveryDialog">
+  <div class="dlg">
+    <h2>⚠ 이전 가동작업 복구</h2>
+    <div class="infobox" id="recoveryInfo">브라우저가 닫혀 있던 시간이 감지되었습니다.</div>
+    <div class="muted" style="margin-top:8px">실제 설비가 계속 가동했다면 ‘가동으로 유지’, 설비가 멈췄다면 ‘정지로 처리’를 선택하세요.</div>
+    <div class="dlg-actions">
+      <button class="btn green" onclick="recoverAsRunning()">가동으로 유지</button>
+      <button class="btn red" onclick="recoverAsStopped()">정지로 처리</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="editReportDialog">
+  <div class="dlg">
+    <h2>✏️ 생산일보 수정</h2>
+    <div class="muted" id="editTimeInfo" style="margin-bottom:10px"></div>
+    <div class="grid">
+      <div class="fld"><label>작업일자</label><input type="date" id="editDate"></div>
+      <div class="fld"><label>근무조</label><select id="editShift"><option>주간</option><option>야간</option><option>기타</option></select></div>
+      <div class="fld"><label>작업자</label><input id="editWorker"></div>
+      <div class="fld"><label>설비</label><input id="editMachine"></div>
+      <div class="fld"><label>작업지시번호</label><input id="editOrderNo"></div>
+      <div class="fld"><label>품번</label><input id="editItemNo"></div>
+      <div class="fld"><label>품명</label><input id="editItemName"></div>
+      <div class="fld"><label>공정</label><input id="editProcess"></div>
+      <div class="fld"><label>계획수량</label><input type="number" min="0" id="editPlanQty"></div>
+      <div class="fld"><label>기준 CT(초)</label><input type="number" min="0" step="0.1" id="editStdCt"></div>
+      <div class="fld"><label>소재/LOT</label><input id="editMaterialLot"></div>
+      <div class="fld"><label>도면/Rev</label><input id="editDrawingRev"></div>
+      <div class="fld"><label>양품수량</label><input type="number" min="0" id="editGoodQty"></div>
+      <div class="fld"><label>불량수량</label><input type="number" min="0" id="editBadQty"></div>
+      <div class="fld full"><label>불량유형</label><select id="editBadReason"><option value="">불량 없음 / 선택</option><option>치수불량</option><option>외관불량</option><option>가공누락</option><option>소재불량</option><option>공구/셋업</option><option>기타</option></select></div>
+      <div class="fld full"><label>특이사항</label><textarea id="editRemark"></textarea></div>
+    </div>
+    <div class="dlg-actions"><button class="btn gray" onclick="document.getElementById('editReportDialog').close()">취소</button><button class="btn blue" onclick="saveEditReport()">수정 저장</button></div>
+  </div>
+</dialog>
+
+<script>
+const K={reports:'machining_reports_v1',active:'machining_active_v1',machines:'machining_machines_v1',items:'machining_items_v1',prefs:'machining_prefs_v1',draft:'machining_draft_v1'};
+const STOP_REASONS=['공구교환','치수측정','소재대기','프로그램수정','셋업/교체','설비이상','품질확인','휴식/식사'];
+const FIELD_LABELS={date:'작업일자',shift:'근무조',worker:'작업자',machine:'설비',orderNo:'작업지시',itemNo:'품번',itemName:'품명',process:'공정',planQty:'계획수량',stdCt:'기준CT',materialLot:'소재LOT',drawingRev:'도면Rev',goodQty:'양품',badQty:'불량',badReason:'불량유형',remark:'특이사항'};
+let reports=load(K.reports,[]), machines=load(K.machines,[]), items=load(K.items,[]), prefs=load(K.prefs,{}), active=load(K.active,null), draft=load(K.draft,null);
+let selectedStopReason='', editingReportId='';
+const $=id=>document.getElementById(id);
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function store(k,v){localStorage.setItem(k,JSON.stringify(v));flashSaved()}
+function storeSilent(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function todayKst(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul'}).format(new Date())}
+function nowIso(){return new Date().toISOString()}
+function fmtClock(ms){ms=Math.max(0,Math.floor(ms||0));const sec=Math.floor(ms/1000),h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return [h,m,s].map(v=>String(v).padStart(2,'0')).join(':')}
+function fmtTime(iso){if(!iso)return '-';return new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso))}
+function fmtDateTime(iso){if(!iso)return '-';return new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(iso))}
+function flashSaved(){const el=$('topStatus');if(!el)return;el.textContent='✓ 로컬 저장';el.className='badge';clearTimeout(flashSaved.t);flashSaved.t=setTimeout(()=>{const st=active?.status;el.textContent=st==='stopped'?'정지중':st==='running'?'가동중':st==='finished'?'저장대기':'로컬 저장';el.className='badge '+(st==='stopped'?'stop':st?'':'wait')},900)}
+function openDrawer(){$('drawerBg').classList.add('show');$('drawer').classList.add('open');document.body.style.overflow='hidden'}
+function closeDrawer(){$('drawerBg').classList.remove('show');$('drawer').classList.remove('open');document.body.style.overflow=''}
+function switchTab(id,btn){document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');if(btn)btn.classList.add('active');const names={work:'작업입력',report:'일보/이력',master:'기준정보',setting:'설정',guide:'사용안내'};$('curMenuName').textContent=names[id]||'';closeDrawer();window.scrollTo({top:0,behavior:'smooth'});if(id==='report')renderHistory();if(id==='master')renderMaster()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+
+const entryIds=['workDate','shift','worker','machine','orderNo','itemNo','itemName','process','planQty','stdCt','materialLot','drawingRev','goodQty','badQty','badReason','remark'];
+function getEntry(){const o={};entryIds.forEach(id=>o[id]=$(id).value);return o}
+function setEntry(o){if(!o)return;entryIds.forEach(id=>{if(o[id]!==undefined&&o[id]!==null)$(id).value=o[id]})}
+function saveDraft(){const e=getEntry();if(active){active.entry=e;active.lastHeartbeatAt=nowIso();store(K.active,active)}else{draft=e;store(K.draft,draft)}updateMetrics()}
+entryIds.forEach(id=>{$(id).addEventListener('input',saveDraft);$(id).addEventListener('change',saveDraft)});
+$('itemNo').addEventListener('change',onItemNoChange);
+$('process').addEventListener('change',applyItemMaster);
+function onItemNoChange(){const no=$('itemNo').value.trim(),matches=items.filter(v=>v.itemNo===no);renderProcessListForItem(no);if(!matches.length){saveDraft();return}if(!$('itemName').value||matches.every(x=>x.itemName===$('itemName').value))$('itemName').value=matches[0].itemName||'';if(matches.length===1){$('process').value=matches[0].process||'';$('stdCt').value=matches[0].stdCt??''}else if(!matches.some(x=>x.process===$('process').value.trim())){$('process').value='';$('stdCt').value=''}applyItemMaster()}
+function applyItemMaster(){const no=$('itemNo').value.trim(),pr=$('process').value.trim();const x=items.find(v=>v.itemNo===no&&v.process===pr);if(x){$('itemName').value=x.itemName||'';$('stdCt').value=x.stdCt??''}saveDraft()}
+function renderProcessListForItem(no){const matched=items.filter(x=>x.itemNo===no);const src=matched.length?matched:items;$('processList').innerHTML=[...new Set(src.map(x=>x.process).filter(Boolean))].map(p=>'<option value="'+esc(p)+'"></option>').join('')}
+
+function validateStart(){if(!$('workDate').value)return '작업일자를 입력하세요.';if(!$('worker').value.trim())return '작업자를 입력하세요.';if(!$('machine').value.trim())return '설비를 입력하세요.';if(!$('itemNo').value.trim())return '품번을 입력하세요.';if(!$('process').value.trim())return '공정을 입력하세요.';return ''}
+function startWork(){if(active){alert('이미 진행중인 작업이 있습니다.');return}const msg=validateStart();if(msg){alert(msg);return}const t=nowIso();active={id:'A'+Date.now(),status:'running',startedAt:t,runStartedAt:t,runAccumMs:0,stopAccumMs:0,currentStop:null,stops:[],lastHeartbeatAt:t,entry:getEntry()};localStorage.removeItem(K.draft);draft=null;store(K.active,active);renderActive()}
+function stopWork(){if(!active||active.status!=='running')return;selectedStopReason='';$('customReason').value='';document.querySelectorAll('#dialogReasons .reason').forEach(x=>x.classList.remove('active'));$('stopDialog').showModal()}
+function chooseStopReason(r,el){selectedStopReason=r;document.querySelectorAll('#dialogReasons .reason').forEach(x=>x.classList.remove('active'));el.classList.add('active')}
+function confirmStop(){if(!active||active.status!=='running')return;const reason=$('customReason').value.trim()||selectedStopReason;if(!reason){alert('정지 사유를 선택하거나 입력하세요.');return}const now=Date.now();active.runAccumMs+=Math.max(0,now-new Date(active.runStartedAt).getTime());active.runStartedAt=null;active.status='stopped';active.currentStop={reason,startedAt:new Date(now).toISOString()};active.lastHeartbeatAt=new Date(now).toISOString();active.entry=getEntry();store(K.active,active);$('stopDialog').close();renderActive()}
+function resumeWork(){if(!active||active.status!=='stopped')return;const now=Date.now(),st=active.currentStop;const ms=Math.max(0,now-new Date(st.startedAt).getTime());active.stopAccumMs+=ms;active.stops.push({reason:st.reason,startedAt:st.startedAt,endedAt:new Date(now).toISOString(),durationMs:ms});active.currentStop=null;active.status='running';active.runStartedAt=new Date(now).toISOString();active.lastHeartbeatAt=new Date(now).toISOString();active.entry=getEntry();store(K.active,active);renderActive()}
+function finishWork(){if(!active)return;if(!confirm('현재 작업의 가동을 종료할까요?\n수량 확인 후 아래 생산일보 저장 버튼으로 최종 저장합니다.'))return;const now=Date.now();if(active.status==='running'&&active.runStartedAt){active.runAccumMs+=Math.max(0,now-new Date(active.runStartedAt).getTime());active.runStartedAt=null}else if(active.status==='stopped'&&active.currentStop){const st=active.currentStop,ms=Math.max(0,now-new Date(st.startedAt).getTime());active.stopAccumMs+=ms;active.stops.push({reason:st.reason,startedAt:st.startedAt,endedAt:new Date(now).toISOString(),durationMs:ms});active.currentStop=null}active.status='finished';active.finishedAt=new Date(now).toISOString();active.lastHeartbeatAt=new Date(now).toISOString();active.entry=getEntry();store(K.active,active);renderActive()}
+function currentDurations(){if(!active)return{run:0,stop:0,total:0};const now=Date.now();let run=Number(active.runAccumMs||0),stop=Number(active.stopAccumMs||0);if(active.status==='running'&&active.runStartedAt)run+=Math.max(0,now-new Date(active.runStartedAt).getTime());if(active.status==='stopped'&&active.currentStop)stop+=Math.max(0,now-new Date(active.currentStop.startedAt).getTime());return{run,stop,total:run+stop}}
+function calcPerformance(total,stdCt,runMs){return runMs>0&&stdCt>0?(total*stdCt*1000/runMs*100):0}
+function renderActive(){if(active&&active.entry)setEntry(active.entry);const st=active?.status||'idle';$('btnStart').disabled=!!active;$('btnStop').disabled=st!=='running';$('btnResume').disabled=st!=='stopped';$('btnDone').disabled=!active||st==='finished';$('stopReasonArea').style.display=st==='stopped'?'block':'none';$('runCard').className='card '+(st==='stopped'?'stopcard':st==='running'?'run':'');$('statusDot').className='statusdot '+(st==='running'?'run':st==='stopped'?'stop':'');if(st==='running'){$('stateLabel').textContent='가동중';$('statusMain').textContent='설비 가동중';$('statusSub').textContent='정지 발생 시 정지시작을 누르세요.';$('topStatus').textContent='가동중';$('topStatus').className='badge'}else if(st==='stopped'){$('stateLabel').textContent='정지중';$('statusMain').textContent='설비 정지중';$('statusSub').textContent=active.currentStop?.reason||'정지';$('topStatus').textContent='정지중';$('topStatus').className='badge stop';$('reasonWrap').innerHTML='<span class="reason active">'+esc(active.currentStop?.reason||'정지')+'</span>'}else if(st==='finished'){$('stateLabel').textContent='완료';$('statusMain').textContent='작업 가동 종료';$('statusSub').textContent='수량 확인 후 생산일보 저장';$('topStatus').textContent='저장대기';$('topStatus').className='badge wait'}else{$('stateLabel').textContent='대기';$('statusMain').textContent='작업 시작 전';$('statusSub').textContent='기본정보 입력 후 가동시작';$('topStatus').textContent='로컬 저장';$('topStatus').className='badge wait'}updateMetrics()}
+function updateMetrics(){const d=currentDurations(),good=Number($('goodQty').value)||0,bad=Number($('badQty').value)||0,total=good+bad,plan=Number($('planQty').value)||0,stdCt=Number($('stdCt').value)||0;const badRate=total?bad/total*100:0,ach=plan?good/plan*100:0,op=d.total?d.run/d.total*100:0,perf=calcPerformance(total,stdCt,d.run),gph=d.run?good/(d.run/3600000):0;$('liveTimer').textContent=fmtClock(d.run);$('mTotal').textContent=total.toLocaleString();$('mBadRate').textContent=badRate.toFixed(1)+'%';$('mAchieve').textContent=ach.toFixed(1)+'%';$('mRun').textContent=fmtClock(d.run);$('mStop').textContent=fmtClock(d.stop);$('mOpRate').textContent=op.toFixed(1)+'%';$('mStdCtMetric').textContent=stdCt.toFixed(1)+'s';$('mPerformance').textContent=perf.toFixed(1)+'%';$('mGoodPerHour').textContent=gph.toFixed(1)}
+function heartbeat(){if(!active||active.status!=='running'||$('recoveryDialog')?.open)return;active.lastHeartbeatAt=nowIso();active.entry=getEntry();storeSilent(K.active,active)}
+window.addEventListener('beforeunload',heartbeat);
+
+function checkRecovery(){if(!active||active.status!=='running')return;const legacy=!active.lastHeartbeatAt,hb=active.lastHeartbeatAt||active.runStartedAt||active.startedAt;if(!hb){active.lastHeartbeatAt=nowIso();storeSilent(K.active,active);return}const gap=Date.now()-new Date(hb).getTime();if(gap<=120000){active.lastHeartbeatAt=nowIso();storeSilent(K.active,active);return}const mins=Math.max(1,Math.round(gap/60000));$('recoveryInfo').innerHTML=(legacy?'이전 버전 작업의 기준 시점: ':'마지막 정상 기록: ')+'<b>'+esc(fmtDateTime(hb))+'</b><br>기록 공백: 약 <b>'+mins.toLocaleString()+'분</b>';$('recoveryDialog').showModal()}
+function recoverAsRunning(){if(!active)return;$('recoveryDialog').close();active.lastHeartbeatAt=nowIso();store(K.active,active);renderActive()}
+function recoverAsStopped(){if(!active)return;const hb=active.lastHeartbeatAt||active.runStartedAt||active.startedAt,cut=new Date(hb).getTime(),rs=new Date(active.runStartedAt||hb).getTime();if(Number.isFinite(cut)&&Number.isFinite(rs)&&cut>=rs)active.runAccumMs=Number(active.runAccumMs||0)+(cut-rs);active.runStartedAt=null;active.status='stopped';active.currentStop={reason:'비정상 종료/브라우저 종료',startedAt:new Date(cut).toISOString()};active.lastHeartbeatAt=nowIso();store(K.active,active);$('recoveryDialog').close();renderActive()}
+
+function saveDailyReport(){if(!active){alert('먼저 작업을 시작하세요.');return}if(active.status!=='finished'){alert('먼저 🏁 작업완료를 눌러 가동시간을 확정하세요.');return}const e=getEntry(),good=Number(e.goodQty)||0,bad=Number(e.badQty)||0,total=good+bad;if(total<=0&&!confirm('양품/불량 수량이 0입니다. 그대로 저장할까요?'))return;if(bad>0&&!e.badReason){alert('불량수량이 있으면 불량유형을 선택하세요.');return}const d=currentDurations(),op=d.total?d.run/d.total*100:0,plan=Number(e.planQty)||0,stdCt=Number(e.stdCt)||0,perf=calcPerformance(total,stdCt,d.run);const rec={id:'R'+Date.now(),savedAt:nowIso(),date:e.workDate,shift:e.shift,worker:e.worker.trim(),machine:e.machine.trim(),orderNo:e.orderNo.trim(),itemNo:e.itemNo.trim(),itemName:e.itemName.trim(),process:e.process.trim(),planQty:plan,stdCt,materialLot:e.materialLot.trim(),drawingRev:e.drawingRev.trim(),goodQty:good,badQty:bad,badReason:e.badReason,totalQty:total,badRate:total?bad/total*100:0,achievementRate:plan?good/plan*100:0,startedAt:active.startedAt,finishedAt:active.finishedAt,runMs:d.run,stopMs:d.stop,opRate:op,performanceRate:perf,stops:active.stops||[],remark:e.remark.trim(),editHistory:[]};reports.unshift(rec);store(K.reports,reports);active=null;draft=null;localStorage.removeItem(K.active);localStorage.removeItem(K.draft);clearEntryAfterSave();renderActive();renderHistory();alert('✅ 생산일보가 이 브라우저에 로컬 저장되었습니다.\n\n'+rec.machine+' · '+rec.itemNo+' / '+rec.process+'\n양품 '+good.toLocaleString()+' / 불량 '+bad.toLocaleString()+' EA')}
+function clearEntryAfterSave(){const keep={workDate:todayKst(),shift:$('shift').value,worker:$('worker').value,machine:$('machine').value,goodQty:'0',badQty:'0',badReason:''};entryIds.forEach(id=>$(id).value='');Object.entries(keep).forEach(([k,v])=>$(k).value=v);renderProcessListForItem('');updateMetrics()}
+
+function reportPerformance(r){return Number.isFinite(Number(r.performanceRate))&&Number(r.performanceRate)!==0?Number(r.performanceRate):calcPerformance(Number(r.totalQty||Number(r.goodQty||0)+Number(r.badQty||0)),Number(r.stdCt||0),Number(r.runMs||0))}
+function renderHistory(){let list=[...reports],fd=$('filterDate').value,fm=$('filterMachine').value.trim().toLowerCase();if(fd)list=list.filter(x=>x.date===fd);if(fm)list=list.filter(x=>(x.machine||'').toLowerCase().includes(fm));$('historyCount').textContent=list.length+'건';const good=list.reduce((sum,x)=>sum+Number(x.goodQty||0),0),bad=list.reduce((sum,x)=>sum+Number(x.badQty||0),0),tot=good+bad;$('sJobs').textContent=list.length;$('sGood').textContent=good.toLocaleString();$('sBad').textContent=bad.toLocaleString();$('sRate').textContent=(tot?bad/tot*100:0).toFixed(1)+'%';const box=$('historyList');if(!list.length){box.innerHTML='<div class="empty">저장된 생산일보가 없습니다.</div>';return}box.innerHTML=list.map(r=>{const edits=(r.editHistory||[]).length,perf=reportPerformance(r),badTxt=Number(r.badQty||0)>0?' · 불량유형 '+esc(r.badReason||'미분류'):'';return '<div class="history-card"><div class="history-head"><b>'+esc(r.machine)+'</b><span>'+esc(r.itemNo)+' · '+esc(r.process)+'</span><span class="tail">'+esc(r.date)+' '+fmtTime(r.startedAt)+'~'+fmtTime(r.finishedAt)+(edits?'<span class="editmark">수정 '+edits+'</span>':'')+'</span></div><div class="history-sub">작업자 '+esc(r.worker)+' · 지시 '+esc(r.orderNo||'-')+' · 소재LOT '+esc(r.materialLot||'-')+badTxt+' · 성능률 '+perf.toFixed(1)+'%'+(r.remark?' · '+esc(r.remark):'')+'</div><div class="history-num"><div><b style="color:#15803d">'+Number(r.goodQty||0).toLocaleString()+'</b><span>양품</span></div><div><b style="color:#b91c1c">'+Number(r.badQty||0).toLocaleString()+'</b><span>불량</span></div><div><b>'+fmtClock(r.runMs)+'</b><span>순가동</span></div><div><b style="color:#6d28d9">'+Number(r.opRate||0).toFixed(1)+'%</b><span>가동률</span></div></div><div class="minirow" style="margin-top:7px"><button class="btn blue" style="padding:6px 9px;font-size:10px" onclick="openEditReport(\''+r.id+'\')">수정</button><button class="btn white" style="padding:6px 9px;font-size:10px" onclick="showStops(\''+r.id+'\')">정지내역</button>'+(edits?'<button class="btn white" style="padding:6px 9px;font-size:10px" onclick="showEditHistory(\''+r.id+'\')">수정이력</button>':'')+'<button class="btn red" style="padding:6px 9px;font-size:10px" onclick="deleteReport(\''+r.id+'\')">삭제</button></div></div>'}).join('')}
+function showStops(id){const r=reports.find(x=>x.id===id);if(!r)return;const a=r.stops||[];alert(a.length?a.map((s,i)=>(i+1)+'. '+s.reason+' · '+fmtClock(s.durationMs)).join('\n'):'정지내역이 없습니다.')}
+function deleteReport(id){if(!confirm('이 생산일보를 삭제할까요?'))return;reports=reports.filter(x=>x.id!==id);store(K.reports,reports);renderHistory()}
+function openEditReport(id){const r=reports.find(x=>x.id===id);if(!r)return;editingReportId=id;$('editDate').value=r.date||'';$('editShift').value=r.shift||'주간';$('editWorker').value=r.worker||'';$('editMachine').value=r.machine||'';$('editOrderNo').value=r.orderNo||'';$('editItemNo').value=r.itemNo||'';$('editItemName').value=r.itemName||'';$('editProcess').value=r.process||'';$('editPlanQty').value=Number(r.planQty||0);$('editStdCt').value=Number(r.stdCt||0);$('editMaterialLot').value=r.materialLot||'';$('editDrawingRev').value=r.drawingRev||'';$('editGoodQty').value=Number(r.goodQty||0);$('editBadQty').value=Number(r.badQty||0);$('editBadReason').value=r.badReason||'';$('editRemark').value=r.remark||'';$('editTimeInfo').textContent='가동시간은 계측값 보호를 위해 수정하지 않습니다. '+fmtDateTime(r.startedAt)+' ~ '+fmtDateTime(r.finishedAt)+' / 순가동 '+fmtClock(r.runMs)+' / 정지 '+fmtClock(r.stopMs);$('editReportDialog').showModal()}
+function saveEditReport(){const r=reports.find(x=>x.id===editingReportId);if(!r)return;const next={date:$('editDate').value,shift:$('editShift').value,worker:$('editWorker').value.trim(),machine:$('editMachine').value.trim(),orderNo:$('editOrderNo').value.trim(),itemNo:$('editItemNo').value.trim(),itemName:$('editItemName').value.trim(),process:$('editProcess').value.trim(),planQty:Number($('editPlanQty').value)||0,stdCt:Number($('editStdCt').value)||0,materialLot:$('editMaterialLot').value.trim(),drawingRev:$('editDrawingRev').value.trim(),goodQty:Number($('editGoodQty').value)||0,badQty:Number($('editBadQty').value)||0,badReason:$('editBadReason').value,remark:$('editRemark').value.trim()};if(!next.date||!next.worker||!next.machine||!next.itemNo||!next.process){alert('작업일자, 작업자, 설비, 품번, 공정은 필수입니다.');return}if(next.badQty>0&&!next.badReason){alert('불량수량이 있으면 불량유형을 선택하세요.');return}const changes=[];Object.keys(next).forEach(k=>{if(String(r[k]??'')!==String(next[k]??''))changes.push({field:k,from:r[k]??'',to:next[k]??''})});if(!changes.length){$('editReportDialog').close();return}const editedAt=nowIso();r.editHistory=[...(r.editHistory||[]),{editedAt,changes}].slice(-20);Object.assign(r,next);r.totalQty=r.goodQty+r.badQty;r.badRate=r.totalQty?r.badQty/r.totalQty*100:0;r.achievementRate=r.planQty?r.goodQty/r.planQty*100:0;r.performanceRate=calcPerformance(r.totalQty,r.stdCt,Number(r.runMs||0));r.editedAt=editedAt;store(K.reports,reports);$('editReportDialog').close();renderHistory();alert('✅ 생산일보를 수정했습니다. 변경내역은 수정이력에 저장됩니다.')}
+function showEditHistory(id){const r=reports.find(x=>x.id===id);if(!r)return;const h=r.editHistory||[];if(!h.length){alert('수정이력이 없습니다.');return}const text=h.map((x,i)=>{const c=(x.changes||[]).map(v=>(FIELD_LABELS[v.field]||v.field)+': '+String(v.from??'-')+' → '+String(v.to??'-')).join('\n   ');return (i+1)+'. '+fmtDateTime(x.editedAt)+'\n   '+c}).join('\n\n');alert(text)}
+
+function addMachine(){const code=$('mMachineCode').value.trim(),name=$('mMachineName').value.trim();if(!code){alert('설비코드를 입력하세요.');return}if(machines.some(x=>x.code.toLowerCase()===code.toLowerCase())){alert('이미 등록된 설비코드입니다.');return}machines.push({code,name});store(K.machines,machines);$('mMachineCode').value='';$('mMachineName').value='';renderMaster()}
+function delMachine(idx){const x=machines[idx];if(!x)return;if(!confirm(x.code+' 설비를 삭제할까요?'))return;machines.splice(idx,1);store(K.machines,machines);renderMaster()}
+function addItem(){const itemNo=$('mItemNo').value.trim(),itemName=$('mItemName').value.trim(),process=$('mProcess').value.trim(),stdCt=Number($('mStdCt').value)||0;if(!itemNo||!process){alert('품번과 공정을 입력하세요.');return}if(items.some(x=>x.itemNo.toLowerCase()===itemNo.toLowerCase()&&x.process.toLowerCase()===process.toLowerCase())){alert('동일 품번/공정이 이미 등록되어 있습니다.');return}items.push({itemNo,itemName,process,stdCt});store(K.items,items);['mItemNo','mItemName','mProcess','mStdCt'].forEach(id=>$(id).value='');renderMaster()}
+function delItem(idx){if(!items[idx])return;if(!confirm('이 품목/공정을 삭제할까요?'))return;items.splice(idx,1);store(K.items,items);renderMaster()}
+function renderMaster(){$('machineBody').innerHTML=machines.length?machines.map((m,i)=>'<tr><td><b>'+esc(m.code)+'</b></td><td>'+esc(m.name||'-')+'</td><td><button class="btn red" style="padding:5px 7px;font-size:10px" onclick="delMachine('+i+')">삭제</button></td></tr>').join(''):'<tr><td colspan="3" class="empty">등록된 설비 없음</td></tr>';$('itemBody').innerHTML=items.length?items.map((x,i)=>'<tr><td><b>'+esc(x.itemNo)+'</b></td><td>'+esc(x.itemName||'-')+'</td><td>'+esc(x.process)+'</td><td class="num">'+Number(x.stdCt||0).toFixed(1)+'s</td><td><button class="btn red" style="padding:5px 7px;font-size:10px" onclick="delItem('+i+')">삭제</button></td></tr>').join(''):'<tr><td colspan="5" class="empty">등록된 품목/공정 없음</td></tr>';renderDataLists()}
+function renderDataLists(){$('machineList').innerHTML=machines.map(m=>'<option value="'+esc(m.code)+'">'+esc(m.name||'')+'</option>').join('');const uniq=new Map();items.forEach(x=>{if(!uniq.has(x.itemNo))uniq.set(x.itemNo,x)});$('itemList').innerHTML=[...uniq.values()].map(x=>'<option value="'+esc(x.itemNo)+'">'+esc(x.itemName||'')+'</option>').join('');renderProcessListForItem($('itemNo')?.value.trim()||'')}
+
+function savePrefs(){prefs={...prefs,companyName:$('companyName').value,defaultWorker:$('defaultWorker').value,defaultShift:$('defaultShift').value};store(K.prefs,prefs)}
+function loadPrefs(){$('companyName').value=prefs.companyName||'';$('defaultWorker').value=prefs.defaultWorker||'';$('defaultShift').value=prefs.defaultShift||'주간';if(!active){if(draft){if(!$('worker').value)$('worker').value=prefs.defaultWorker||''}else{$('worker').value=prefs.defaultWorker||'';$('shift').value=prefs.defaultShift||'주간'}}}
+function exportBackup(){prefs={...prefs,lastBackupAt:nowIso()};storeSilent(K.prefs,prefs);const data={version:2,exportedAt:nowIso(),reports,machines,items,prefs,active,draft};download('machining_daily_report_backup_'+todayKst()+'.json',JSON.stringify(data,null,2),'application/json')}
+function importBackup(input){const f=input.files?.[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(!confirm('현재 로컬 데이터를 백업파일 내용으로 교체할까요?'))return;reports=Array.isArray(d.reports)?d.reports:[];machines=Array.isArray(d.machines)?d.machines:[];items=Array.isArray(d.items)?d.items:[];prefs=d.prefs||{};active=d.active||null;draft=d.draft||null;storeSilent(K.reports,reports);storeSilent(K.machines,machines);storeSilent(K.items,items);storeSilent(K.prefs,prefs);if(active)storeSilent(K.active,active);else localStorage.removeItem(K.active);if(draft)storeSilent(K.draft,draft);else localStorage.removeItem(K.draft);location.reload()}catch(e){alert('백업파일을 읽을 수 없습니다.')}};rd.readAsText(f);input.value=''}
+function download(name,text,type){const b=new Blob(['\ufeff'+text],{type:type||'text/plain;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+function csvCell(v){const s=String(v??'').replace(/"/g,'""');return '"'+s+'"'}
+function downloadCsv(){const rows=[['작업일자','근무조','작업자','설비','작업지시','품번','품명','공정','소재LOT','도면Rev','계획수량','양품','불량','불량유형','총생산','불량률(%)','달성률(%)','시작','종료','순가동','정지합계','가동률(%)','기준CT(초)','성능률(%)','정지내역','특이사항','수정횟수']];reports.forEach(r=>rows.push([r.date,r.shift,r.worker,r.machine,r.orderNo,r.itemNo,r.itemName,r.process,r.materialLot,r.drawingRev,r.planQty,r.goodQty,r.badQty,r.badReason||'',r.totalQty,Number(r.badRate||0).toFixed(2),Number(r.achievementRate||0).toFixed(2),fmtTime(r.startedAt),fmtTime(r.finishedAt),fmtClock(r.runMs),fmtClock(r.stopMs),Number(r.opRate||0).toFixed(2),r.stdCt,reportPerformance(r).toFixed(2),(r.stops||[]).map(s=>s.reason+' '+fmtClock(s.durationMs)).join(' | '),r.remark,(r.editHistory||[]).length]));download('가공생산일보_'+todayKst()+'.csv',rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8')}
+function resetAll(){if(!confirm('모든 로컬 생산일보/진행작업/임시저장/기준정보를 삭제합니다. 계속할까요?'))return;if(!confirm('삭제 후 복구할 수 없습니다. 정말 초기화할까요?'))return;Object.values(K).forEach(k=>localStorage.removeItem(k));location.reload()}
+
+STOP_REASONS.forEach(r=>{const b=document.createElement('button');b.className='reason';b.textContent=r;b.onclick=()=>chooseStopReason(r,b);$('dialogReasons').appendChild(b)});
+function init(){if(!machines.length){machines=[{code:'MCT-01',name:'머시닝센터 1호기'},{code:'CNC-01',name:'CNC 선반 1호기'}];storeSilent(K.machines,machines)}if(!items.length){items=[{itemNo:'SAMPLE-001',itemName:'샘플품',process:'CNC선삭',stdCt:45}];storeSilent(K.items,items)}renderMaster();if(active&&active.entry)setEntry(active.entry);else if(draft)setEntry(draft);if(!$('workDate').value)$('workDate').value=todayKst();$('filterDate').value=todayKst();loadPrefs();renderDataLists();renderActive();renderHistory();checkRecovery();setInterval(updateMetrics,1000);setInterval(heartbeat,15000)}
+init();
+</script>
+</body>
+</html>
