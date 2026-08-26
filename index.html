@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0b1220">
-<title>스마트팩토리 v2.1</title>
+<title>스마트팩토리 v2.2</title>
 <style>
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
@@ -301,6 +301,27 @@ body.locked { overflow: hidden; }
 .acc.c-work[open] .icon { box-shadow: 0 0 16px rgba(251,191,36,0.4); }
 .acc.c-work[open] .title { color: #fde68a; }
 .acc.c-work .icon { background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.3)); color: #fcd34d; }
+
+/* ===== PC 접속 시 통합 MES 진입 ===== */
+.mes-bar{
+  display:none; align-items:center; gap:12px;
+  margin:0 0 14px; padding:14px 16px; border-radius:14px; text-decoration:none;
+  background:linear-gradient(135deg, rgba(56,189,248,0.14), rgba(139,92,246,0.14));
+  border:1px solid rgba(56,189,248,0.35);
+}
+body.is-pc .mes-bar{display:flex}
+.mes-bar:hover{border-color:rgba(56,189,248,0.75); background:linear-gradient(135deg, rgba(56,189,248,0.22), rgba(139,92,246,0.20))}
+.mes-bar .ic{font-size:26px}
+.mes-bar b{display:block; color:#7dd3fc; font-size:15px; font-weight:800}
+.mes-bar span{display:block; font-size:12px; color:#94a3b8; margin-top:2px}
+.mes-bar .go{margin-left:auto; color:#7dd3fc; font-size:20px}
+
+/* ===== iframe 임베드 모드 (MES 탭 내부 실행) ===== */
+body.embed .header,
+body.embed .footer,
+body.embed .mes-bar,
+body.embed .pin-lock{display:none !important}
+body.embed .container{padding-top:10px}
 </style>
 </head>
 <body class="locked">
@@ -317,7 +338,7 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="header">
-  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver">v2.1</span></h1>
+  <h1><span data-i18n="title">스마트팩토리</span> <span class="ver" id="verBtn">v2.2</span></h1>
   <div class="top-btns">
     <button class="top-btn user" id="userBtn" type="button" title="사용자 정보" style="display:none">
       <span class="ic">👤</span><span id="userName">사용자</span>
@@ -334,6 +355,14 @@ body.locked { overflow: hidden; }
 </div>
 
 <div class="container">
+  <a class="mes-bar" href="mes_main.html">
+    <div class="ic">💻</div>
+    <div>
+      <b>통합 MES 열기</b>
+      <span>PC 전용 · 수주/생산/품질/외주 + 금형관리 전체</span>
+    </div>
+    <div class="go">›</div>
+  </a>
   <details class="acc c-hq">
     <summary><div class="icon">🔧</div><div class="title" data-i18n="hq">재고(본사)</div><div class="count">1</div><div class="arrow">›</div></summary>
     <div class="acc-body">
@@ -504,10 +533,35 @@ body.locked { overflow: hidden; }
     </div>
   </details>
 
-  <div class="footer">v2.1 · msm Smart Factory · <span data-i18n="footer_mod">업무현황 모듈</span></div>
+  <div class="footer">v2.2 · msm Smart Factory · <span data-i18n="footer_mod">업무현황 모듈</span></div>
 </div>
 
 <script>
+/* ===== v2.2 : PC 감지 / 임베드 모드 / 변경이력 ===== */
+const CHANGELOG_MSM =
+  'msm 스마트팩토리 변경이력\n\n'+
+  '[v2.2] 2026-08-26\n'+
+  ' \u00b7 PC 접속 시 [통합 MES 열기] 배너 표시\n'+
+  ' \u00b7 MES 탭 내부 실행(embed) 모드 지원 : 헤더/푸터/PIN화면 자동 숨김\n'+
+  ' \u00b7 모바일 = 현장용, PC = MES 로 진입 분리\n\n'+
+  '[v2.1] 업무현황 모듈 추가';
+
+(function envInit(){
+  const embedded = (window.self !== window.top) || /[?&]embed=1/.test(location.search);
+  if(embedded){
+    document.body.classList.add('embed');
+    document.body.classList.remove('locked');
+  }else{
+    const isPC = window.matchMedia('(min-width:900px)').matches
+              && window.matchMedia('(pointer:fine)').matches;
+    if(isPC) document.body.classList.add('is-pc');
+  }
+})();
+document.addEventListener('DOMContentLoaded',function(){
+  const vb = document.getElementById('verBtn');
+  if(vb) vb.addEventListener('click', function(){ alert(CHANGELOG_MSM); });
+});
+
 const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
 const TBL_USER = 'mm_user_pin';

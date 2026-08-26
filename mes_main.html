@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TJ MES v1.1 - 통합 생산관리시스템</title>
+<style>
+:root{
+  --top1-h:36px;
+  --top2-h:72px;
+  --left-w:210px;
+  --tab-h:32px;
+  --blue:#2d66ad;
+  --blue-dark:#1f4f8c;
+  --blue-soft:#dce8f6;
+  --line:#a9b6c4;
+  --line2:#c8d1da;
+  --panel:#eef2f5;
+  --header:#e7edf3;
+  --text:#25313d;
+  --muted:#667483;
+  --shadow:rgba(24,45,67,.15);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font-family:"Malgun Gothic","맑은 고딕",Arial,sans-serif;
+  font-size:12px;
+  color:var(--text);
+  background:#dfe5ea;
+  overflow:hidden;
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+body.locked .top-level-1,body.locked .top-level-2,body.locked .left-panel,
+body.locked .workspace,body.locked .bottom-status{display:none}
+
+/* ===== PIN 잠금 ===== */
+.pin-lock{
+  position:fixed;inset:0;z-index:900;display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  background:linear-gradient(160deg,#233c5c,#12233a);
+}
+body.locked .pin-lock{display:flex}
+.pl-logo{color:#e8f0fa;font-size:22px;font-weight:900;letter-spacing:1px}
+.pl-logo span{color:#7fb3ea}
+.pl-sub{color:#9fb6cf;font-size:12px}
+.pl-hint{color:#cfe0f2;font-size:12px;height:16px}
+.pl-hint.ok{color:#7ee3a6}.pl-hint.err{color:#ff9a9a}
+.pl-dots{display:flex;gap:12px;margin:4px 0 2px}
+.pl-dot{width:13px;height:13px;border-radius:50%;border:1px solid #6f8fb5;background:transparent}
+.pl-dot.on{background:#7fb3ea;border-color:#7fb3ea}
+.pl-dots.shake{animation:shk .35s}
+@keyframes shk{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.pl-keypad{display:grid;grid-template-columns:repeat(3,64px);gap:8px}
+.pl-key{
+  height:52px;border:1px solid #48688f;border-radius:4px;
+  background:linear-gradient(#2f4f74,#24405f);color:#e8f1fa;font-size:18px;font-weight:700;
+}
+.pl-key:hover{background:#365a83}
+.pl-lockout{color:#ff9a9a;font-size:12px}
+.pl-ver{position:fixed;bottom:12px;color:#5f7994;font-size:11px}
+
+/* 모바일 가드 */
+.mob-guard{position:fixed;inset:0;z-index:950;display:none;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#12233a,#0b1626);padding:22px}
+body.mobile-block .mob-guard{display:flex}
+body.mobile-block .top-level-1,body.mobile-block .top-level-2,body.mobile-block .left-panel,
+body.mobile-block .workspace,body.mobile-block .bottom-status{display:none}
+.mg-box{max-width:330px;text-align:center;color:#dce8f6}
+.mg-ic{font-size:44px;margin-bottom:10px}
+.mg-box h3{margin:0 0 8px;font-size:17px;color:#7fb3ea}
+.mg-box p{margin:0 0 18px;font-size:13px;line-height:1.7;color:#9fb6cf}
+.mg-btn{display:block;padding:14px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;
+  background:linear-gradient(135deg,#3d7cc0,#2b5c96);color:#fff;border:1px solid #4d88c9}
+.mg-skip{margin-top:12px;background:none;border:0;color:#7f95ac;font-size:12px;text-decoration:underline}
+
+/* 1차 메뉴 */
+.top-level-1{
+  position:fixed;left:0;right:0;top:0;height:var(--top1-h);z-index:100;
+  display:flex;align-items:stretch;
+  background:linear-gradient(#f9fbfc,#e4eaf0);
+  border-bottom:1px solid #8d9aaa;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+}
+.app-mark{
+  width:78px;display:flex;align-items:center;justify-content:center;
+  border-right:1px solid #b7c1cb;background:#f1f4f7;
+  font-weight:900;color:#b63b30;letter-spacing:.5px;
+}
+.l1-menu{display:flex;align-items:stretch;overflow:auto;white-space:nowrap}
+.l1-btn{
+  min-width:88px;padding:0 14px;border:0;border-right:1px solid #c6ced6;
+  background:transparent;color:#3d4a58;font-weight:700;
+}
+.l1-btn:hover{background:#edf3f9;color:var(--blue-dark)}
+.l1-btn.active{background:#dce8f5;color:var(--blue-dark);box-shadow:inset 0 -3px 0 var(--blue)}
+.top-status{
+  margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 10px;
+  color:#6f7c89;font-size:11px;background:#f8fafc;border-left:1px solid #c6ced6;
+}
+.status-dot{width:7px;height:7px;background:#2f9d63;border-radius:50%}
+.status-dot.off{background:#c0392b}
+.gs-wrap{position:relative;display:flex;align-items:center}
+.gs-input{height:22px;width:150px;border:1px solid #aeb9c4;padding:0 6px;background:#fff}
+.gs-pop{
+  position:absolute;top:26px;right:0;width:270px;max-height:320px;overflow:auto;z-index:200;
+  background:#fff;border:1px solid #8494a4;box-shadow:0 4px 10px rgba(0,0,0,.18);display:none;
+}
+.gs-pop.on{display:block}
+.gs-item{padding:6px 8px;border-bottom:1px solid #eef1f4;cursor:pointer;color:#42515f}
+.gs-item:hover{background:#e8f1fa}
+.gs-item b{color:#1f4f8c}
+.gs-item .p{color:#8b98a5;font-size:10px}
+.mini-btn{height:22px;border:1px solid #9aa8b6;background:linear-gradient(#fff,#e6ebf0);padding:0 8px;color:#43536a}
+.mini-btn:hover{border-color:#6e8fb3;background:#edf5fd}
+
+/* 2차 메뉴 */
+.top-level-2{
+  position:fixed;top:var(--top1-h);left:0;right:0;height:var(--top2-h);z-index:90;
+  display:flex;align-items:stretch;background:linear-gradient(#f7f9fb,#e8edf2);
+  border-bottom:1px solid #929fad;
+}
+.l2-title{
+  width:78px;display:flex;align-items:center;justify-content:center;
+  background:#eef2f6;border-right:1px solid #bdc7d0;color:#677482;font-weight:700;
+}
+.l2-menu{display:flex;align-items:stretch;overflow:auto;min-width:0}
+.l2-btn{
+  position:relative;min-width:80px;padding:8px 10px 6px;border:0;border-right:1px solid #ccd3da;
+  background:transparent;color:#4b5967;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+}
+.l2-btn:hover{background:#fdfefe}
+.l2-btn.active{background:#ffffff;color:var(--blue-dark);box-shadow:inset 0 -3px 0 var(--blue)}
+.l2-icon{
+  width:28px;height:28px;display:grid;place-items:center;font-size:18px;
+  border:1px solid #bcc7d2;background:linear-gradient(#fff,#e9eef3);box-shadow:inset 0 0 0 1px #fff;
+}
+.l2-label{font-weight:700;font-size:11px}
+
+/* 좌측 메뉴 */
+.left-panel{
+  position:fixed;top:calc(var(--top1-h) + var(--top2-h));left:0;bottom:0;width:var(--left-w);z-index:80;
+  background:#f4f6f8;border-right:1px solid #8f9dab;box-shadow:2px 0 4px rgba(0,0,0,.04);
+  display:flex;flex-direction:column;
+}
+.left-head{
+  height:34px;padding:0 10px;display:flex;align-items:center;gap:7px;
+  background:linear-gradient(#edf2f6,#dbe3ea);border-bottom:1px solid #9eabb8;
+  color:#314355;font-weight:800;
+}
+.left-head .tiny{font-size:10px;color:#7a8793;margin-left:auto}
+.tree{padding:4px 0;overflow:auto;flex:1;background:#f8fafb}
+.tree-group{border-bottom:1px solid #d5dce3}
+.tree-caption{
+  padding:7px 10px;background:#edf2f6;color:#546271;font-weight:800;
+  display:flex;align-items:center;gap:6px;
+}
+.tree-caption::before{content:"▾";font-size:10px;color:#738394}
+.tree-item{
+  width:100%;border:0;background:transparent;text-align:left;padding:7px 8px 7px 26px;
+  color:#475563;border-top:1px solid #f1f3f5;position:relative;
+}
+.tree-item::before{content:"•";position:absolute;left:15px;color:#7d8b99}
+.tree-item.ext::before{content:"▸";color:#2f6e49}
+.tree-item:hover{background:#e8f0f8;color:#1f4f8c}
+.tree-item.active{background:#d6e5f6;color:#153f74;font-weight:800;box-shadow:inset 3px 0 0 var(--blue)}
+.recent-box{border-top:1px solid #9eabb8;background:#eef2f6;padding:4px 0 6px;max-height:150px;overflow:auto}
+.recent-cap{padding:5px 10px;color:#667483;font-weight:800;font-size:11px}
+.recent-item{width:100%;border:0;background:transparent;text-align:left;padding:5px 10px 5px 20px;color:#5a6875;position:relative}
+.recent-item::before{content:"↩";position:absolute;left:8px;color:#96a3b0;font-size:10px}
+.recent-item:hover{background:#dfe9f4;color:#1f4f8c}
+
+/* 본문 + 누적 탭 */
+.workspace{
+  position:fixed;
+  top:calc(var(--top1-h) + var(--top2-h));
+  left:var(--left-w);right:0;bottom:0;
+  background:#cdd5dc;
+  display:flex;flex-direction:column;min-width:0;
+}
+.tabbar{
+  height:var(--tab-h);display:flex;align-items:flex-end;gap:2px;padding:4px 5px 0;
+  background:linear-gradient(#e7ecf1,#cfd7df);border-bottom:1px solid #8493a2;
+  overflow-x:auto;overflow-y:hidden;white-space:nowrap;
+}
+.tab{
+  height:28px;min-width:115px;max-width:210px;display:flex;align-items:center;
+  border:1px solid #97a6b5;border-bottom:0;background:linear-gradient(#f5f7f9,#d9e0e7);
+  color:#566371;padding:0 5px 0 9px;box-shadow:0 -1px 0 rgba(255,255,255,.7) inset;cursor:pointer;
+}
+.tab.active{background:#fff;color:#234d7f;font-weight:800;border-color:#7990a8;position:relative;z-index:2}
+.tab .tab-title{overflow:hidden;text-overflow:ellipsis}
+.tab .close{
+  margin-left:auto;width:20px;height:20px;border:0;background:transparent;color:#7e8994;font-size:14px;line-height:18px;padding:0;
+}
+.tab .close:hover{background:#e1e7ed;color:#b23030}
+.tab-home .close{display:none}
+
+.content-shell{flex:1;min-height:0;padding:7px;padding-bottom:29px;background:#dfe4e9}
+.page{
+  height:100%;background:#fff;border:1px solid #8f9cab;box-shadow:0 1px 3px var(--shadow);
+  display:none;overflow:auto;flex-direction:column;
+}
+.page.active{display:flex}
+.page-title{
+  height:34px;display:flex;align-items:center;padding:0 9px;gap:8px;flex:0 0 auto;
+  background:linear-gradient(#fbfcfd,#e8edf2);border-bottom:1px solid #a9b6c2;
+}
+.page-title h2{font-size:14px;margin:0;color:#41556a;font-weight:800}
+.page-title h2::before{content:"◯";margin-right:5px;color:#76879a;font-size:13px}
+.page-title .sub{font-size:10px;color:#8894a0}
+.page-actions{margin-left:auto;display:flex;gap:4px}
+.erp-btn{
+  height:24px;padding:0 10px;border:1px solid #9aa8b6;background:linear-gradient(#fff,#e1e7ec);color:#405163;
+}
+.erp-btn:hover{border-color:#6e8fb3;background:#edf5fd}
+.erp-btn.primary{background:linear-gradient(#4f84c0,#2e67a8);color:#fff;border-color:#24578f}
+
+/* iframe 페이지 */
+.ext-frame{flex:1;min-height:0;width:100%;border:0;background:#0f172a}
+
+/* 검색 조건 */
+.search-panel{margin:7px;border:1px solid #a9b6c3;background:#f7f9fb;flex:0 0 auto}
+.search-row{display:grid;grid-template-columns:92px minmax(130px,1fr) 92px minmax(130px,1fr) 92px minmax(130px,1fr);border-bottom:1px solid #d6dde4}
+.search-row:last-child{border-bottom:0}
+.search-label{display:flex;align-items:center;padding:5px 7px;background:#edf2f6;border-right:1px solid #d1d9e0;color:#526171;font-weight:700}
+.search-field{padding:4px 6px;border-right:1px solid #e0e5ea}
+.search-field:last-child{border-right:0}
+.search-field input,.search-field select{height:24px;width:100%;border:1px solid #aeb9c4;background:#fff;padding:0 6px;color:#42515f}
+
+/* 그리드 */
+.grid-wrap{margin:7px;border:1px solid #8494a4;overflow:auto;background:#fff}
+.grid-toolbar{height:28px;background:#edf2f6;border-bottom:1px solid #aab6c1;display:flex;align-items:center;padding:0 6px;gap:4px;color:#697785}
+.grid-toolbar .right{margin-left:auto}
+table.erp-grid{width:100%;border-collapse:collapse;table-layout:fixed}
+.erp-grid th{
+  height:27px;background:linear-gradient(#f3f6f8,#dce3e9);border-right:1px solid #aab7c3;border-bottom:1px solid #91a0af;
+  color:#4a5968;font-weight:800;text-align:center;padding:0 5px;white-space:nowrap;
+}
+.erp-grid td{height:26px;border-right:1px solid #d0d7de;border-bottom:1px solid #d9dfe5;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.erp-grid tr:nth-child(even) td{background:#fafbfc}
+.erp-grid tr:hover td{background:#e8f1fa}
+.erp-grid tr.selected td{background:#2f68ad;color:#fff}
+.erp-grid .num{text-align:right}
+.erp-grid .center{text-align:center}
+.erp-grid .status{font-weight:700;color:#2f6e49}
+.erp-grid .selected .status{color:#fff}
+
+.info-box{margin:7px;border:1px solid #aab6c2;background:#f8fafc;padding:10px;line-height:1.8;color:#4d5a68}
+.info-box b{color:#2e5f95}
+
+/* 대시보드 */
+.dash-wrap{padding:9px;overflow:auto;flex:1;min-height:0;background:#f2f5f8}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px;margin-bottom:9px}
+.kpi{border:1px solid #a9b6c3;background:linear-gradient(#fff,#eef3f8);padding:9px 10px}
+.kpi .k-label{color:#6a7887;font-weight:700;font-size:11px}
+.kpi .k-val{font-size:22px;font-weight:900;color:#22537f;margin-top:4px}
+.kpi .k-val small{font-size:11px;color:#7c8b99;font-weight:700;margin-left:3px}
+.kpi.warn .k-val{color:#b0442f}
+.kpi.ok .k-val{color:#2f6e49}
+.dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:1100px){.dash-cols{grid-template-columns:1fr}}
+.dash-card{border:1px solid #a0aebc;background:#fff}
+.dash-card h3{margin:0;height:28px;display:flex;align-items:center;padding:0 9px;font-size:12px;color:#41556a;
+  background:linear-gradient(#f4f7fa,#e5ebf1);border-bottom:1px solid #b3bfca}
+.dash-card h3 .r{margin-left:auto;font-weight:400;color:#8894a0;font-size:10px}
+.dash-body{max-height:260px;overflow:auto}
+.quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;padding:9px}
+.quick button{border:1px solid #a9b6c3;background:linear-gradient(#fff,#eaf0f6);padding:9px 8px;text-align:left;color:#3f5164;font-weight:700}
+.quick button:hover{border-color:#5b86b6;background:#e9f2fc;color:#1f4f8c}
+.quick button span{display:block;font-weight:400;color:#8493a1;font-size:10px;margin-top:2px}
+
+/* 화면 하단 상태바 */
+.bottom-status{
+  position:fixed;left:var(--left-w);right:0;bottom:0;height:22px;
+  display:flex;align-items:center;padding:0 8px;background:#e7ecf0;border-top:1px solid #9aa8b5;color:#6f7b87;font-size:10px;z-index:85;
+}
+.bottom-status .right{margin-left:auto}
+
+@media(max-width:900px){
+  :root{--left-w:175px}
+  .l1-btn{min-width:76px;padding:0 10px}
+  .l2-btn{min-width:70px}
+  .search-row{grid-template-columns:82px 1fr 82px 1fr}
+  .search-row .hide-sm{display:none}
+  .gs-input{width:100px}
+}
+</style>
+</head>
+<body class="locked">
+
+<!-- PIN 잠금 -->
+<div class="pin-lock" id="pinLock">
+  <div class="pl-logo">TJ <span>MES</span></div>
+  <div class="pl-sub">통합 생산관리시스템</div>
+  <div class="pl-hint" id="plHint">4자리 PIN을 입력하세요</div>
+  <div class="pl-dots" id="plDots"><div class="pl-dot"></div><div class="pl-dot"></div><div class="pl-dot"></div><div class="pl-dot"></div></div>
+  <div class="pl-lockout" id="plLockout" style="display:none"></div>
+  <div class="pl-keypad" id="plKeypad"></div>
+  <div class="pl-ver">v1.1 · mm Smart Factory 통합</div>
+</div>
+
+<!-- 모바일 가드 -->
+<div class="mob-guard" id="mobGuard">
+  <div class="mg-box">
+    <div class="mg-ic">📱</div>
+    <h3>모바일 기기로 접속했습니다</h3>
+    <p>통합 MES는 PC 전용 화면입니다.<br>현장 업무(재고·수리·일보)는<br>모바일 화면에서 이용하세요.</p>
+    <a class="mg-btn" href="index.html">현장용 화면으로 이동 ›</a>
+    <button class="mg-skip" id="mgSkip">그래도 PC 화면 보기</button>
+  </div>
+</div>
+
+<!-- 1차 메뉴 -->
+<header class="top-level-1">
+  <div class="app-mark">TJ MES</div>
+  <nav class="l1-menu" id="l1Menu"></nav>
+  <div class="top-status">
+    <div class="gs-wrap">
+      <input class="gs-input" id="gsInput" placeholder="🔍 메뉴 검색" autocomplete="off">
+      <div class="gs-pop" id="gsPop"></div>
+    </div>
+    <button class="mini-btn" id="verBtn" title="변경이력">ⓘ</button>
+    <button class="mini-btn" id="userBtn">👤 사용자</button>
+    <button class="mini-btn" id="logoutBtn">🔒</button>
+    <span class="status-dot" id="netDot"></span><span id="netTxt">Connected</span><span id="clock"></span>
+  </div>
+</header>
+
+<!-- 2차 메뉴 -->
+<section class="top-level-2">
+  <div class="l2-title">업무메뉴</div>
+  <nav class="l2-menu" id="l2Menu"></nav>
+</section>
+
+<!-- 좌측 메뉴 -->
+<aside class="left-panel">
+  <div class="left-head"><span id="leftTitle">메뉴</span><span class="tiny">MENU</span></div>
+  <div class="tree" id="treeMenu"></div>
+  <div class="recent-box">
+    <div class="recent-cap">최근 사용</div>
+    <div id="recentList"></div>
+  </div>
+</aside>
+
+<!-- 본문: 누적 탭 + 페이지 -->
+<main class="workspace">
+  <div class="tabbar" id="tabbar"></div>
+  <div class="content-shell" id="contentShell"></div>
+</main>
+
+<div class="bottom-status">
+  <span id="stUser">사용자: -</span>
+  <span style="margin-left:18px">태진다이텍 통합 MES</span>
+  <span class="right">TJ MES v1.1 · Ready</span>
+</div>
+
+<script>
+/* ==================== 설정 ==================== */
+const VER = 'v1.1';
+const CHANGELOG =
+  'TJ MES 변경이력\n\n'+
+  '[v1.1] 2026-08-26\n'+
+  ' · 모바일 접속 감지 → 현장용 화면(index.html) 안내\n'+
+  ' · 금형관리 iframe 임베드 모드 (?embed=1 + 자동 주입)\n'+
+  '   - 내부 헤더/푸터/뒤로가기/PIN화면 자동 숨김 (이중 헤더 제거)\n'+
+  ' · 탭별 🌓 라이트/다크 스킨 전환 (설정 저장)\n\n'+
+  '[v1.0] 2026-08-26\n'+
+  ' · MES 상위 프레임 신규 구축 (1차/2차/좌측트리 + 누적탭)\n'+
+  ' · mm 스마트팩토리 → [금형관리] 메뉴로 통합 (탭 내 실행)\n'+
+  ' · mm_user_session 공유 로그인 (PIN 1회 인증)\n'+
+  ' · 통합 대시보드 KPI / 메뉴 전체검색 / 최근사용 메뉴\n'+
+  ' · 탭 상태 자동 저장(재접속 시 복원)';
+
+const SUPABASE_URL = 'https://xrmwfsuitikqibwqxede.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0mgJ2cQeYpIDcfJi_9p4pA_dlaknATN';
+const TBL_USER = 'mm_user_pin';
+const MASTER_PIN_HASH = 'ed946f65d2c785d90e827c5ffd879ce3b49c68d4c88013074176a7e73bc58bcf';
+const LK_AUTH = 'mm_user_session';
+const LK_FAIL = 'mm_pin_fail';
+const LK_TABS = 'mes_open_tabs';
+const LK_RECENT = 'mes_recent';
+const SESSION_DAYS = 7, MAX_FAIL = 5, LOCKOUT_SEC = 60;
+
+/* ==================== 메뉴 정의 ====================
+   t: dash / ext(iframe) / grid / form
+   u: ext 일 때 파일경로
+==================================================== */
+const MENU = [
+  { key:'dash', name:'대시보드', second:[
+    { key:'d-main', name:'현황판', icon:'▦', groups:[
+      { name:'종합현황', items:[
+        {id:'home', n:'통합 대시보드', t:'dash', d:'전사 생산·품질·금형 현황 요약'},
+        {id:'mach-dash', n:'설비 가동현황', t:'ext', u:'counter_dashboard.html', d:'프레스 SPM/생산수 실시간 모니터링'}
+      ]},
+      { name:'업무', items:[
+        {id:'work-status', n:'인원별 업무현황', t:'ext', u:'work_status.html', d:'모바일 입력 → PC 실시간 공유'},
+        {id:'board', n:'수정요청 게시판', t:'ext', u:'board.html', d:'수정요청 · 버그신고 · 공지'}
+      ]}
+    ]}
+  ]},
+
+  { key:'sales', name:'영업/수주', second:[
+    { key:'order', name:'수주', icon:'▣', groups:[
+      { name:'수주', items:[
+        {id:'order-reg', n:'수주등록', t:'form', d:'고객 발주(PO) 등록'},
+        {id:'order-status', n:'수주현황', t:'grid', d:'수주 잔량 / 진행상태 조회'},
+        {id:'delivery-plan', n:'납기현황', t:'grid', d:'납기임박 / 지연 건 조회'}
+      ]},
+      { name:'고객', items:[
+        {id:'customer', n:'고객사관리', t:'form', d:'고객사 기준정보'},
+        {id:'unit-price', n:'단가관리', t:'grid', d:'품목별 판매단가 이력'}
+      ]}
+    ]},
+    { key:'ship', name:'출하', icon:'🚚', groups:[
+      { name:'출하', items:[
+        {id:'ship-plan', n:'출하계획', t:'grid', d:'일자별 출하 계획'},
+        {id:'ship-result', n:'출하실적', t:'grid', d:'납품서 발행 / 실적'}
+      ]}
+    ]}
+  ]},
+
+  { key:'mfg', name:'생산관리', second:[
+    { key:'plan', name:'생산계획', icon:'▤', groups:[
+      { name:'계획', items:[
+        {id:'prod-plan', n:'생산계획', t:'grid', d:'주간/일간 생산계획 수립'},
+        {id:'work-order', n:'작업지시', t:'grid', d:'호기별 작업지시 발행'}
+      ]}
+    ]},
+    { key:'result', name:'생산실적', icon:'⚙', groups:[
+      { name:'실적', items:[
+        {id:'daily-report', n:'생산일보', t:'ext', u:'production_report.html', d:'호기별 생산수·정지·불량 실시간 작성'},
+        {id:'prod-status', n:'생산현황', t:'grid', d:'작업지시 대비 실적 진척'},
+        {id:'oee', n:'설비종합효율(OEE)', t:'grid', d:'가동률 · 성능 · 양품률'}
+      ]}
+    ]},
+    { key:'osp', name:'외주관리', icon:'↔', groups:[
+      { name:'외주', items:[
+        {id:'osp-order', n:'외주발주', t:'grid', d:'외주 공정별 발주 등록'},
+        {id:'osp-issue', n:'외주출고', t:'grid', d:'LOT 단위 외주 출고 스캔'},
+        {id:'osp-receipt', n:'외주입고', t:'grid', d:'입고 수량 · 외주 배치번호 등록'},
+        {id:'osp-stock', n:'외주재고', t:'grid', d:'외주처 보유 재공 현황'}
+      ]},
+      { name:'추적', items:[
+        {id:'lot-trace', n:'LOT 추적', t:'grid', d:'정/역방향 계보 추적'},
+        {id:'lot-tree', n:'LOT 계보도', t:'grid', d:'분할/병합 이력 조회'}
+      ]}
+    ]}
+  ]},
+
+  { key:'quality', name:'품질관리', second:[
+    { key:'insp', name:'검사', icon:'✓', groups:[
+      { name:'검사', items:[
+        {id:'insp-in', n:'수입검사', t:'grid', d:'원자재/외주품 입고검사'},
+        {id:'insp-proc', n:'공정검사', t:'grid', d:'자주검사 / 순회검사'},
+        {id:'insp-out', n:'출하검사', t:'grid', d:'출하 전 최종검사'}
+      ]}
+    ]},
+    { key:'ncr', name:'부적합', icon:'⚠', groups:[
+      { name:'부적합 / 시정조치', items:[
+        {id:'ncr-reg', n:'부적합 등록', t:'form', d:'사내·고객 클레임 등록'},
+        {id:'capa-8d', n:'8D 보고서', t:'form', d:'시정조치 8D 작성 / 승인'},
+        {id:'improvement', n:'개선활동 보고', t:'ext', u:'improvement_report.html', d:'개선 전/후 비교 및 효과 기록'}
+      ]}
+    ]},
+    { key:'qstat', name:'품질현황', icon:'📈', groups:[
+      { name:'현황', items:[
+        {id:'q-status', n:'품질현황', t:'grid', d:'공정/품목별 불량률'},
+        {id:'q-pareto', n:'불량 파레토', t:'grid', d:'불량유형 집계'}
+      ]}
+    ]}
+  ]},
+
+  { key:'mat', name:'자재/재고', second:[
+    { key:'mat-io', name:'입출고', icon:'📦', groups:[
+      { name:'자재', items:[
+        {id:'mat-in', n:'원자재 입고', t:'grid', d:'코일/소재 입고 · HEAT NO 등록'},
+        {id:'mat-out', n:'자재 출고', t:'grid', d:'작업지시 기준 자재 불출'}
+      ]},
+      { name:'재고', items:[
+        {id:'stock-raw', n:'원자재 재고', t:'grid', d:'소재 LOT별 잔량'},
+        {id:'stock-wip', n:'재공 재고', t:'grid', d:'공정 대기 재공품'},
+        {id:'stock-fg', n:'제품 재고', t:'grid', d:'완제품 창고 재고'}
+      ]}
+    ]}
+  ]},
+
+  { key:'mold', name:'금형관리', second:[
+    { key:'mm-stock', name:'금형부품재고', icon:'🔧', groups:[
+      { name:'재고 (mm)', items:[
+        {id:'mm-hq', n:'금형부품 재고(본사)', t:'ext', u:'head_moldpart.html', d:'소모품 입출고 / 재고 조회'},
+        {id:'mm-f1', n:'금형부품 재고(1공장)', t:'ext', u:'first_factory.html', d:'프레스부품 입출고 / 재고 조회'},
+        {id:'mm-wy', n:'금형부품 재고(원영)', t:'ext', u:'wonyoung_factory.html', d:'원영 입출고 / 재고 조회'}
+      ]},
+      { name:'발주', items:[
+        {id:'mm-po', n:'발주 / 외주현황', t:'ext', u:'purchase_order.html', d:'외주업체별 발주·입고관리 / 보고서'}
+      ]}
+    ]},
+    { key:'mm-repair', name:'금형수리', icon:'🛠', groups:[
+      { name:'수리', items:[
+        {id:'mm-rq', n:'수리의뢰', t:'ext', u:'mold_repair_request.html', d:'금형 불량 발생 시 수리 의뢰 등록'},
+        {id:'mm-rp', n:'수리진행', t:'ext', u:'mold_repair_complete.html', d:'수리 진행/완료 처리 및 결과 등록'},
+        {id:'mm-rr', n:'이력조회·보고서', t:'ext', u:'mold_repair_report.html', d:'기간별 통계 / 보고서 인쇄 / CSV'}
+      ]}
+    ]},
+    { key:'mm-dev', name:'금형개발', icon:'🧪', groups:[
+      { name:'개발', items:[
+        {id:'mm-try', n:'Tryout 보고서', t:'ext', u:'tryout_report.html', d:'개발 단계 시작품 테스트 결과'},
+        {id:'mm-master', n:'금형마스터', t:'ext', u:'mold_master.html', d:'소재 / 매핑기종 / 금형재번 / 고객사'}
+      ]},
+      { name:'금형이력', items:[
+        {id:'mold-life', n:'금형 타발수명', t:'grid', d:'누적 SHOT / 수명 대비 잔여'}
+      ]}
+    ]}
+  ]},
+
+  { key:'base', name:'기준정보', second:[
+    { key:'master', name:'마스터', icon:'▥', groups:[
+      { name:'기준정보', items:[
+        {id:'item-master', n:'품목정보', t:'form', d:'품번 / 품명 / 규격 / 단위'},
+        {id:'proc-master', n:'공정정보', t:'form', d:'공정코드 / 표준 CT'},
+        {id:'mach-master', n:'설비정보', t:'form', d:'호기 / 톤수 / 설치일'},
+        {id:'vendor', n:'거래처관리', t:'form', d:'고객사 / 외주처 / 매입처'},
+        {id:'code-master', n:'공통코드', t:'form', d:'common_code 관리'}
+      ]}
+    ]},
+    { key:'sys', name:'시스템', icon:'🛡', groups:[
+      { name:'시스템', items:[
+        {id:'security', n:'보안 마스터', t:'ext', u:'security_master.html', d:'PIN 관리 / 로그인 위치 / 차단 / 알림'},
+        {id:'counter-gen', n:'카운터 생성기', t:'ext', u:'counter_generator.html', d:'ESP32 스트로크 카운터 설정'}
+      ]}
+    ]}
+  ]}
+];
+
+/* ==================== 인덱스 ==================== */
+const ITEM = {};   // id -> {item, l1, l2}
+MENU.forEach(l1=>l1.second.forEach(l2=>l2.groups.forEach(g=>g.items.forEach(it=>{
+  ITEM[it.id] = {it:it, l1:l1.key, l2:l2.key, path:l1.name+' › '+l2.name};
+}))));
+
+let currentL1='dash', currentL2='d-main', activeTab='home';
+const openTabs = new Map();
+const pageEls  = new Map();
+let curPin='', lockTimer=null;
+
+const byId = id=>document.getElementById(id);
+const getL1 = ()=>MENU.find(x=>x.key===currentL1)||MENU[0];
+const getL2 = ()=>getL1().second.find(x=>x.key===currentL2)||getL1().second[0];
+const esc = s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ==================== 인증 ==================== */
+async function sha256hex(t){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function getSession(){
+  try{ const s=JSON.parse(localStorage.getItem(LK_AUTH)||'null');
+    if(!s||!s.exp||s.exp<Date.now()){localStorage.removeItem(LK_AUTH);return null;} return s;
+  }catch(e){return null}
+}
+function setSession(o){ o.exp = Date.now()+SESSION_DAYS*864e5; localStorage.setItem(LK_AUTH, JSON.stringify(o)); }
+function clearSession(){ localStorage.removeItem(LK_AUTH); }
+function getFail(){ try{return JSON.parse(localStorage.getItem(LK_FAIL)||'{"count":0,"until":0}')}catch(e){return{count:0,until:0}} }
+function setFail(f){ localStorage.setItem(LK_FAIL, JSON.stringify(f)); }
+function clearFail(){ localStorage.removeItem(LK_FAIL); }
+
+function buildKeypad(){
+  const kp = byId('plKeypad'); kp.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','←','0','✓'].forEach(k=>{
+    const b=document.createElement('button'); b.className='pl-key'; b.textContent=k;
+    b.addEventListener('click', ()=>{ if(k==='←') pinDel(); else if(k!=='✓') pinPress(k); });
+    kp.appendChild(b);
+  });
+}
+function updateDots(){
+  [...byId('plDots').children].forEach((d,i)=>d.classList.toggle('on', i<curPin.length));
+}
+function shakeDots(){ const d=byId('plDots'); d.classList.add('shake'); setTimeout(()=>d.classList.remove('shake'),350); curPin=''; updateDots(); }
+function pinPress(n){
+  if(curPin.length>=4)return;
+  if(getFail().until>Date.now())return;
+  curPin+=n; updateDots();
+  if(curPin.length===4) setTimeout(pinDone,150);
+}
+function pinDel(){ if(!curPin)return; curPin=curPin.slice(0,-1); updateDots(); }
+
+async function pinDone(){
+  const hint = byId('plHint'); hint.className='pl-hint'; hint.textContent='확인 중...';
+  try{
+    const h = await sha256hex(curPin);
+    if(h===MASTER_PIN_HASH){
+      clearFail(); setSession({role:'admin',name:'관리자',factory:'',dept:'',position:''});
+      hint.classList.add('ok'); hint.textContent='✓ 관리자 인증'; setTimeout(unlock,300); return;
+    }
+    const r = await fetch(SUPABASE_URL+'/rest/v1/'+TBL_USER+'?select=id,name,factory,dept,position,blocked,blocked_reason&pin_hash=eq.'+h,
+      {headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
+    if(!r.ok) throw new Error('서버 응답 오류');
+    const list = await r.json();
+    if(list && list.length){
+      const u=list[0];
+      if(u.blocked){ hint.classList.add('err'); hint.textContent='🚫 차단된 계정입니다'; shakeDots(); return; }
+      clearFail();
+      setSession({role:'user',id:u.id,name:u.name,factory:u.factory||'',dept:u.dept||'',position:u.position||''});
+      hint.classList.add('ok'); hint.textContent='✓ '+u.name+'님 환영합니다';
+      setTimeout(unlock,400); return;
+    }
+    const f=getFail(); f.count=(f.count||0)+1;
+    if(f.count>=MAX_FAIL){ f.until=Date.now()+LOCKOUT_SEC*1000; f.count=0; setFail(f); checkLockout(); }
+    else { setFail(f); hint.classList.add('err'); hint.textContent='PIN 불일치 ('+f.count+'/'+MAX_FAIL+')'; }
+    shakeDots();
+  }catch(err){ hint.classList.add('err'); hint.textContent='❌ '+err.message; shakeDots(); }
+}
+function checkLockout(){
+  const f=getFail(), msg=byId('plLockout');
+  if(f.until>Date.now()){
+    msg.style.display='block';
+    const upd=()=>{
+      const s=Math.ceil((f.until-Date.now())/1000);
+      if(s<=0){ msg.style.display='none'; clearFail(); clearInterval(lockTimer);
+        byId('plHint').className='pl-hint'; byId('plHint').textContent='4자리 PIN을 입력하세요'; return; }
+      msg.textContent='🔒 '+s+'초 후 재시도';
+    };
+    upd(); clearInterval(lockTimer); lockTimer=setInterval(upd,1000);
+  } else msg.style.display='none';
+}
+function unlock(){
+  document.body.classList.remove('locked');
+  byId('pinLock').style.display='none';
+  applySession();
+  bootApp();
+}
+function applySession(){
+  const s=getSession(); if(!s)return;
+  const label = s.role==='admin' ? '관리자' : (s.factory? s.factory+' · ':'')+s.name+(s.position?' '+s.position:'');
+  byId('userBtn').textContent='👤 '+label;
+  byId('stUser').textContent='사용자: '+label;
+}
+
+/* ==================== 메뉴 렌더 ==================== */
+function buildL1(){
+  const el=byId('l1Menu'); el.innerHTML='';
+  MENU.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='l1-btn'+(m.key===currentL1?' active':''); b.textContent=m.name;
+    b.addEventListener('click',()=>selectL1(m.key));
+    el.appendChild(b);
+  });
+}
+function buildL2(){
+  const el=byId('l2Menu'); el.innerHTML='';
+  getL1().second.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='l2-btn'+(m.key===currentL2?' active':'');
+    const i=document.createElement('span'); i.className='l2-icon'; i.textContent=m.icon;
+    const t=document.createElement('span'); t.className='l2-label'; t.textContent=m.name;
+    b.appendChild(i); b.appendChild(t);
+    b.addEventListener('click',()=>selectL2(m.key));
+    el.appendChild(b);
+  });
+}
+function buildTree(){
+  const l2=getL2(); byId('leftTitle').textContent=l2.name;
+  const el=byId('treeMenu'); el.innerHTML='';
+  l2.groups.forEach(g=>{
+    const gd=document.createElement('div'); gd.className='tree-group';
+    const cap=document.createElement('div'); cap.className='tree-caption'; cap.textContent=g.name;
+    gd.appendChild(cap);
+    g.items.forEach(it=>{
+      const b=document.createElement('button');
+      b.className='tree-item'+(it.t==='ext'?' ext':'')+(it.id===activeTab?' active':'');
+      b.textContent=it.n; b.title=it.d||it.n;
+      b.addEventListener('click',()=>openPage(it.id));
+      gd.appendChild(b);
+    });
+    el.appendChild(gd);
+  });
+}
+function selectL1(k){ currentL1=k; currentL2=getL1().second[0].key; buildL1(); buildL2(); buildTree(); }
+function selectL2(k){ currentL2=k; buildL2(); buildTree(); }
+
+/* ==================== 탭 / 페이지 ==================== */
+function openPage(id){
+  const def=ITEM[id]; if(!def)return;
+  if(!openTabs.has(id)){ openTabs.set(id,{id:id,title:def.it.n}); ensurePage(id); }
+  activateTab(id);
+  currentL1=def.l1; currentL2=def.l2;
+  buildL1(); buildL2(); buildTree();
+  pushRecent(id); saveTabs();
+}
+function activateTab(id){
+  activeTab=id;
+  pageEls.forEach((el,k)=>el.classList.toggle('active', k===id));
+  renderTabs(); buildTree(); saveTabs();
+}
+function closePage(id){
+  if(openTabs.size<=1) return;
+  openTabs.delete(id);
+  const el=pageEls.get(id); if(el){ el.remove(); pageEls.delete(id); }
+  if(activeTab===id) activateTab([...openTabs.keys()].pop());
+  else { renderTabs(); saveTabs(); }
+}
+function renderTabs(){
+  const bar=byId('tabbar'); bar.innerHTML='';
+  [...openTabs.values()].forEach((t,i)=>{
+    const d=document.createElement('div');
+    d.className='tab'+(t.id===activeTab?' active':'')+(i===0?' tab-home':'');
+    const s=document.createElement('span'); s.className='tab-title'; s.textContent=t.title;
+    const c=document.createElement('button'); c.className='close'; c.textContent='×'; c.title='닫기';
+    c.addEventListener('click',ev=>{ev.stopPropagation();closePage(t.id);});
+    d.appendChild(s); d.appendChild(c);
+    d.addEventListener('click',()=>activateTab(t.id));
+    bar.appendChild(d);
+  });
+  requestAnimationFrame(()=>{ const a=bar.querySelector('.tab.active'); if(a)a.scrollIntoView({block:'nearest',inline:'nearest'}); });
+}
+
+function pageHead(it, extra){
+  const h=document.createElement('div'); h.className='page-title';
+  const t=document.createElement('h2'); t.textContent=it.n;
+  const s=document.createElement('span'); s.className='sub'; s.textContent=it.d||'';
+  const a=document.createElement('div'); a.className='page-actions';
+  (extra||[]).forEach(([label,cls,fn])=>{
+    const b=document.createElement('button'); b.className='erp-btn'+(cls?' '+cls:''); b.textContent=label;
+    b.addEventListener('click',fn); a.appendChild(b);
+  });
+  const close=document.createElement('button'); close.className='erp-btn'; close.textContent='닫기';
+  close.addEventListener('click',()=>closePage(it.id)); a.appendChild(close);
+  h.appendChild(t); h.appendChild(s); h.appendChild(a);
+  return h;
+}
+
+function ensurePage(id){
+  if(pageEls.has(id))return pageEls.get(id);
+  const it=ITEM[id].it;
+  const p=document.createElement('section'); p.className='page'; p.dataset.page=id;
+  if(it.t==='ext')      buildExtPage(p,it);
+  else if(it.t==='dash')buildDashPage(p,it);
+  else                  buildStubPage(p,it);
+  byId('contentShell').appendChild(p);
+  pageEls.set(id,p);
+  return p;
+}
+
+/* --- iframe 임베드 모드 : 내부 헤더/푸터/PIN 자동 숨김 --- */
+const LK_THEME='mes_embed_theme';
+let embedTheme = localStorage.getItem(LK_THEME) || 'dark';
+const extFrames = [];
+
+const EMBED_CSS =
+  '.header,.footer,.back-btn,.pin-lock,#pinLock,.lang-tabs{display:none!important}'+
+  'body{padding-top:0!important;overflow:auto!important}'+
+  '.container,.wrap,main{padding-top:10px!important}';
+
+const LIGHT_CSS =
+  ':root{--bg-dark:#eef2f6;--bg-card:#ffffff;--bg-card-hi:#e7edf3;--border:#c8d2dc;--border-hi:#a9b6c4;'+
+  '--text:#25313d;--text-mid:#3c4b5a;--text-sub:#5f6f7e;--text-dim:#8593a1;'+
+  '--ice:#1f4f8c;--ice-lt:#2d66ad;--orange:#b45309;--green:#15803d;--rose:#b91c1c}'+
+  'html,body{background:#eef2f6!important;color:#25313d!important}'+
+  'input,select,textarea{background:#fff!important;color:#25313d!important;border-color:#aeb9c4!important}';
+
+function injectEmbed(fr){
+  let doc=null;
+  try{ doc = fr.contentDocument; }catch(e){ return; }
+  if(!doc || !doc.body) return;
+  try{
+    doc.body.classList.remove('locked');
+    let st=doc.getElementById('__mesEmbed');
+    if(!st){ st=doc.createElement('style'); st.id='__mesEmbed'; (doc.head||doc.documentElement).appendChild(st); }
+    st.textContent = EMBED_CSS + (embedTheme==='light' ? LIGHT_CSS : '');
+  }catch(e){}
+}
+function applyThemeAll(){
+  localStorage.setItem(LK_THEME, embedTheme);
+  extFrames.forEach(injectEmbed);
+}
+function extUrl(u){ return u + (u.indexOf('?')<0?'?':'&') + 'embed=1&theme=' + embedTheme; }
+
+function buildExtPage(p,it){
+  const fr=document.createElement('iframe');
+  fr.className='ext-frame'; fr.src=extUrl(it.u); fr.setAttribute('allow','camera;clipboard-write');
+  fr.addEventListener('load',()=>injectEmbed(fr));
+  extFrames.push(fr);
+  p.appendChild(pageHead(it,[
+    ['🌓 스킨','',b=>{ embedTheme = (embedTheme==='light'?'dark':'light'); applyThemeAll();
+                      b.target.textContent = embedTheme==='light' ? '🌓 라이트' : '🌓 다크'; }],
+    ['새로고침','',()=>{ fr.src=extUrl(it.u); }],
+    ['새창열기','',()=>window.open(it.u,'_blank')]
+  ]));
+  p.appendChild(fr);
+}
+
+function buildStubPage(p,it){
+  p.appendChild(pageHead(it,[['조회','primary',b=>fakeSearch(b.target)],['신규','',()=>{}],['엑셀','',()=>{}]]));
+  const sp=document.createElement('div'); sp.className='search-panel';
+  sp.innerHTML =
+    '<div class="search-row">'+
+      '<div class="search-label">기간</div><div class="search-field"><input type="date"></div>'+
+      '<div class="search-label">공장</div><div class="search-field"><select><option>전체</option><option>본사</option><option>1공장</option><option>원영</option></select></div>'+
+      '<div class="search-label hide-sm">담당자</div><div class="search-field hide-sm"><input placeholder="담당자"></div>'+
+    '</div>'+
+    '<div class="search-row">'+
+      '<div class="search-label">품번/품명</div><div class="search-field"><input placeholder="품번 또는 품명"></div>'+
+      '<div class="search-label">LOT</div><div class="search-field"><input placeholder="LOT NO"></div>'+
+      '<div class="search-label hide-sm">상태</div><div class="search-field hide-sm"><select><option>전체</option><option>진행</option><option>완료</option></select></div>'+
+    '</div>';
+  p.appendChild(sp);
+  const gw=document.createElement('div'); gw.className='grid-wrap';
+  gw.innerHTML =
+    '<div class="grid-toolbar"><button class="erp-btn">상세보기</button><button class="erp-btn">인쇄</button><span class="right">총 0건</span></div>'+
+    '<table class="erp-grid"><thead><tr>'+
+      '<th style="width:42px">No</th><th style="width:110px">일자</th><th style="width:120px">품번</th>'+
+      '<th style="width:180px">품명</th><th style="width:130px">LOT NO</th><th style="width:80px">공정</th>'+
+      '<th style="width:80px">수량</th><th style="width:80px">상태</th><th>비고</th>'+
+    '</tr></thead><tbody></tbody></table>';
+  p.appendChild(gw);
+  const ib=document.createElement('div'); ib.className='info-box';
+  ib.innerHTML='<b>'+esc(it.n)+'</b> — 화면 프레임만 배치된 상태입니다. (기능 개발 예정)<br>'+
+               '연결 대상: Supabase MES 스키마 · 좌측 트리에서 다른 메뉴를 열면 이 탭은 유지된 채 새 탭으로 누적됩니다.';
+  p.appendChild(ib);
+}
+function fakeSearch(btn){
+  const old=btn.textContent; btn.textContent='조회중...'; btn.disabled=true;
+  setTimeout(()=>{btn.textContent=old;btn.disabled=false;},450);
+}
+
+/* ==================== 대시보드 ==================== */
+function buildDashPage(p,it){
+  p.appendChild(pageHead(it,[['새로고침','primary',()=>loadDash()]]));
+  const w=document.createElement('div'); w.className='dash-wrap';
+  w.innerHTML =
+    '<div class="kpi-row" id="kpiRow">'+
+      kpiHtml('kMold','등록 금형','건')+
+      kpiHtml('kRepair','수리 진행중','건','warn')+
+      kpiHtml('kPart','금형부품 품목','품목')+
+      kpiHtml('kTry','Tryout 이력','건')+
+      kpiHtml('kImp','개선활동','건','ok')+
+      kpiHtml('kUser','등록 사용자','명')+
+    '</div>'+
+    '<div class="dash-cols">'+
+      '<div class="dash-card"><h3>진행중 금형수리 <span class="r" id="repTime">-</span></h3>'+
+        '<div class="dash-body"><table class="erp-grid" id="repTbl"><thead><tr>'+
+        '<th style="width:110px">의뢰번호</th><th style="width:90px">의뢰일</th><th>내용</th><th style="width:80px">상태</th>'+
+        '</tr></thead><tbody><tr><td colspan="4" class="center">로딩중...</td></tr></tbody></table></div></div>'+
+      '<div class="dash-card"><h3>바로가기</h3><div class="quick" id="quickBox"></div></div>'+
+    '</div>';
+  p.appendChild(w);
+  setTimeout(()=>{ buildQuick(); loadDash(); },50);
+}
+function kpiHtml(id,label,unit,cls){
+  return '<div class="kpi'+(cls?' '+cls:'')+'"><div class="k-label">'+label+'</div>'+
+         '<div class="k-val" id="'+id+'">-<small>'+unit+'</small></div></div>';
+}
+function buildQuick(){
+  const box=byId('quickBox'); if(!box)return; box.innerHTML='';
+  [['daily-report','생산일보','오늘 생산 실적 입력'],
+   ['mm-rq','금형 수리의뢰','불량 발생 시 즉시 등록'],
+   ['mm-f1','1공장 부품재고','입출고 / 재고 조회'],
+   ['mm-po','금형부품 발주','외주 발주·입고 현황'],
+   ['mm-try','Tryout 보고서','시작품 테스트 결과'],
+   ['work-status','업무현황','인원별 업무 공유']].forEach(([id,t,d])=>{
+    const b=document.createElement('button');
+    b.appendChild(document.createTextNode(t));
+    const s=document.createElement('span'); s.textContent=d; b.appendChild(s);
+    b.addEventListener('click',()=>openPage(id));
+    box.appendChild(b);
+  });
+}
+async function sbCount(path){
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,{headers:{
+      apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,Prefer:'count=exact',Range:'0-0'}});
+    if(!r.ok)return null;
+    const cr=r.headers.get('content-range')||'';
+    const n=parseInt((cr.split('/')[1]||'0'),10);
+    return isNaN(n)?null:n;
+  }catch(e){ return null; }
+}
+function setKpi(id,v,unit){
+  const el=byId(id); if(!el)return;
+  el.innerHTML = (v==null?'-':v.toLocaleString())+'<small>'+unit+'</small>';
+}
+async function loadDash(){
+  const jobs = [
+    sbCount('mm_mold_master?select=*').then(v=>setKpi('kMold',v,'건')),
+    sbCount('mm_mold_repair?select=*&status=in.(requested,in_progress)').then(v=>setKpi('kRepair',v,'건')),
+    Promise.all([sbCount('press_inventory_items?select=*'),sbCount('f1_inventory_items?select=*'),sbCount('wy_inventory_items?select=*')])
+      .then(a=>setKpi('kPart', a.every(x=>x==null)?null:a.reduce((s,x)=>s+(x||0),0),'품목')),
+    sbCount('tryout_logs?select=*').then(v=>setKpi('kTry',v,'건')),
+    sbCount('improvement_logs?select=*').then(v=>setKpi('kImp',v,'건')),
+    sbCount(TBL_USER+'?select=*').then(v=>setKpi('kUser',v,'명')),
+    loadRepairList()
+  ];
+  await Promise.all(jobs.map(p=>p.catch(()=>null)));
+  const t=byId('repTime'); if(t)t.textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+}
+async function loadRepairList(){
+  const tb=document.querySelector('#repTbl tbody'); if(!tb)return;
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/mm_mold_repair?status=in.(requested,in_progress)&order=request_date.desc,id.desc&limit=12',
+      {headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
+    const list = r.ok ? await r.json() : [];
+    tb.innerHTML='';
+    if(!list.length){ tb.innerHTML='<tr><td colspan="4" class="center">진행중인 수리 건이 없습니다</td></tr>'; return; }
+    list.forEach(x=>{
+      const tr=document.createElement('tr');
+      const desc = x.mold_name || x.item_name || x.trouble || x.content || x.remark || '-';
+      const st = x.status==='requested' ? '의뢰' : (x.status==='in_progress' ? '진행중' : (x.status||'-'));
+      [[x.repair_no||'-',''],[(x.request_date||'').substring(0,10),'center'],[desc,''],[st,'status center']]
+        .forEach(([v,cls])=>{ const td=document.createElement('td'); td.className=cls; td.textContent=v; td.title=v; tr.appendChild(td); });
+      tr.addEventListener('click',()=>openPage('mm-rp'));
+      tb.appendChild(tr);
+    });
+  }catch(e){ tb.innerHTML='<tr><td colspan="4" class="center">조회 실패</td></tr>'; }
+}
+
+/* ==================== 메뉴 전체검색 ==================== */
+function initSearch(){
+  const inp=byId('gsInput'), pop=byId('gsPop');
+  const render=()=>{
+    const q=inp.value.trim().toLowerCase();
+    pop.innerHTML='';
+    if(!q){ pop.classList.remove('on'); return; }
+    const hits=Object.keys(ITEM).filter(id=>{
+      const d=ITEM[id];
+      return (d.it.n+' '+(d.it.d||'')+' '+d.path).toLowerCase().includes(q);
+    }).slice(0,20);
+    if(!hits.length){ pop.classList.remove('on'); return; }
+    hits.forEach(id=>{
+      const d=ITEM[id];
+      const it=document.createElement('div'); it.className='gs-item';
+      it.innerHTML='<b>'+esc(d.it.n)+'</b><div class="p">'+esc(d.path)+'</div>';
+      it.addEventListener('click',()=>{ openPage(id); inp.value=''; pop.classList.remove('on'); });
+      pop.appendChild(it);
+    });
+    pop.classList.add('on');
+  };
+  inp.addEventListener('input',render);
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ inp.value=''; pop.classList.remove('on'); }
+    if(e.key==='Enter'){ const f=pop.querySelector('.gs-item'); if(f)f.click(); }
+  });
+  document.addEventListener('click',e=>{ if(!e.target.closest('.gs-wrap')) pop.classList.remove('on'); });
+}
+
+/* ==================== 최근 사용 ==================== */
+function pushRecent(id){
+  let list=[]; try{ list=JSON.parse(localStorage.getItem(LK_RECENT)||'[]'); }catch(e){}
+  list=[id].concat(list.filter(x=>x!==id)).slice(0,6);
+  localStorage.setItem(LK_RECENT,JSON.stringify(list));
+  renderRecent();
+}
+function renderRecent(){
+  let list=[]; try{ list=JSON.parse(localStorage.getItem(LK_RECENT)||'[]'); }catch(e){}
+  const box=byId('recentList'); box.innerHTML='';
+  list.filter(id=>ITEM[id]).forEach(id=>{
+    const b=document.createElement('button'); b.className='recent-item'; b.textContent=ITEM[id].it.n;
+    b.addEventListener('click',()=>openPage(id)); box.appendChild(b);
+  });
+}
+
+/* ==================== 상태 저장/복원 ==================== */
+function saveTabs(){
+  localStorage.setItem(LK_TABS, JSON.stringify({tabs:[...openTabs.keys()], active:activeTab}));
+}
+function restoreTabs(){
+  let st=null; try{ st=JSON.parse(localStorage.getItem(LK_TABS)||'null'); }catch(e){}
+  const ids = (st && st.tabs && st.tabs.length) ? st.tabs.filter(id=>ITEM[id]) : ['home'];
+  if(!ids.includes('home')) ids.unshift('home');
+  ids.forEach(id=>{ openTabs.set(id,{id:id,title:ITEM[id].it.n}); ensurePage(id); });
+  const act = (st && ITEM[st.active]) ? st.active : 'home';
+  const d=ITEM[act]; currentL1=d.l1; currentL2=d.l2;
+  activateTab(act);
+}
+
+/* ==================== 부팅 ==================== */
+function tick(){
+  byId('clock').textContent=new Date().toLocaleString('ko-KR',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+async function checkNet(){
+  const ok = (await sbCount(TBL_USER+'?select=*')) !== null;
+  byId('netDot').classList.toggle('off',!ok);
+  byId('netTxt').textContent = ok?'Connected':'Offline';
+}
+function bootApp(){
+  buildL1(); buildL2();
+  restoreTabs();
+  buildTree(); renderRecent(); initSearch();
+  tick(); setInterval(tick,30000);
+  checkNet(); setInterval(checkNet,120000);
+}
+byId('verBtn').addEventListener('click',()=>alert(CHANGELOG));
+byId('logoutBtn').addEventListener('click',()=>{
+  if(!confirm('로그아웃 하시겠습니까?\n다시 접속하려면 PIN을 입력해야 합니다.'))return;
+  clearSession(); location.reload();
+});
+byId('userBtn').addEventListener('click',()=>{
+  const s=getSession(); if(!s)return;
+  const days=Math.max(0,Math.ceil((s.exp-Date.now())/864e5));
+  alert('👤 '+(s.role==='admin'?'관리자':s.name)+'\n'+
+        (s.factory?'🏭 공장: '+s.factory+'\n':'')+(s.dept?'📂 부서: '+s.dept+'\n':'')+
+        (s.position?'🎖 직위: '+s.position+'\n':'')+'\n⏱ 자동 잠금까지: '+days+'일');
+});
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey && e.key.toLowerCase()==='k'){ e.preventDefault(); byId('gsInput').focus(); }
+});
+
+/* --- 모바일 감지 --- */
+function isMobileClient(){
+  if(localStorage.getItem('mes_force_pc')==='1') return false;
+  const narrow = window.matchMedia('(max-width:820px)').matches;
+  const coarse = window.matchMedia('(pointer:coarse)').matches && window.innerWidth < 1100;
+  return narrow || coarse;
+}
+function checkMobile(){
+  document.body.classList.toggle('mobile-block', isMobileClient());
+}
+byId('mgSkip').addEventListener('click',()=>{
+  localStorage.setItem('mes_force_pc','1');
+  document.body.classList.remove('mobile-block');
+});
+window.addEventListener('resize',checkMobile);
+
+/* 시작 */
+(function init(){
+  checkMobile();
+  buildKeypad(); updateDots(); checkLockout();
+  const s=getSession();
+  if(s){ document.body.classList.remove('locked'); byId('pinLock').style.display='none'; applySession(); bootApp(); }
+})();
+</script>
+</body>
+</html>
